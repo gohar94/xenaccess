@@ -32,6 +32,15 @@
 
 #include "xenaccess.h"
 
+/* determine what type of OS is running in the requested domain */
+int set_os_type (int *os_type)
+{
+    /* for now we only support linux.  But this should be changed
+     * to verify that the domain is really running linux */
+    *os_type = XA_OS_LINUX;
+    return XA_SUCCESS;
+}
+
 /* given a xa_instance_t struct with the xc_handle and the
  * domain_id filled in, this function will fill in the rest
  * of the values using queries to libxc. */
@@ -43,6 +52,11 @@ int helper_init (xa_instance_t *instance)
             instance->xc_handle, instance->domain_id,
             1, &(instance->info)
         ) != 1){
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+
+    if (set_os_type(&(instance->os_type)) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
     }

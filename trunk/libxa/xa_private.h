@@ -38,6 +38,11 @@
 #include <math.h>
 #include <ctype.h>
 #include <xenctrl.h>
+#include "xenaccess.h"
+
+/*--------------------------------------------
+ * Print util functions from xa_pretty_print.c
+ */
 
 /**
  * Prints out the hex and ascii version of a chunk of bytes. The
@@ -55,5 +60,43 @@ void print_hex (unsigned char *data, int length);
  * @param[in] info The struct to print
  */
 void print_dominfo (xc_dominfo_t info);
+
+/*-----------------------------------------
+ * Memory access functions from xa_memory.c
+ */
+
+/**
+ * Memory maps one page from domU to a local address range.  The
+ * memory to be mapped is specified with the machine frame number.
+ * This memory must be unmapped manually with munmap.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] prot Desired memory protection (see 'man mmap' for values)
+ * @param[in] mfn Machine frame number
+ * @return Mapped memory or NULL on error
+ */
+void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn);
+
+/**
+ * Memory maps one page from domU to a local address range.  The
+ * memory to be mapped is specified with the page frame number.
+ * This memory must be unmapped manually with munmap.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] prot Desired memory protection (see 'man mmap' for values)
+ * @param[in] pfn Page frame number
+ * @return Mapped memory or NULL on error
+ */
+void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn);
+
+
+// functions that still need comments
+int linux_system_map_symbol_to_address (
+        xa_instance_t *instance, char *symbol, uint32_t *address);
+
+void *linux_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset);
+
+
 
 #endif /* XA_PRIVATE_H */
