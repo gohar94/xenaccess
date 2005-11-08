@@ -36,14 +36,15 @@
 
 #define XA_SUCCESS 0
 #define XA_FAILURE -1
-#define XA_LIST_HEAD 0
-#define XA_LIST_NODE 1
-#define XA_LIST_TAIL 2
+#define XA_OS_LINUX 0
+#define XA_OS_WINDOWS 1  /* not yet supported */
+#define XA_OS_NETBSD 2   /* not yet supported */
 #define XA_PAGE_SIZE XC_PAGE_SIZE
 
 typedef struct xa_instance{
     int xc_handle;
     uint32_t domain_id;
+    int os_type;
     xc_dominfo_t info;
 } xa_instance_t;
 
@@ -76,27 +77,20 @@ int xa_destroy (xa_instance_t *instance);
 
 /**
  * Memory maps one page from domU to a local address range.  The
- * memory to be mapped is specified with the machine frame number.
- * This memory must be unmapped manually with munmap.
+ * memory to be mapped is specified with a kernel symbol (e.g.,
+ * from System.map on linux).  This memory must be unmapped manually
+ * with munmap.
  *
  * @param[in] instance libxa instance
- * @param[in] prot Desired memory protection (see 'man mmap' for values)
- * @param[in] mfn Machine frame number
+ * @param[in] symbol Desired kernel symbol to access
+ * @param[out] offset Offset to kernel symbol within the mapped memory
  * @return Mapped memory or NULL on error
  */
-void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn);
+void *xa_access_kernel_symbol
+        (xa_instance_t *instance, char *symbol, uint32_t *offset);
 
-/**
- * Memory maps one page from domU to a local address range.  The
- * memory to be mapped is specified with the page frame number.
- * This memory must be unmapped manually with munmap.
- *
- * @param[in] instance libxa instance
- * @param[in] prot Desired memory protection (see 'man mmap' for values)
- * @param[in] pfn Page frame number
- * @return Mapped memory or NULL on error
- */
-void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn);
+
+
 
 
 #endif /* LIB_XEN_ACCESS_H */

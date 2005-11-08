@@ -33,8 +33,10 @@
 
 #include <stdlib.h>
 #include <sys/mman.h>
-#include <xenaccess.h>
+#include "xenaccess.h"
+#include "xa_private.h"
 
+/* convert a pfn to a mfn based on the live mapping tables */
 unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 {
     shared_info_t *live_shinfo = NULL;
@@ -103,4 +105,17 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
 
     return xc_map_foreign_range(
         instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
+}
+
+void *xa_access_kernel_symbol
+        (xa_instance_t *instance, char *symbol, uint32_t *offset)
+{
+    if (instance->os_type == XA_OS_LINUX){
+        return linux_access_kernel_symbol(instance, symbol, offset);
+    }
+
+    /*TODO we do not yet support any other OSes */
+    else{
+        return NULL;
+    }
 }

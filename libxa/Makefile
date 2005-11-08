@@ -4,6 +4,8 @@ SRCS       :=
 SRCS       += xa_core.c
 SRCS       += xa_memory.c
 SRCS       += xa_pretty_print.c
+SRCS       += linux_system_map.c
+SRCS       += linux_memory.c
 
 CFLAGS   += -Wall
 CFLAGS   += -Werror
@@ -26,7 +28,7 @@ build:
 	$(MAKE) $(LIB)
 
 clean:
-	rm -rf *.a *.so* *.o *.opic *.rpm $(LIB) *~ $(DEPS) test
+	rm -rf *.a *.so* *.o *.opic *.rpm $(LIB) *~ $(DEPS) 
 
 # libxenaccess
 libxenaccess.a: $(LIB_OBJS)
@@ -44,9 +46,5 @@ libxenaccess.so: $(PIC_OBJS)
 
 %.o: %.cc
 	$(CC) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
-
-# test program
-test: test.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -l xenctrl -l xenaccess -o $@ $^
 
 -include $(DEPS)
