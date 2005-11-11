@@ -89,7 +89,19 @@ int xa_destroy (xa_instance_t *instance);
 void *xa_access_kernel_symbol
         (xa_instance_t *instance, char *symbol, uint32_t *offset);
 
-
+/**
+ * Memory maps one page from domU to a local address range.  The
+ * memory to be mapped is specified with a virtual address (e.g.,
+ * from System.map on linux).  This memory must be unmapped manually
+ * with munmap.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] virt_address Desired virtual address to access
+ * @param[out] offset Offset to kernel symbol within the mapped memory
+ * @return Mapped memory or NULL on error
+ */
+void *xa_access_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 
 
 
