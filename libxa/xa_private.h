@@ -90,7 +90,7 @@ void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn);
 void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn);
 
 
-// functions that still need comments
+/*TODO functions that still need comments */
 int linux_system_map_symbol_to_address (
         xa_instance_t *instance, char *symbol, uint32_t *address);
 

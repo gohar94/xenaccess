@@ -37,7 +37,7 @@
 #include "xa_private.h"
 
 /* 80 chars is more than enough for one line of system.map */
-#define MAX_ROW_LENGTH 80
+#define MAX_ROW_LENGTH 200
 
 int get_system_map_row (FILE *f, char *row, char *symbol, int position)
 {
@@ -45,7 +45,7 @@ int get_system_map_row (FILE *f, char *row, char *symbol, int position)
 
     while (fgets(row, MAX_ROW_LENGTH, f) != NULL){
         char *token = NULL;
-        
+
         /* find the correct token to check */
         int curpos = 0;
         int position_copy = position;
@@ -92,7 +92,7 @@ int linux_system_map_symbol_to_address (
 {
     /* hard code this for now, but we need to figure out how
      * to automate the discovery of this location */
-    char *system_map = "/boot/System.map-2.6.12.6-xenU";
+    char *system_map = "/boot/System.map-2.6.12.6-xen";
 
     FILE *f = NULL;
     char *row = NULL;

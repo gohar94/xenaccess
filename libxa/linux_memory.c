@@ -69,7 +69,7 @@ void *linux_access_virtual_address (
     *offset = phys_address & bitmask;
 
     /* access the memory */
-    return xa_mmap_pfn(instance, PROT_READ, pfn);
+    return xa_mmap_pfn(instance, PROT_READ | PROT_WRITE, pfn);
 }
 
 
