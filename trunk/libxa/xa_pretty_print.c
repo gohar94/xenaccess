@@ -96,7 +96,7 @@ void print_dominfo (xc_dominfo_t info)
     printf("\tshutdown_reason = %d\n", info.shutdown_reason);
     printf("\tnr_pages = %lu\n", info.nr_pages);
     printf("\tshared_info_frame = %lu\n", info.shared_info_frame);
-//    printf("\tcpu_time = %x\n", info.cpu_time);
+    /* printf("\tcpu_time = %x\n", info.cpu_time); */
     printf("\tmax_memkb = %lu\n", info.max_memkb);
     printf("\tnr_online_vcpus = %d\n", info.nr_online_vcpus);
     printf("\tmax_vcpu_id = %d\n", info.max_vcpu_id);

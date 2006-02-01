@@ -9,6 +9,8 @@ SRCS       += linux_memory.c
 
 CFLAGS   += -Wall
 CFLAGS   += -Werror
+CFLAGS   += -ansi
+CFLAGS   += -pedantic
 CFLAGS   += -O3
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
