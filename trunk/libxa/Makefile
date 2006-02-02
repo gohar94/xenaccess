@@ -17,6 +17,7 @@ CFLAGS   += -Wp,-MD,.$(@F).d
 CFLAGS   += -m32 -march=i686
 LDFLAGS  += -L.
 LDFLAGS  += -m32
+LDFLAGS  += -l m
 DEPS     = .*.d
 
 LIB_OBJS := $(patsubst %.c,%.o,$(SRCS))
