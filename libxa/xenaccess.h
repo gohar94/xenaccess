@@ -40,10 +40,13 @@
 #define XA_OS_WINDOWS 1  /* not yet supported */
 #define XA_OS_NETBSD 2   /* not yet supported */
 #define XA_PAGE_SIZE XC_PAGE_SIZE
+#define XA_PAGE_OFFSET 0xc0000000
 
 typedef struct xa_instance{
     int xc_handle;
     uint32_t domain_id;
+    uint32_t high_memory;
+    uint32_t pkmap_base;
     int os_type;
     xc_dominfo_t info;
 } xa_instance_t;

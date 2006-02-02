@@ -30,7 +30,9 @@
  * $Date$
  */
 
+#include <sys/mman.h>
 #include "xenaccess.h"
+#include "xa_private.h"
 
 /* determine what type of OS is running in the requested domain */
 int set_os_type (int *os_type)
@@ -46,8 +48,11 @@ int set_os_type (int *os_type)
  * of the values using queries to libxc. */
 int helper_init (xa_instance_t *instance)
 {
+    uint32_t virt_address, offset;
+    unsigned char *memory;
     int ret = XA_SUCCESS;
 
+    /* init instance->xc_handle */
     if (xc_domain_getinfo(
             instance->xc_handle, instance->domain_id,
             1, &(instance->info)
@@ -56,6 +61,27 @@ int helper_init (xa_instance_t *instance)
         goto error_exit;
     }
 
+    /* init instance->high_memory */
+    if (linux_system_map_symbol_to_address(
+            instance, "high_memory", &virt_address) == XA_FAILURE){
+        printf("ERROR: high_memory symbol not found in system map\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    memory = linux_access_physical_address(
+                instance, virt_address - XA_PAGE_OFFSET, &offset);
+    if (NULL == memory){
+        printf("ERROR: could not map high_memory symbol\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    instance->high_memory = *((uint32_t*)(memory + offset));
+    munmap(memory, XA_PAGE_SIZE);
+
+    /*TODO init instance->pkmap_base */
+    instance->pkmap_base = 0xfe000000;
+
+    /* init instance->os_type */
     if (set_os_type(&(instance->os_type)) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
@@ -97,7 +123,7 @@ int xa_destroy (xa_instance_t *instance)
     ret1 = helper_destroy(instance);
     ret2 = xc_interface_close(instance->xc_handle);
 
-    if (ret1 == XA_FAILURE || ret2 == XA_FAILURE){
+    if (XA_FAILURE == ret1 || XA_FAILURE == ret2){
         return XA_FAILURE;
     }
     return XA_SUCCESS;
