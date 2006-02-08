@@ -97,6 +97,9 @@ int linux_system_map_symbol_to_address (
 void *linux_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset);
 
+void *linux_access_machine_address (
+        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset);
+
 void *linux_access_physical_address (
         xa_instance_t *instance, uint32_t phys_address, uint32_t *offset);
 
