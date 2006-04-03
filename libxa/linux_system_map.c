@@ -92,7 +92,7 @@ int linux_system_map_symbol_to_address (
 {
     /* hard code this for now, but we need to figure out how
      * to automate the discovery of this location */
-    char *system_map = "/boot/System.map-2.6.12.6-xen";
+    char *system_map = linux_predict_sysmap_name(instance->domain_id);
 
     FILE *f = NULL;
     char *row = NULL;
@@ -114,6 +114,7 @@ int linux_system_map_symbol_to_address (
     *address = (uint32_t) strtoul(row, NULL, 16);
 
 error_exit:
+    if (system_map) free(system_map);
     if (row) free(row);
     if (f) fclose(f);
     return ret;

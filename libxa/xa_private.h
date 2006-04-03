@@ -106,6 +106,6 @@ void *linux_access_physical_address (
 void *linux_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 
-char *xa_predict_sysmap_name (int id);
+char *linux_predict_sysmap_name (int id);
 
 #endif /* XA_PRIVATE_H */

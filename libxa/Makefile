@@ -6,19 +6,26 @@ SRCS       += xa_memory.c
 SRCS       += xa_pretty_print.c
 SRCS       += linux_system_map.c
 SRCS       += linux_memory.c
+SRCS       += linux_domain_info.c
 
 CFLAGS   += -Wall
 CFLAGS   += -Werror
 CFLAGS   += -ansi
-CFLAGS   += -pedantic
+#CFLAGS   += -pedantic
 CFLAGS   += -O3
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
-CFLAGS   += -m32 -march=i686
+#CFLAGS   += -m32 -march=i686
+CFLAGS   += $(shell xml2-config --cflags)
+CFLAGS   += -I/usr/local/include/libvirt
 LDFLAGS  += -L.
+LDFLAGS  += -L/usr/local/lib
 LDFLAGS  += -m32
-LDFLAGS  += -l m
+LDFLAGS  += -lm
+LDFLAGS  += -lvirt
+LDFLAGS  += $(shell xml2-config --libs)
 DEPS     = .*.d
+STD      = -std=c99
 
 LIB_OBJS := $(patsubst %.c,%.o,$(SRCS))
 PIC_OBJS := $(patsubst %.c,%.opic,$(SRCS))
@@ -33,21 +40,24 @@ build:
 clean:
 	rm -rf *.a *.so* *.o *.opic *.rpm $(LIB) *~ $(DEPS) 
 
+# gcc `xml2-config --cflags --libs` -I/usr/local/include/libvirt -L/usr/local/lib -lvirt -g  -o xa_domain_info xa_domain_info.c
+
+
 # libxenaccess
 libxenaccess.a: $(LIB_OBJS)
 	$(AR) rc $@ $^
 
 libxenaccess.so: $(PIC_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-soname -Wl,libxenaccess.so -shared -o $@ $^
+	$(CC) $(STD) $(CFLAGS) $(LDFLAGS) -Wl,-soname -Wl,libxenaccess.so -shared -o $@ $^
 
 #general build rules
 %.opic: %.c
-	$(CC) $(CPPFLAGS) -DPIC $(CFLAGS) -fPIC -c -o $@ $<
+	$(CC) $(STD) $(CPPFLAGS) -DPIC $(CFLAGS) -fPIC -c -o $@ $<
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(STD) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cc
-	$(CC) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(STD) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 -include $(DEPS)
