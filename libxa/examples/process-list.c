@@ -35,6 +35,7 @@
 #include "../xenaccess.h"
 
 #define TASKS_OFFSET 24 * 4
+#define PID_OFFSET 39 * 4
 #define NAME_OFFSET 106 * 4
 
 int main (int argc, char **argv)
@@ -43,6 +44,7 @@ int main (int argc, char **argv)
     unsigned char *memory = NULL;
     uint32_t offset, next_process, list_head;
     char *name = NULL;
+    int pid = 0;
 
     /* this is the domain ID that we are looking at */
     /* this is hard coded for keep this example code simple */
@@ -75,7 +77,6 @@ int main (int argc, char **argv)
         /* follow the next pointer */
         memory = xa_access_virtual_address(&xai, next_process, &offset);
         if (NULL == memory){
-            printf("failed on next_process = 0x%.8x\n", next_process);
             perror("failed to map memory for process list pointer");
             goto error_exit;
         }
@@ -85,18 +86,22 @@ int main (int argc, char **argv)
 
         /* if we are back at the list head, we are done */
         if (list_head == next_process){
-            printf("exiting b/c next_process = 0x%.8x\n", next_process);
             break;
         }
 
         /* print out the process name */
 
-        /* Note: the module struct that we are looking at has a string
-           directly following the next / prev pointers.  This is why you
-           can just add 420 to get the name.  See include/linux/sched.h
-           for mode details */
+        /* Note: the task_struct that we are looking at has a lot of
+           information.  However, the process name and id are burried
+           nice and deep.  Instead of doing something sane like mapping
+           this data to a task_struct, I'm just jumping to the location
+           with the info that I want.  This helps to make the example
+           code cleaner, if not more fragile.  In a real app, you'd
+           want to do this a little more robust :-)  See
+           include/linux/sched.h for mode details */
         name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
-        printf("%s\n", name);
+        memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
+        printf("[%5d] %s\n", pid, name);
         munmap(memory, XA_PAGE_SIZE);
     }
 
