@@ -10,12 +10,15 @@ LDFLAGS  += -L. -L../
 LDFLAGS  += -m32
 DEPS     = .*.d
 
-all: module-list
+all: module-list process-list
 
 clean:
-	rm -rf *.a *.o *~ $(DEPS) module-list
+	rm -rf *.a *.o *~ $(DEPS) module-list process-list
 
 module-list: module-list.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -l xenctrl -l xenaccess -o $@ $^
+
+process-list: process-list.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -l xenctrl -l xenaccess -o $@ $^
 
 -include $(DEPS)
