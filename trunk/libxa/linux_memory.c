@@ -30,8 +30,76 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include "xa_private.h"
+
+/* offset to each of these fields from the beginning of the struct
+   assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
+   is defined in the guest's kernel (this is the default in xen) */
+#define XALINUX_TASKS_OFFSET 24 * 4   /* task_struct->tasks */
+#define XALINUX_MM_OFFSET 30 * 4      /* task_struct->mm */
+#define XALINUX_PID_OFFSET 39 * 4     /* task_struct->pid */
+#define XALINUX_NAME_OFFSET 106 * 4   /* task_struct->comm */
+#define XALINUX_PGD_OFFSET 7 * 4      /* mm_struct->pgd */
+
+/* finds the address of the page global directory for a given pid */
+uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
+{
+    unsigned char *memory = NULL;
+    uint32_t pgd = 0, list_head = 0, next_process = 0, ptr = 0, offset = 0;
+    int task_pid = 0;
+
+    /* first we need a pointer to this pid's task_struct */
+    memory = xa_access_kernel_symbol(instance, "init_task", &offset);
+    if (NULL == memory){
+        printf("ERROR: failed to get task list head 'init_task'\n");
+        goto error_exit;
+    }
+    memcpy(&next_process, memory + offset + XALINUX_TASKS_OFFSET, 4);
+    list_head = next_process;
+    munmap(memory, XA_PAGE_SIZE);
+
+    while (1){
+        memory = xa_access_virtual_address(instance, next_process, &offset);
+        if (NULL == memory){
+            printf("ERROR: failed to get task list next pointer");
+            goto error_exit;
+        }
+        memcpy(&next_process, memory + offset, 4);
+
+        /* if we are back at the list head, we are done */
+        if (list_head == next_process){
+            goto error_exit;
+        }
+
+        memcpy(&task_pid,
+               memory + offset + XALINUX_PID_OFFSET - XALINUX_TASKS_OFFSET,
+               4
+        );
+        
+        /* if pid matches, then we found what we want */
+        if (task_pid == pid){
+            break;
+        }
+        munmap(memory, XA_PAGE_SIZE);
+    }
+
+    /* now follow the pointer to the memory descriptor and
+       grab the pgd value */
+    memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
+    munmap(memory, XA_PAGE_SIZE);
+    memory = xa_access_virtual_address(instance, ptr, &offset);
+    if (NULL == memory){
+        printf("ERROR: failed to follow mm pointer");
+        goto error_exit;
+    }
+    memcpy(&pgd, memory + offset + XALINUX_PGD_OFFSET, 4);
+
+error_exit:
+    if (memory) munmap(memory, XA_PAGE_SIZE);
+    return pgd;
+}
 
 /* converty address to machine address via page tables */
 uint32_t linux_pagetable_lookup (
@@ -125,15 +193,24 @@ void *linux_access_physical_address (
     return xa_mmap_pfn(instance, PROT_READ, pfn);
 }
 
-/* maps the page associated with a virtual address */
 void *linux_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
+    return linux_access_user_virtual_address(instance, virt_address, offset, 0);
+}
+
+/* maps the page associated with a virtual address */
+void *linux_access_user_virtual_address (
+            xa_instance_t *instance,
+            uint32_t virt_address,
+            uint32_t *offset,
+            int pid)
+{
     /* use kernel page tables */
-    /*TODO HYPERVISOR_VIRT_START = 0xFC000000 so this range is too high.
+    /*TODO HYPERVISOR_VIRT_START = 0xFC000000 so we can't go over that.
       Figure out what this should be b/c there still may be a fixed
-      mapping range between the paged addresses and VIRT_START */
-    if (XA_PAGE_OFFSET < virt_address && virt_address < 0xfe000000){
+      mapping range between the page'd addresses and VIRT_START */
+    if (XA_PAGE_OFFSET <= virt_address && virt_address < 0xfc000000){
         uint32_t kpgd = 0;
         uint32_t mach_address = 0;
         uint32_t local_offset = 0;
@@ -161,26 +238,21 @@ void *linux_access_virtual_address (
     }
 
     /* use user page tables */
-/*
-    else if (virt_address < XA_PAGE_OFFSET){
-        uint32_t mach_address = linux_pagetable_lookup(instance, virt_address); 
+    else if (virt_address < XA_PAGE_OFFSET && pid != 0){
+        uint32_t pgd = linux_pid_to_pgd(instance, pid);
+        uint32_t mach_address = 0;
+
+        if (!pgd){
+            mach_address = linux_pagetable_lookup(instance, pgd, virt_address); 
+        }
         if (!mach_address){
             printf("ERROR: address not in page table\n");
             return NULL;
         }
         return linux_access_machine_address(instance, mach_address, offset);
     }
-*/
 
-    /*TODO this range is NOT linear mapped...need to find a way to
-     * perform this mapping later */
-    /*TODO two cases to handle here:
-            2) 0xfe000000 < virt_address
-            3) user space memory
-    */
-    /*TODO determine how to handle boundry cases (vaddr == high_memory?) */
-    /*TODO note that 0xfe000000 should really be PKMAP_BASE */
-    /*TODO remember than Xen is at top 64MB of virtual addr space */
+    /* something's not right, we can't find this memory */
     else{
         printf("ERROR: cannot translate this address\n");
         return NULL;

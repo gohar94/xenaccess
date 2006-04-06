@@ -18,9 +18,9 @@
  *
  * --------------------
  * This file provides a simple example for walking through the list
- * of modules in a guest domain.
+ * of tasks or processes in a guest domain.
  *
- * File: module-list.c
+ * File: process-list.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  *
@@ -34,9 +34,12 @@
 #include <stdio.h>
 #include "../xenaccess.h"
 
-#define TASKS_OFFSET 24 * 4
-#define PID_OFFSET 39 * 4
-#define NAME_OFFSET 106 * 4
+/* offset to each of these fields from the beginning of the struct
+   assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
+   is defined in the guest's kernel (this is the default in xen) */
+#define TASKS_OFFSET 24 * 4   /* task_struct->tasks */
+#define PID_OFFSET 39 * 4     /* task_struct->pid */
+#define NAME_OFFSET 106 * 4   /* task_struct->comm */
 
 int main (int argc, char **argv)
 {
@@ -56,7 +59,7 @@ int main (int argc, char **argv)
         goto error_exit;
     }
 
-    /* get the head of the module list */
+    /* get the head of the task list */
     memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
     if (NULL == memory){
         perror("failed to get process list head");
@@ -66,7 +69,7 @@ int main (int argc, char **argv)
     list_head = next_process;
     munmap(memory, XA_PAGE_SIZE);
 
-    /* walk the module list */
+    /* walk the task list */
     while (1){
 
         /* Note: the next two steps are equiv to something like

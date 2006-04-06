@@ -89,8 +89,8 @@ int xa_destroy (xa_instance_t *instance);
  * @param[out] offset Offset to kernel symbol within the mapped memory
  * @return Mapped memory or NULL on error
  */
-void *xa_access_kernel_symbol
-        (xa_instance_t *instance, char *symbol, uint32_t *offset);
+void *xa_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset);
 
 /**
  * Memory maps one page from domU to a local address range.  The
@@ -105,6 +105,23 @@ void *xa_access_kernel_symbol
  */
 void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
+
+/**
+ * Memory maps one page from domU to a local address range.  The
+ * memory to be mapped is specified with a virtual address from a 
+ * process' address space.  This memory must be unmapped manually
+ * with munmap.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] virt_address Desired virtual address to access
+ * @param[out] offset Offset to kernel symbol within the mapped memory
+ * @param[in] pid (only required for user memory) PID of process that owns
+ *      virtual address given in virt_address
+ * @return Mapped memory or NULL on error
+ */
+void *xa_access_user_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address,
+        uint32_t *offset, int pid);
 
 
 
