@@ -129,20 +129,11 @@ void *linux_access_physical_address (
 void *linux_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
-    /* this range is linear mapped */
-/*
-    if (XA_PAGE_OFFSET < virt_address && virt_address < instance->high_memory){
-*/
-    if (XA_PAGE_OFFSET < virt_address && virt_address < 0xd0400000){
-        uint32_t phys_address = virt_address - XA_PAGE_OFFSET;
-        return linux_access_physical_address(instance, phys_address, offset);
-    }
-
     /* use kernel page tables */
-/*
-    else if (instance->high_memory < virt_address && virt_address < 0xfe000000){
-*/
-    else if (0xd0400000 < virt_address && virt_address < 0xfe000000){
+    /*TODO HYPERVISOR_VIRT_START = 0xFC000000 so this range is too high.
+      Figure out what this should be b/c there still may be a fixed
+      mapping range between the paged addresses and VIRT_START */
+    if (XA_PAGE_OFFSET < virt_address && virt_address < 0xfe000000){
         uint32_t kpgd = 0;
         uint32_t mach_address = 0;
         uint32_t local_offset = 0;
