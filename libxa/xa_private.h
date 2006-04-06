@@ -103,6 +103,10 @@ void *linux_access_machine_address (
 void *linux_access_physical_address (
         xa_instance_t *instance, uint32_t phys_address, uint32_t *offset);
 
+void *linux_access_user_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address,
+        uint32_t *offset, int pid);
+
 void *linux_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 

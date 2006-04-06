@@ -107,8 +107,8 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
         instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
 }
 
-void *xa_access_kernel_symbol
-        (xa_instance_t *instance, char *symbol, uint32_t *offset)
+void *xa_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
     if (instance->os_type == XA_OS_LINUX){
         return linux_access_kernel_symbol(instance, symbol, offset);
@@ -120,11 +120,28 @@ void *xa_access_kernel_symbol
     }
 }
 
-void *xa_access_virtual_address
-        (xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
+void *xa_access_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
     if (instance->os_type == XA_OS_LINUX){
         return linux_access_virtual_address(instance, virt_address, offset);
+    }
+
+    /*TODO we do not yet support any other OSes */
+    else{
+        return NULL;
+    }
+}
+
+void *xa_access_user_virtual_address (
+            xa_instance_t *instance,
+            uint32_t virt_address,
+            uint32_t *offset,
+            int pid)
+{
+    if (instance->os_type == XA_OS_LINUX){
+        return linux_access_user_virtual_address(
+                    instance, virt_address, offset, pid);
     }
 
     /*TODO we do not yet support any other OSes */
