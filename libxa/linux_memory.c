@@ -33,37 +33,21 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
-/* convert high_memory address to machine address via page tables */
-uint32_t linux_highmem_lookup (xa_instance_t *instance, uint32_t virt_address)
+/* converty address to machine address via page tables */
+uint32_t linux_pagetable_lookup (
+            xa_instance_t *instance,
+            uint32_t page_table_base,
+            uint32_t virt_address)
 {
-    uint32_t kpgd = 0;
     uint32_t index = 0;
     uint32_t offset = 0;
     uint32_t pgd_entry = 0;
     uint32_t pte_entry = 0;
     unsigned char *memory = NULL;
 
-    /* make sure that the address is in the right range */
-    if (virt_address < instance->high_memory || 0xfe000000 < virt_address){
-        return 0;
-    }
-
-    /* get the address for the kernel master global directory */
-    if (linux_system_map_symbol_to_address(
-            instance, "swapper_pg_dir", &kpgd) == XA_FAILURE){
-        return 0;
-    }
-    memory = linux_access_physical_address(
-                instance, kpgd - XA_PAGE_OFFSET, &offset);
-    if (NULL == memory){
-        return 0;
-    }
-    kpgd = *((uint32_t*)(memory + offset));
-    munmap(memory, XA_PAGE_SIZE);
-
     /* perform the lookup in the global directory */
     index = (((virt_address) >> 22) & (1024 - 1));
-    pgd_entry = kpgd + (index * sizeof(uint32_t));
+    pgd_entry = page_table_base + (index * sizeof(uint32_t));
     memory = linux_access_physical_address(
                 instance, pgd_entry - XA_PAGE_OFFSET, &offset);
     if (NULL == memory){
@@ -146,18 +130,56 @@ void *linux_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
     /* this range is linear mapped */
+/*
     if (XA_PAGE_OFFSET < virt_address && virt_address < instance->high_memory){
+*/
+    if (XA_PAGE_OFFSET < virt_address && virt_address < 0xd0400000){
         uint32_t phys_address = virt_address - XA_PAGE_OFFSET;
         return linux_access_physical_address(instance, phys_address, offset);
     }
+
+    /* use kernel page tables */
+/*
     else if (instance->high_memory < virt_address && virt_address < 0xfe000000){
-        uint32_t mach_address = linux_highmem_lookup(instance, virt_address); 
+*/
+    else if (0xd0400000 < virt_address && virt_address < 0xfe000000){
+        uint32_t kpgd = 0;
+        uint32_t mach_address = 0;
+        uint32_t local_offset = 0;
+        unsigned char *memory = NULL;
+
+        /* get the address for the kernel master global directory */
+        if (linux_system_map_symbol_to_address(
+                instance, "swapper_pg_dir", &kpgd) == XA_FAILURE){
+            return NULL;
+        }
+        memory = linux_access_physical_address(
+                    instance, kpgd - XA_PAGE_OFFSET, &local_offset);
+        if (NULL == memory){
+            return NULL;
+        }
+        kpgd = *((uint32_t*)(memory + local_offset));
+        munmap(memory, XA_PAGE_SIZE);
+
+        mach_address = linux_pagetable_lookup(instance, kpgd, virt_address); 
         if (!mach_address){
             printf("ERROR: address not in page table\n");
             return NULL;
         }
         return linux_access_machine_address(instance, mach_address, offset);
     }
+
+    /* use user page tables */
+/*
+    else if (virt_address < XA_PAGE_OFFSET){
+        uint32_t mach_address = linux_pagetable_lookup(instance, virt_address); 
+        if (!mach_address){
+            printf("ERROR: address not in page table\n");
+            return NULL;
+        }
+        return linux_access_machine_address(instance, mach_address, offset);
+    }
+*/
 
     /*TODO this range is NOT linear mapped...need to find a way to
      * perform this mapping later */
@@ -169,7 +191,7 @@ void *linux_access_virtual_address (
     /*TODO note that 0xfe000000 should really be PKMAP_BASE */
     /*TODO remember than Xen is at top 64MB of virtual addr space */
     else{
-        printf("ERROR: range not linearly mapped, cannot convert\n");
+        printf("ERROR: cannot translate this address\n");
         return NULL;
     }
 }
