@@ -51,6 +51,25 @@ typedef struct xa_instance{
     xc_dominfo_t info;
 } xa_instance_t;
 
+/* This struct holds the task addresses that are found in a task's
+   memory descriptor.  One can fill the values in the struct using
+   the linux_get_taskaddr(...) function.  The comments next to each
+   entry are taken from Bovet & Cesati's excellent book Understanding
+   the Linux Kernel 3rd Ed, p354. */
+typedef struct xa_linux_taskaddr{
+    unsigned long start_code;  /* initial address of executable code */
+    unsigned long end_code;    /* final address of executable code */
+    unsigned long start_data;  /* initial address of initialized data */
+    unsigned long end_data;    /* final address of initialized data */
+    unsigned long start_brk;   /* initial address of the heap */
+    unsigned long brk;         /* current final address of the heap */
+    unsigned long start_stack; /* initial address of user mode stack */
+    unsigned long arg_stack;   /* initial address of command-line arguments */
+    unsigned long arg_end;     /* final address of command-line arguments */
+    unsigned long env_start;   /* initial address of environmental variables */
+    unsigned long env_end;     /* final address of environmental variables */
+} xa_linux_taskaddr_t;
+
 /*--------------------------------------------------------
  * Initialization and Destruction functions from xa_core.c
  */
@@ -123,6 +142,11 @@ void *xa_access_user_virtual_address (
         xa_instance_t *instance, uint32_t virt_address,
         uint32_t *offset, int pid);
 
+/*-----------------------------
+ * Linux-specific functionality
+ */
+int xa_linux_get_taskaddr (
+        xa_instance_t *instance, int pid, xa_linux_taskaddr_t *taskaddr);
 
 
 #endif /* LIB_XEN_ACCESS_H */

@@ -42,31 +42,34 @@
 #define XALINUX_PID_OFFSET 39 * 4     /* task_struct->pid */
 #define XALINUX_NAME_OFFSET 106 * 4   /* task_struct->comm */
 #define XALINUX_PGD_OFFSET 7 * 4      /* mm_struct->pgd */
+#define XALINUX_ADDR_OFFSET 18 * 4    /* mm_struct->pgd */
 
-/* finds the address of the page global directory for a given pid */
-uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
+
+/* finds the task struct for a given pid */
+unsigned char *linux_get_taskstruct (
+        xa_instance_t *instance, int pid, uint32_t *offset)
 {
     unsigned char *memory = NULL;
-    uint32_t pgd = 0, list_head = 0, next_process = 0, ptr = 0, offset = 0;
+    uint32_t list_head = 0, next_process = 0;
     int task_pid = 0;
 
     /* first we need a pointer to this pid's task_struct */
-    memory = xa_access_kernel_symbol(instance, "init_task", &offset);
+    memory = xa_access_kernel_symbol(instance, "init_task", offset);
     if (NULL == memory){
         printf("ERROR: failed to get task list head 'init_task'\n");
         goto error_exit;
     }
-    memcpy(&next_process, memory + offset + XALINUX_TASKS_OFFSET, 4);
+    memcpy(&next_process, memory + *offset + XALINUX_TASKS_OFFSET, 4);
     list_head = next_process;
     munmap(memory, XA_PAGE_SIZE);
 
     while (1){
-        memory = xa_access_virtual_address(instance, next_process, &offset);
+        memory = xa_access_virtual_address(instance, next_process, offset);
         if (NULL == memory){
             printf("ERROR: failed to get task list next pointer");
             goto error_exit;
         }
-        memcpy(&next_process, memory + offset, 4);
+        memcpy(&next_process, memory + *offset, 4);
 
         /* if we are back at the list head, we are done */
         if (list_head == next_process){
@@ -74,15 +77,33 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
         }
 
         memcpy(&task_pid,
-               memory + offset + XALINUX_PID_OFFSET - XALINUX_TASKS_OFFSET,
+               memory + *offset + XALINUX_PID_OFFSET - XALINUX_TASKS_OFFSET,
                4
         );
         
         /* if pid matches, then we found what we want */
         if (task_pid == pid){
-            break;
+            return memory;
         }
         munmap(memory, XA_PAGE_SIZE);
+    }
+
+error_exit:
+    if (memory) munmap(memory, XA_PAGE_SIZE);
+    return NULL;
+}
+
+/* finds the address of the page global directory for a given pid */
+uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
+{
+    unsigned char *memory = NULL;
+    uint32_t pgd = 0, ptr = 0, offset = 0;
+
+    /* first we need a pointer to this pid's task_struct */
+    memory = linux_get_taskstruct(instance, pid, &offset);
+    if (NULL == memory){
+        printf("ERROR: could not find task struct for pid = %d\n", pid);
+        goto error_exit;
     }
 
     /* now follow the pointer to the memory descriptor and
@@ -94,7 +115,8 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
         printf("ERROR: failed to follow mm pointer");
         goto error_exit;
     }
-    memcpy(&pgd, memory + offset + XALINUX_PGD_OFFSET, 4);
+    /* memcpy(&pgd, memory + offset + XALINUX_PGD_OFFSET, 4); */
+    pgd = *((uint32_t*)(memory + offset + XALINUX_PGD_OFFSET));
 
 error_exit:
     if (memory) munmap(memory, XA_PAGE_SIZE);
@@ -104,8 +126,9 @@ error_exit:
 /* converty address to machine address via page tables */
 uint32_t linux_pagetable_lookup (
             xa_instance_t *instance,
-            uint32_t page_table_base,
-            uint32_t virt_address)
+            uint32_t pgd,
+            uint32_t virt_address,
+            int kernel)
 {
     uint32_t index = 0;
     uint32_t offset = 0;
@@ -115,10 +138,20 @@ uint32_t linux_pagetable_lookup (
 
     /* perform the lookup in the global directory */
     index = (((virt_address) >> 22) & (1024 - 1));
-    pgd_entry = page_table_base + (index * sizeof(uint32_t));
-    memory = linux_access_physical_address(
+    pgd_entry = pgd + (index * sizeof(uint32_t));
+    if (kernel){
+        memory = linux_access_physical_address(
                 instance, pgd_entry - XA_PAGE_OFFSET, &offset);
+    }
+    else{
+        memory = linux_access_virtual_address(instance, pgd_entry, &offset);
+    }
     if (NULL == memory){
+        printf("ERROR: pgd entry lookup failed (phys addr = 0x%.8x)\n",
+                pgd_entry - XA_PAGE_OFFSET);
+        printf("** pgd = 0x%.8x\n", pgd);
+        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
+        printf("** vaddr = 0x%.8x\n", virt_address);
         return 0;
     }
     pgd_entry = *((uint32_t*)(memory + offset));
@@ -131,6 +164,11 @@ uint32_t linux_pagetable_lookup (
     pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
     memory = linux_access_machine_address(instance, pte_entry, &offset);
     if (NULL == memory){
+        printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
+                pte_entry);
+        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
+        printf("** pte_entry = 0x%.8x\n", pte_entry);
+        printf("** vaddr = 0x%.8x\n", virt_address);
         return 0;
     }
     pte_entry = *((uint32_t*)(memory + offset));
@@ -229,7 +267,7 @@ void *linux_access_user_virtual_address (
         kpgd = *((uint32_t*)(memory + local_offset));
         munmap(memory, XA_PAGE_SIZE);
 
-        mach_address = linux_pagetable_lookup(instance, kpgd, virt_address); 
+        mach_address = linux_pagetable_lookup(instance, kpgd, virt_address, 1); 
         if (!mach_address){
             printf("ERROR: address not in page table\n");
             return NULL;
@@ -242,9 +280,10 @@ void *linux_access_user_virtual_address (
         uint32_t pgd = linux_pid_to_pgd(instance, pid);
         uint32_t mach_address = 0;
 
-        if (!pgd){
-            mach_address = linux_pagetable_lookup(instance, pgd, virt_address); 
+        if (pgd){
+            mach_address = linux_pagetable_lookup(instance, pgd, virt_address, 0); 
         }
+
         if (!mach_address){
             printf("ERROR: address not in page table\n");
             return NULL;
@@ -271,4 +310,39 @@ void *linux_access_kernel_symbol (
     }
 
     return linux_access_virtual_address(instance, virt_address, offset);
+}
+
+/* fills the taskaddr struct for a given linux process */
+int xa_linux_get_taskaddr (
+        xa_instance_t *instance, int pid, xa_linux_taskaddr_t *taskaddr)
+{
+    unsigned char *memory;
+    uint32_t ptr = 0, offset = 0;
+
+    /* find the right task struct */
+    memory = linux_get_taskstruct(instance, pid, &offset);
+    if (NULL == memory){
+        printf("ERROR: could not find task struct for pid = %d\n", pid);
+        goto error_exit;
+    }
+
+    /* copy the information out of the memory descriptor */
+    memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
+    munmap(memory, XA_PAGE_SIZE);
+    memory = xa_access_virtual_address(instance, ptr, &offset);
+    if (NULL == memory){
+        printf("ERROR: failed to follow mm pointer");
+        goto error_exit;
+    }
+    memcpy(
+        taskaddr,
+        memory + offset + XALINUX_ADDR_OFFSET,
+        sizeof(xa_linux_taskaddr_t)
+    );
+
+    return XA_SUCCESS;
+
+error_exit:
+    if (memory) munmap(memory, XA_PAGE_SIZE);
+    return XA_FAILURE;
 }
