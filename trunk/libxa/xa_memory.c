@@ -45,39 +45,44 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 
     /* Live mapping of the table mapping each PFN to its current MFN. */
     unsigned long *live_pfn_to_mfn_table = NULL;
-    unsigned long nr_pfns;
+    unsigned long nr_pfns = 0;
     unsigned long ret = -1;
 
-    nr_pfns = instance->info.max_memkb >> (XC_PAGE_SHIFT - 10);
+    if (NULL == instance->live_pfn_to_mfn_table){
+        nr_pfns = instance->info.max_memkb >> (XC_PAGE_SHIFT - 10);
 
-    live_shinfo = xa_mmap_mfn(
-        instance, PROT_READ, instance->info.shared_info_frame);
-    if (live_shinfo == NULL){
-        goto error_exit;
+        live_shinfo = xa_mmap_mfn(
+            instance, PROT_READ, instance->info.shared_info_frame);
+        if (live_shinfo == NULL){
+            goto error_exit;
+        }
+
+        live_pfn_to_mfn_frame_list_list = xa_mmap_mfn(
+            instance, PROT_READ, live_shinfo->arch.pfn_to_mfn_frame_list_list);
+        if (live_pfn_to_mfn_frame_list_list == NULL){
+            goto error_exit;
+        }
+
+        live_pfn_to_mfn_frame_list = xc_map_foreign_batch(
+            instance->xc_handle, instance->domain_id, PROT_READ,
+            live_pfn_to_mfn_frame_list_list,
+            (nr_pfns+(1024*1024)-1)/(1024*1024) );
+        if (live_pfn_to_mfn_frame_list == NULL){
+            goto error_exit;
+        }
+
+        live_pfn_to_mfn_table = xc_map_foreign_batch(
+            instance->xc_handle, instance->domain_id, PROT_READ,
+            live_pfn_to_mfn_frame_list, (nr_pfns+1023)/1024 );
+        if (live_pfn_to_mfn_table  == NULL){
+            goto error_exit;
+        }
+
+        instance->live_pfn_to_mfn_table = live_pfn_to_mfn_table;
+        instance->nr_pfns = nr_pfns;
     }
 
-    live_pfn_to_mfn_frame_list_list = xa_mmap_mfn(
-        instance, PROT_READ, live_shinfo->arch.pfn_to_mfn_frame_list_list);
-    if (live_pfn_to_mfn_frame_list_list == NULL){
-        goto error_exit;
-    }
-
-    live_pfn_to_mfn_frame_list = xc_map_foreign_batch(
-        instance->xc_handle, instance->domain_id, PROT_READ,
-        live_pfn_to_mfn_frame_list_list,
-        (nr_pfns+(1024*1024)-1)/(1024*1024) );
-    if (live_pfn_to_mfn_frame_list == NULL){
-        goto error_exit;
-    }
-
-    live_pfn_to_mfn_table = xc_map_foreign_batch(
-        instance->xc_handle, instance->domain_id, PROT_READ,
-        live_pfn_to_mfn_frame_list, (nr_pfns+1023)/1024 );
-    if (live_pfn_to_mfn_table  == NULL){
-        goto error_exit;
-    }
-
-    ret = live_pfn_to_mfn_table[pfn];
+    ret = instance->live_pfn_to_mfn_table[pfn];
 
 error_exit:
     if (live_shinfo) munmap(live_shinfo, XC_PAGE_SIZE);
@@ -85,8 +90,6 @@ error_exit:
         munmap(live_pfn_to_mfn_frame_list_list, XC_PAGE_SIZE);
     if (live_pfn_to_mfn_frame_list)
         munmap(live_pfn_to_mfn_frame_list, XC_PAGE_SIZE);
-    if (live_pfn_to_mfn_table)
-        munmap(live_pfn_to_mfn_table, nr_pfns*4);
 
     return ret;
 }

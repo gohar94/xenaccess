@@ -48,9 +48,9 @@ int set_os_type (int *os_type)
  * of the values using queries to libxc. */
 int helper_init (xa_instance_t *instance)
 {
-    uint32_t virt_address, offset;
-    unsigned char *memory;
     int ret = XA_SUCCESS;
+    uint32_t local_offset = 0;
+    unsigned char *memory = NULL;
 
     /* init instance->xc_handle */
     if (xc_domain_getinfo(
@@ -61,23 +61,6 @@ int helper_init (xa_instance_t *instance)
         goto error_exit;
     }
 
-    /* init instance->high_memory */
-    if (linux_system_map_symbol_to_address(
-            instance, "high_memory", &virt_address) == XA_FAILURE){
-        printf("ERROR: high_memory symbol not found in system map\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    memory = linux_access_physical_address(
-                instance, virt_address - XA_PAGE_OFFSET, &offset);
-    if (NULL == memory){
-        printf("ERROR: could not map high_memory symbol\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    instance->high_memory = *((uint32_t*)(memory + offset));
-    munmap(memory, XA_PAGE_SIZE);
-
     /*TODO init instance->pkmap_base */
     instance->pkmap_base = 0xfe000000;
 
@@ -85,6 +68,25 @@ int helper_init (xa_instance_t *instance)
     if (set_os_type(&(instance->os_type)) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
+    }
+
+    /* setup os-specific stuff */
+    if (instance->os_type == XA_OS_LINUX){
+        if (linux_system_map_symbol_to_address(
+                 instance, "swapper_pg_dir", &instance->kpgd) == XA_FAILURE){
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+
+        memory = linux_access_physical_address(
+                    instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
+        if (NULL == memory){
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        instance->kpgd = *((uint32_t*)(memory + local_offset));
+        munmap(memory, XA_PAGE_SIZE);
+
     }
 
 error_exit:
@@ -95,6 +97,11 @@ error_exit:
  * than the xc_handle and the domain_id */
 int helper_destroy (xa_instance_t *instance)
 {
+    if (instance->live_pfn_to_mfn_table){
+        munmap(instance->live_pfn_to_mfn_table, instance->nr_pfns*4);
+    }
+
+
     return XA_SUCCESS;
 }
 
@@ -110,6 +117,8 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
     /* populate struct with critical values */
     instance->xc_handle = xc_handle;
     instance->domain_id = domain_id;
+    instance->live_pfn_to_mfn_table = NULL;
+    instance->nr_pfns = 0;
     
     /* fill in rest of the information */
     return helper_init(instance);
