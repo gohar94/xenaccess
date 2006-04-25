@@ -45,10 +45,12 @@
 typedef struct xa_instance{
     int xc_handle;
     uint32_t domain_id;
-    uint32_t high_memory;
     uint32_t pkmap_base;
+    uint32_t kpgd;
     int os_type;
     xc_dominfo_t info;
+    unsigned long *live_pfn_to_mfn_table;
+    unsigned long nr_pfns;
 } xa_instance_t;
 
 /* This struct holds the task addresses that are found in a task's

@@ -249,25 +249,10 @@ void *linux_access_user_virtual_address (
       Figure out what this should be b/c there still may be a fixed
       mapping range between the page'd addresses and VIRT_START */
     if (XA_PAGE_OFFSET <= virt_address && virt_address < 0xfc000000){
-        uint32_t kpgd = 0;
         uint32_t mach_address = 0;
-        uint32_t local_offset = 0;
-        unsigned char *memory = NULL;
 
-        /* get the address for the kernel master global directory */
-        if (linux_system_map_symbol_to_address(
-                instance, "swapper_pg_dir", &kpgd) == XA_FAILURE){
-            return NULL;
-        }
-        memory = linux_access_physical_address(
-                    instance, kpgd - XA_PAGE_OFFSET, &local_offset);
-        if (NULL == memory){
-            return NULL;
-        }
-        kpgd = *((uint32_t*)(memory + local_offset));
-        munmap(memory, XA_PAGE_SIZE);
-
-        mach_address = linux_pagetable_lookup(instance, kpgd, virt_address, 1); 
+        mach_address = linux_pagetable_lookup(
+                            instance, instance->kpgd, virt_address, 1); 
         if (!mach_address){
             printf("ERROR: address not in page table\n");
             return NULL;

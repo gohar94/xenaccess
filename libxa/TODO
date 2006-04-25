@@ -3,8 +3,9 @@ list is in no particular order...
 
 * switch over build system to use standard build tools (autoconf et al)
 * cleanup code throughout and fix TODO spots
-* expand the memory that can be accessed
 * create higher level abstractions
 * consider adding data gathering from xenbus, xenoprofile, etc
 * create some kind of clean api abtraction for memory that spans multiple pages
 * show additional example applications
+* add caching
+* add function that returns active domid(s)
