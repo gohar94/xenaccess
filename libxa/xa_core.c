@@ -87,6 +87,13 @@ int helper_init (xa_instance_t *instance)
         instance->kpgd = *((uint32_t*)(memory + local_offset));
         munmap(memory, XA_PAGE_SIZE);
 
+        memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
+        if (NULL == memory){
+            printf("ERROR: failed to get task list head 'init_task'\n");
+            goto error_exit;
+        }
+        instance->init_task =
+            *((uint32_t*)(memory + local_offset + XALINUX_TASKS_OFFSET));
     }
 
 error_exit:

@@ -47,6 +47,7 @@ typedef struct xa_instance{
     uint32_t domain_id;
     uint32_t pkmap_base;
     uint32_t kpgd;
+    uint32_t init_task;
     int os_type;
     xc_dominfo_t info;
     unsigned long *live_pfn_to_mfn_table;

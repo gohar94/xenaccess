@@ -37,8 +37,40 @@
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
+#include <time.h>
 #include <xenctrl.h>
 #include "xenaccess.h"
+
+/* offset to each of these fields from the beginning of the struct
+   assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
+   is defined in the guest's kernel (this is the default in xen) */
+#define XALINUX_TASKS_OFFSET 24 * 4   /* task_struct->tasks */
+#define XALINUX_MM_OFFSET 30 * 4      /* task_struct->mm */
+#define XALINUX_PID_OFFSET 39 * 4     /* task_struct->pid */
+#define XALINUX_NAME_OFFSET 108 * 4   /* task_struct->comm */
+#define XALINUX_PGD_OFFSET 9 * 4      /* mm_struct->pgd */
+#define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->pgd */
+
+
+/*-------------------------------------
+ * Definitions to support the LRU cache
+ */
+#define XA_CACHE_SIZE 10
+
+struct xa_cache_entry{
+    time_t last_used;
+    uint32_t virt_address;
+    uint32_t mach_address;
+    int pid;
+    struct xa_cache_entry *next;
+    struct xa_cache_entry *prev;
+};
+typedef struct xa_cache_entry* xa_cache_entry_t;
+
+int xa_check_cache (uint32_t virt_address, int pid, uint32_t *mach_address);
+
+int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address);
+
 
 /*--------------------------------------------
  * Print util functions from xa_pretty_print.c
@@ -99,6 +131,10 @@ void *linux_access_kernel_symbol (
 
 void *linux_access_machine_address (
         xa_instance_t *instance, uint32_t mach_address, uint32_t *offset);
+
+void *linux_access_machine_address_rw (
+        xa_instance_t *instance, uint32_t mach_address,
+        uint32_t *offset, int prot);
 
 void *linux_access_physical_address (
         xa_instance_t *instance, uint32_t phys_address, uint32_t *offset);

@@ -9,3 +9,5 @@ list is in no particular order...
 * show additional example applications
 * add caching
 * add function that returns active domid(s)
+* get page global directory via control register in CPU instead of 
+  using os-specific symbol information

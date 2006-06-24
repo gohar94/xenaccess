@@ -33,8 +33,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <libvirt.h>
-#include <virterror.h>
+#include <libvirt/libvirt.h>
+#include <libvirt/virterror.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
