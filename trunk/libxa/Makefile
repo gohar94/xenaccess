@@ -3,6 +3,7 @@ CC       = gcc
 SRCS       :=
 SRCS       += xa_core.c
 SRCS       += xa_memory.c
+SRCS       += xa_cache.c
 SRCS       += xa_pretty_print.c
 SRCS       += linux_system_map.c
 SRCS       += linux_memory.c
@@ -12,14 +13,12 @@ CFLAGS   += -Wall
 CFLAGS   += -Werror
 CFLAGS   += -ansi
 #CFLAGS   += -pedantic
-CFLAGS   += -O3
+CFLAGS   += -O3 -g
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
 #CFLAGS   += -m32 -march=i686
 CFLAGS   += $(shell xml2-config --cflags)
-CFLAGS   += -I/usr/local/include/libvirt
 LDFLAGS  += -L.
-LDFLAGS  += -L/usr/local/lib
 LDFLAGS  += -m32
 LDFLAGS  += -lm
 LDFLAGS  += -lvirt
@@ -39,9 +38,6 @@ build:
 
 clean:
 	rm -rf *.a *.so* *.o *.opic *.rpm $(LIB) *~ $(DEPS) 
-
-# gcc `xml2-config --cflags --libs` -I/usr/local/include/libvirt -L/usr/local/lib -lvirt -g  -o xa_domain_info xa_domain_info.c
-
 
 # libxenaccess
 libxenaccess.a: $(LIB_OBJS)
