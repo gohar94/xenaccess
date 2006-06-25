@@ -30,21 +30,26 @@
  * $Id$
  * $Date$
  */
+#define _GNU_SOURCE
+#include <string.h>
 #include <time.h>
 #include "xa_private.h"
+
+#define MAX_SYM_LEN 512
 
 xa_cache_entry_t cache_head = NULL;
 xa_cache_entry_t cache_tail = NULL;
 int current_cache_size = 0;
 
-int xa_check_cache (uint32_t virt_address, int pid, uint32_t *mach_address)
+int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address)
 {
     xa_cache_entry_t current;
     int ret = 0;
 
     current = cache_head;
     while (current != NULL){
-        if ((current->virt_address == virt_address) && (current->pid == pid)){
+        if ((strncmp(current->symbol_name, symbol_name, MAX_SYM_LEN) == 0) &&
+            (current->pid == pid) && (current->mach_address)){
             current->last_used = time(NULL);
             *mach_address = current->mach_address;
             ret = 1;
@@ -57,9 +62,62 @@ exit:
     return ret;
 }
 
-int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address)
+int xa_check_cache_virt (uint32_t virt_address, int pid, uint32_t *mach_address)
+{
+    xa_cache_entry_t current;
+    int ret = 0;
+
+    current = cache_head;
+    while (current != NULL){
+        if ((current->virt_address == virt_address) && (current->pid == pid) &&
+            (current->mach_address)){
+            current->last_used = time(NULL);
+            *mach_address = current->mach_address;
+            ret = 1;
+            goto exit;
+        }
+        current = current->next;
+    }
+
+exit:
+    return ret;
+}
+
+int xa_update_cache (char *symbol_name, uint32_t virt_address,
+                  int pid, uint32_t mach_address)
 {
     xa_cache_entry_t new_entry = NULL;
+
+    /* does anything match the passed symbol_name? */
+    /* if so, update other entries */
+    if (symbol_name){
+        xa_cache_entry_t current = cache_head;
+        while (current != NULL){
+            if (strncmp(current->symbol_name, symbol_name, MAX_SYM_LEN) == 0){
+                current->last_used = time(NULL);
+                current->virt_address = virt_address;
+                current->pid = pid;
+                current->mach_address = mach_address;
+                goto exit;
+            }
+            current = current->next;
+        }
+    }
+
+    /* does anything match the passed virt_address? */
+    /* if so, update other entries */
+    if (virt_address){
+        xa_cache_entry_t current = cache_head;
+        while (current != NULL){
+            if (current->virt_address == virt_address){
+                current->last_used = time(NULL);
+                current->pid = pid;
+                current->mach_address = mach_address;
+                goto exit;
+            }
+            current = current->next;
+        }
+    }
 
     /* do we need to remove anything from the cache? */
     if (current_cache_size >= XA_CACHE_SIZE){
@@ -93,6 +151,9 @@ int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address)
         }
 
         /* free up memory */
+        if (oldest->symbol_name){
+            free(oldest->symbol_name);
+        }
         oldest->next = NULL;
         oldest->prev = NULL;
         free(oldest);
@@ -103,6 +164,12 @@ int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address)
     /* allocate memory for the new cache entry */
     new_entry = (xa_cache_entry_t) malloc(sizeof(struct xa_cache_entry));
     new_entry->last_used = time(NULL);
+    if (symbol_name){
+        new_entry->symbol_name = strndup(symbol_name, MAX_SYM_LEN);
+    }
+    else{
+        new_entry->symbol_name = NULL;
+    }
     new_entry->virt_address = virt_address;
     new_entry->mach_address = mach_address;
     new_entry->pid = pid;
@@ -119,6 +186,7 @@ int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address)
     new_entry->next = NULL;
     current_cache_size++;
 
+exit:
     return 1;
 }
 
