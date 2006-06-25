@@ -37,7 +37,7 @@
 /* determine what type of OS is running in the requested domain */
 int set_os_type (int *os_type)
 {
-    /* for now we only support linux.  But this should be changed
+    /*TODO for now we only support linux.  But this should be changed
      * to verify that the domain is really running linux */
     *os_type = XA_OS_LINUX;
     return XA_SUCCESS;
@@ -57,12 +57,10 @@ int helper_init (xa_instance_t *instance)
             instance->xc_handle, instance->domain_id,
             1, &(instance->info)
         ) != 1){
+        printf("ERROR: Failed to get domain info\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
-
-    /*TODO init instance->pkmap_base */
-    instance->pkmap_base = 0xfe000000;
 
     /* init instance->os_type */
     if (set_os_type(&(instance->os_type)) == XA_FAILURE){
@@ -74,6 +72,7 @@ int helper_init (xa_instance_t *instance)
     if (instance->os_type == XA_OS_LINUX){
         if (linux_system_map_symbol_to_address(
                  instance, "swapper_pg_dir", &instance->kpgd) == XA_FAILURE){
+            printf("ERROR: failed to lookup 'swapper_pg_dir' address\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -90,6 +89,7 @@ int helper_init (xa_instance_t *instance)
         memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
         if (NULL == memory){
             printf("ERROR: failed to get task list head 'init_task'\n");
+            ret = XA_FAILURE;
             goto error_exit;
         }
         instance->init_task =
@@ -118,6 +118,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
 
     /* open handle to the libxc interface */
     if ((xc_handle = xc_interface_open()) == -1){
+        printf("ERROR: Failed to open libxc interface\n");
         return XA_FAILURE;
     }
 

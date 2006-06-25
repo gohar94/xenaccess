@@ -43,13 +43,12 @@
 #define XA_PAGE_OFFSET 0xc0000000
 
 typedef struct xa_instance{
-    int xc_handle;
-    uint32_t domain_id;
-    uint32_t pkmap_base;
-    uint32_t kpgd;
-    uint32_t init_task;
-    int os_type;
-    xc_dominfo_t info;
+    int xc_handle;          /* handle to xenctrl library (libxc) */
+    uint32_t domain_id;     /* domid that we are accessing */
+    uint32_t kpgd;          /* kernel page global directory */
+    uint32_t init_task;     /* address of task struct for init */
+    int os_type;            /* type of os: XA_OS_LINUX, etc */
+    xc_dominfo_t info;      /* libxc info: domid, ssidref, stats, etc */
     unsigned long *live_pfn_to_mfn_table;
     unsigned long nr_pfns;
 } xa_instance_t;

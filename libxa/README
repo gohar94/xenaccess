@@ -11,6 +11,7 @@ The following libraries are used in building this code:
 
 libxc (from Xen, the Xen Control library)
 libvirt (see http://libvirt.org)
+  -- on fedora the package name is libvirt and libvirt-devel
 libxml2 (see http://xmlsoft.org)
   -- note that libxml2 is part of many distributions already
   -- on fedora the package name is libxml2 and libxml2-devel

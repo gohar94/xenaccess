@@ -59,6 +59,7 @@
 
 struct xa_cache_entry{
     time_t last_used;
+    char *symbol_name;
     uint32_t virt_address;
     uint32_t mach_address;
     int pid;
@@ -67,9 +68,13 @@ struct xa_cache_entry{
 };
 typedef struct xa_cache_entry* xa_cache_entry_t;
 
-int xa_check_cache (uint32_t virt_address, int pid, uint32_t *mach_address);
+int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address);
 
-int xa_add_cache (uint32_t virt_address, int pid, uint32_t mach_address);
+int xa_check_cache_virt (uint32_t virt_address, int pid,
+                         uint32_t *mach_address);
+
+int xa_update_cache (char *symbol_name, uint32_t virt_address,
+                     int pid, uint32_t mach_address);
 
 
 /*--------------------------------------------
