@@ -33,13 +33,15 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include "../xenaccess.h"
+#include "../xa_private.h"
 
 /* offset to each of these fields from the beginning of the struct
    assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
    is defined in the guest's kernel (this is the default in xen) */
 #define TASKS_OFFSET 24 * 4   /* task_struct->tasks */
 #define PID_OFFSET 39 * 4     /* task_struct->pid */
-#define NAME_OFFSET 106 * 4   /* task_struct->comm */
+//#define NAME_OFFSET 106 * 4   /* task_struct->comm */
+#define NAME_OFFSET 108 * 4   /* task_struct->comm */
 
 int main (int argc, char **argv)
 {

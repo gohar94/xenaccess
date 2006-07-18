@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export LD_PRELOAD=../libxenaccess.so:/usr/local/lib/libvirt.so
+export LD_PRELOAD=../libxenaccess.so
 $@
 export LD_PRELOAD=
 

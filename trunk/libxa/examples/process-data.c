@@ -65,7 +65,7 @@ int main (int argc, char **argv)
        the PID of a running process in the domain listed above.
        To get a list of PIDs, use the 'process-list' example. */
     /* e.g., on my computer, this pid is crond */
-    int pid = 1669;
+    int pid = 987;
 
     /* initialize the xen access library */
     if (xa_init(dom, &xai) == XA_FAILURE){
