@@ -58,14 +58,11 @@ int main (int argc, char **argv)
     uint32_t offset = 0;
 
     /* this is the domain ID that we are looking at */
-    /* this is hard coded for keep this example code simple */
-    uint32_t dom = 1;
+    uint32_t dom = atoi(argv[1]);
 
-    /* This is the pid that we are looking at.  You should use
-       the PID of a running process in the domain listed above.
-       To get a list of PIDs, use the 'process-list' example. */
-    /* e.g., on my computer, this pid is crond */
-    int pid = 987;
+    /* This is the pid that we are looking at, passed as
+       an argument on the command line. */
+    int pid = atoi(argv[2]);
 
     /* initialize the xen access library */
     if (xa_init(dom, &xai) == XA_FAILURE){
