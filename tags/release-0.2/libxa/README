@@ -1,0 +1,87 @@
+XenAccess v0.2 README
+by Bryan D. Payne
+=====================
+
+Disclaimer
+----------
+This code is still very young.  The API is subject to change often.  The code
+may crash and do other bad things.  So, have fun, play around, but don't
+expect clean polished code just yet :-)
+
+
+Dependencies
+------------
+The following libraries are used in building this code:
+
+libxc (from Xen, the Xen Control library)
+libvirt (see http://libvirt.org)
+  -- on fedora the package name is libvirt and libvirt-devel
+  -- libvirt <= v0.1.1, set (xend-http-server yes) in /etc/xen/xend-config.sxp
+  -- libvirt >= v0.1.3, set (xend-unix-server yes) in /etc/xen/xend-config.sxp
+libxml2 (see http://xmlsoft.org)
+  -- note that libxml2 is part of many distributions already
+  -- on fedora the package name is libxml2 and libxml2-devel
+
+
+Building and Using
+------------------
+Right now, just type 'make'.  There's no 'make install' yet.  There's no
+'./configure' yet.  Those will come in time.  If you'd like to use things
+right away, you can manually install the library or use LD_PRELOAD to
+load the library in place.  For example:
+
+# ./module-list 
+./module-list: error while loading shared libraries: libxenaccess.so: cannot open shared object file: No such file or directory
+# export LD_PRELOAD=/<path to XenAccess library>/libxenaccess.so
+# ./module-list 
+ipv6
+autofs4
+af_packet
+binfmt_misc
+md
+unix
+dm_snapshot
+dm_zero
+dm_mirror
+ext3
+jbd
+dm_mod
+
+
+Problems?
+---------
+Several people have reported problems with the example code.  Most often
+the module-list example will work, but one or both of the process-* examples
+fail.  Unfortunately, this is a side effect of the use of offsets in 
+XenAccess.  The software is basically guessing where certain data is
+located in the domU memory.  If the domU kernel is compiled differently
+than the standard xen kernel, then the kernel data structures will be in
+different locations.  The end result is a failure of these examples.
+
+All hope is not lost!  This code is still in the early stages of development
+and I made the decision to push it out sooner than later.  I am planning on
+addressing these issues in time by adding code that will do a better job of
+dynamically determining the correct location in memory for each data
+structure.  Watching the mailing list for announcements of updated versions
+that address this and other issues.
+
+
+Want to Help?
+-------------
+One of the motivations for starting this project was to create a place where
+everyone interested in using introspection could come together and share
+ideas.  Introspection has many potential uses and it doesn't make sense for
+everyone to keep rewriting code to do this.  Instead, let's use XenAccess as
+a common base and spend our time exploring all of the interesting things that
+introspection can be used for.  
+
+If you'd like to add features to the code, please drop me a line on the
+mailing list.  I'm always happy to take new ideas, code patches, and even
+add developers to the group, depending on how you would like to get invovled.
+
+
+Questions?
+----------
+The mailing list is the best place to get your questions answered:
+
+    http://lists.sourceforge.net/lists/listinfo/xenaccess-devel

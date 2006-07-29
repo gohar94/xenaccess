@@ -1,0 +1,6 @@
+#!/bin/sh
+
+export LD_PRELOAD=../libxenaccess.so
+$@
+export LD_PRELOAD=
+
