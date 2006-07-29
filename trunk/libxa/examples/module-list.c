@@ -42,8 +42,7 @@ int main (int argc, char **argv)
     char *name = NULL;
 
     /* this is the domain ID that we are looking at */
-    /* this is hard coded for keep this example code simple */
-    uint32_t dom = 1;
+    uint32_t dom = atoi(argv[1]);
 
     /* initialize the xen access library */
     if (xa_init(dom, &xai) == XA_FAILURE){
