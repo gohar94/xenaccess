@@ -190,3 +190,18 @@ exit:
     return 1;
 }
 
+int xa_destroy_cache ()
+{
+    xa_cache_entry_t current = cache_head;
+    xa_cache_entry_t tmp = NULL;
+    while (current != NULL){
+        tmp = current->next;
+        free(current);
+        current = tmp;
+    }
+
+    cache_head = NULL;
+    cache_tail = NULL;
+    current_cache_size = 0;
+    return 0;
+}

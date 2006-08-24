@@ -108,6 +108,7 @@ int helper_destroy (xa_instance_t *instance)
         munmap(instance->live_pfn_to_mfn_table, instance->nr_pfns*4);
     }
 
+    xa_destroy_cache();
 
     return XA_SUCCESS;
 }

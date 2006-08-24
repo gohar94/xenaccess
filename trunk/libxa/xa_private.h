@@ -153,4 +153,6 @@ void *linux_access_virtual_address (
 
 char *linux_predict_sysmap_name (int id);
 
+int xa_destroy_cache ();
+
 #endif /* XA_PRIVATE_H */
