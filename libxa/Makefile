@@ -16,10 +16,8 @@ CFLAGS   += -ansi
 CFLAGS   += -O3 -g
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
-#CFLAGS   += -m32 -march=i686
 CFLAGS   += $(shell xml2-config --cflags)
 LDFLAGS  += -L.
-LDFLAGS  += -m32
 LDFLAGS  += -lm
 LDFLAGS  += -lvirt
 LDFLAGS  += $(shell xml2-config --libs)

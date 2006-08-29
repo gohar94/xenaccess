@@ -5,9 +5,7 @@ CFLAGS   += -Werror
 CFLAGS   += -O3
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
-CFLAGS   += -m32 -march=i686
 LDFLAGS  += -L. -L../
-LDFLAGS  += -m32
 DEPS     = .*.d
 
 all: module-list process-list process-data
