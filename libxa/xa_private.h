@@ -155,4 +155,8 @@ char *linux_predict_sysmap_name (int id);
 
 int xa_destroy_cache ();
 
+char *xa_get_kernel_name (int id);
+
+int xa_ishvm (int id);
+
 #endif /* XA_PRIVATE_H */

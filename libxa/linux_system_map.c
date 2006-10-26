@@ -90,8 +90,6 @@ error_exit:
 int linux_system_map_symbol_to_address (
         xa_instance_t *instance, char *symbol, uint32_t *address)
 {
-    /* hard code this for now, but we need to figure out how
-     * to automate the discovery of this location */
     char *system_map = linux_predict_sysmap_name(instance->domain_id);
 
     FILE *f = NULL;

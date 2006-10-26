@@ -36,6 +36,21 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
+unsigned long p2m_hvm (xa_instance_t *instance, unsigned long pfn)
+{
+    unsigned long mfn = 0;
+
+    xc_domain_translate_gpfn_list(
+        instance->xc_handle,
+        instance->domain_id,
+        1,
+        &pfn,
+        &mfn
+    );
+
+    return mfn;
+}
+
 /* convert a pfn to a mfn based on the live mapping tables */
 unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 {
@@ -48,18 +63,24 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
     unsigned long nr_pfns = 0;
     unsigned long ret = -1;
 
+    if (instance->hvm){
+        return p2m_hvm(instance, pfn);
+    }
+
     if (NULL == instance->live_pfn_to_mfn_table){
         nr_pfns = instance->info.max_memkb >> (XC_PAGE_SHIFT - 10);
 
         live_shinfo = xa_mmap_mfn(
             instance, PROT_READ, instance->info.shared_info_frame);
         if (live_shinfo == NULL){
+            printf("ERROR: failed to init live_shinfo\n");
             goto error_exit;
         }
 
         live_pfn_to_mfn_frame_list_list = xa_mmap_mfn(
             instance, PROT_READ, live_shinfo->arch.pfn_to_mfn_frame_list_list);
         if (live_pfn_to_mfn_frame_list_list == NULL){
+            printf("ERROR: failed to init live_pfn_to_mfn_frame_list_list\n");
             goto error_exit;
         }
 
@@ -68,6 +89,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
             live_pfn_to_mfn_frame_list_list,
             (nr_pfns+(1024*1024)-1)/(1024*1024) );
         if (live_pfn_to_mfn_frame_list == NULL){
+            printf("ERROR: failed to init live_pfn_to_mfn_frame_list\n");
             goto error_exit;
         }
 
@@ -75,6 +97,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
             instance->xc_handle, instance->domain_id, PROT_READ,
             live_pfn_to_mfn_frame_list, (nr_pfns+1023)/1024 );
         if (live_pfn_to_mfn_table  == NULL){
+            printf("ERROR: failed to init live_pfn_to_mfn_table\n");
             goto error_exit;
         }
 
@@ -106,8 +129,14 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
 
     mfn = helper_pfn_to_mfn(instance, pfn);
 
-    return xc_map_foreign_range(
-        instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
+    if (-1 == mfn){
+        printf("ERROR: pfn to mfn mapping failed.\n");
+        return NULL;
+    }
+    else{
+        return xc_map_foreign_range(
+            instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
+    }
 }
 
 void *xa_access_kernel_symbol (
@@ -126,11 +155,34 @@ void *xa_access_kernel_symbol (
 void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
+/* test code */
+/*
+    unsigned long mfn;
+    uint32_t bitmask;
+    int i;
+
+    mfn = xc_translate_foreign_address(
+            instance->xc_handle,
+            instance->domain_id,
+            0,
+            virt_address
+    );
+
+    bitmask = 1;
+    for (i = 0; i < XC_PAGE_SHIFT - 1; ++i){
+        bitmask <<= 1;
+        bitmask += 1;
+    }
+    *offset = virt_address & bitmask;
+
+    return xa_mmap_mfn(instance, PROT_READ, mfn);
+*/
+/* end test code */
+
+
     if (instance->os_type == XA_OS_LINUX){
         return linux_access_virtual_address(instance, virt_address, offset);
     }
-
-    /*TODO we do not yet support any other OSes */
     else{
         return NULL;
     }

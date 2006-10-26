@@ -293,7 +293,7 @@ void *linux_access_kernel_symbol (
     }
 
     xa_update_cache(symbol, virt_address, 0, 0);
-    return linux_access_virtual_address(instance, virt_address, offset);
+    return xa_access_virtual_address(instance, virt_address, offset);
 }
 
 /* fills the taskaddr struct for a given linux process */

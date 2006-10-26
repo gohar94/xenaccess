@@ -61,12 +61,21 @@ int helper_init (xa_instance_t *instance)
         ret = XA_FAILURE;
         goto error_exit;
     }
+#ifdef XA_DEBUG
+    printf("Got domain info.\n");
+#endif
 
     /* init instance->os_type */
     if (set_os_type(&(instance->os_type)) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
     }
+#ifdef XA_DEBUG
+    printf("Got OS type.\n");
+#endif
+
+    /* init instance->hvm */
+    instance->hvm = xa_ishvm(instance->domain_id);
 
     /* setup os-specific stuff */
     if (instance->os_type == XA_OS_LINUX){
@@ -76,15 +85,22 @@ int helper_init (xa_instance_t *instance)
             ret = XA_FAILURE;
             goto error_exit;
         }
+#ifdef XA_DEBUG
+    	printf("Got vaddr for swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+#endif
 
         memory = linux_access_physical_address(
                     instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
         if (NULL == memory){
+            printf("ERROR: failed to get physical addr for kpgd\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
         instance->kpgd = *((uint32_t*)(memory + local_offset));
         munmap(memory, XA_PAGE_SIZE);
+#ifdef XA_DEBUG
+    	printf("swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+#endif
 
         memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
         if (NULL == memory){

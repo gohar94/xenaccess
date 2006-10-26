@@ -14,13 +14,9 @@ Dependencies
 The following libraries are used in building this code:
 
 libxc (from Xen, the Xen Control library)
-libvirt (see http://libvirt.org)
-  -- on fedora the package name is libvirt and libvirt-devel
-  -- libvirt <= v0.1.1, set (xend-http-server yes) in /etc/xen/xend-config.sxp
-  -- libvirt >= v0.1.3, set (xend-unix-server yes) in /etc/xen/xend-config.sxp
-libxml2 (see http://xmlsoft.org)
-  -- note that libxml2 is part of many distributions already
-  -- on fedora the package name is libxml2 and libxml2-devel
+libxenstore (from Xen, access to the xenstore)
+
+--> Note: XenAccess no longer uses libvirt or libxml2.
 
 
 Building and Using
