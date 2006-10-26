@@ -5,6 +5,7 @@ SRCS       += xa_core.c
 SRCS       += xa_memory.c
 SRCS       += xa_cache.c
 SRCS       += xa_pretty_print.c
+SRCS       += xa_domain_info.c
 SRCS       += linux_system_map.c
 SRCS       += linux_memory.c
 SRCS       += linux_domain_info.c
@@ -16,11 +17,9 @@ CFLAGS   += -ansi
 CFLAGS   += -O3 -g
 CFLAGS   += $(INCLUDES) -I.
 CFLAGS   += -Wp,-MD,.$(@F).d
-CFLAGS   += $(shell xml2-config --cflags)
 LDFLAGS  += -L.
 LDFLAGS  += -lm
-LDFLAGS  += -lvirt
-LDFLAGS  += $(shell xml2-config --libs)
+LDFLAGS  += -lxenstore
 DEPS     = .*.d
 STD      = -std=c99
 

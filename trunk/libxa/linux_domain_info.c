@@ -31,12 +31,11 @@
  * $Date$
  */
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <libvirt/libvirt.h>
-#include <libvirt/virterror.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
+#include <stdio.h>
+#include <xs.h>
+#include <xa_private.h>
 
 /* quick local implementation of non ISO C function for use below */
 /*TODO move this into its own file of utility-type functions */
@@ -45,105 +44,12 @@ char * strdup (const char *s)
     int length = strlen(s) + 1;
     char *ret = malloc(length);
     if (NULL == ret){
-        /* nothing */
     }
     else{
         memset(ret, 0, length);
         memcpy(ret, s, length);
     }
     return ret;
-}
-
-/* get an xml description of the domain id */
-char *linux_get_xml_info (int id)
-{
-    virConnectPtr conn = NULL;
-    virDomainPtr dom = NULL;
-    char *xml_data = NULL;
-
-    /* NULL means connect to local Xen hypervisor */
-    conn = virConnectOpenReadOnly(NULL);
-    if (NULL == conn) {
-        printf("ERROR: Failed to connect to hypervisor\n");
-        goto error_exit;
-    }
-
-    /* Find the domain of the given id */
-    dom = virDomainLookupByID(conn, id);
-    if (NULL == dom) {
-        virErrorPtr error = virConnGetLastError(conn);
-        printf("(%d) %s\n", error->code, error->message);
-        printf("ERROR: Failed to find Domain %d\n", id);
-        goto error_exit;
-    }
-
-    xml_data = virDomainGetXMLDesc(dom, 0);
-
-error_exit:
-    if (NULL!= dom) virDomainFree(dom);
-    if (NULL!= conn) virConnectClose(conn);
-
-    return xml_data;
-}
-
-char *linux_get_kernel_name (int id)
-{
-    char *xml_data = NULL;
-    char *kernel = NULL;
-    int depth = 0;
-    xmlDocPtr xmldoc = NULL;
-    xmlNode *root_element, *node;
-
-    xml_data = linux_get_xml_info(id);
-    if (NULL == xml_data){
-        printf("ERROR: failed to get domain info for domain id %d\n", id);
-        goto error_exit;
-    }
-
-    xmldoc = xmlParseMemory(xml_data, strlen(xml_data));
-    if (NULL == xmldoc){
-        printf("ERROR: could not parse xml data for domain id %d\n", id);
-        goto error_exit;
-    }
-
-    /* get the root element node */
-    root_element = xmlDocGetRootElement(xmldoc);
-
-    /* seek out the kernel node */
-    /* domain--os--kernel */
-    node = root_element;
-    while (node){
-            if (strcmp((char *)node->name, "domain") == 0 && depth == 0){
-                node = node->children;
-                depth++;
-            }
-            else if (strcmp((char *)node->name, "os") == 0 && depth == 1){
-                node = node->children;
-                depth++;
-            }
-            else if (strcmp((char *)node->name, "kernel") == 0 && depth == 2){
-                /* found it! */
-                break;
-            }
-            else{
-                node = node->next;
-            }
-    }
-
-    /* node either equals NULL or the one we want */
-    if (NULL != node){
-        xmlChar *xmlStr = xmlNodeListGetString(xmldoc, node->children, 1);
-        kernel = strdup((char *) xmlStr);
-        xmlFree(xmlStr);
-    }
-
-error_exit:
-    /* free up memory, clean up xml stuff */
-    xmlFreeDoc(xmldoc);
-    xmlCleanupParser();
-    if (xml_data) free(xml_data);
-
-    return kernel;
 }
 
 char *linux_predict_sysmap_name (int id)
@@ -153,9 +59,15 @@ char *linux_predict_sysmap_name (int id)
     int length = 0;
     int i = 0;
 
-    kernel = linux_get_kernel_name(id);
+    kernel = xa_get_kernel_name(id);
     if (NULL == kernel){
         printf("ERROR: could not get kernel name for domain id %d\n", id);
+        goto error_exit;
+    }
+
+    /* tmp hard code for testing */
+    else if (strcmp(kernel, "/usr/lib/xen/boot/hvmloader") == 0){
+        sysmap = strdup("/boot/System.map-2.6.15-1.2054_FC5");
         goto error_exit;
     }
 

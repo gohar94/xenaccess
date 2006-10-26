@@ -34,6 +34,8 @@
 
 #include <xenctrl.h>
 
+/* #define XA_DEBUG */
+
 #define XA_SUCCESS 0
 #define XA_FAILURE -1
 #define XA_OS_LINUX 0
@@ -48,6 +50,7 @@ typedef struct xa_instance{
     uint32_t kpgd;          /* kernel page global directory */
     uint32_t init_task;     /* address of task struct for init */
     int os_type;            /* type of os: XA_OS_LINUX, etc */
+    int hvm;                /* nonzero if HVM domain */
     xc_dominfo_t info;      /* libxc info: domid, ssidref, stats, etc */
     unsigned long *live_pfn_to_mfn_table;
     unsigned long nr_pfns;
