@@ -67,7 +67,9 @@ char *linux_predict_sysmap_name (int id)
 
     /* tmp hard code for testing */
     else if (strcmp(kernel, "/usr/lib/xen/boot/hvmloader") == 0){
-        sysmap = strdup("/boot/System.map-2.6.15-1.2054_FC5");
+        /*sysmap = strdup("/boot/System.map-2.6.15-1.2054_FC5");*/
+        /*sysmap = strdup("/boot/System.map-2.6.18-1.2239.fc5");*/
+        sysmap = strdup("/boot/System.map-2.6.15-bdpcustom");
         goto error_exit;
     }
 
@@ -88,6 +90,7 @@ char *linux_predict_sysmap_name (int id)
 
 error_exit:
     if (kernel) free(kernel);
+printf("sysmap = '%s'\n", sysmap);
     return sysmap;
 }
 
