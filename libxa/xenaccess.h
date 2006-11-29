@@ -34,7 +34,7 @@
 
 #include <xenctrl.h>
 
-/* #define XA_DEBUG */
+#define XA_DEBUG
 
 #define XA_SUCCESS 0
 #define XA_FAILURE -1

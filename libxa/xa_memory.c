@@ -38,7 +38,7 @@
 
 unsigned long p2m_hvm (xa_instance_t *instance, unsigned long pfn)
 {
-    unsigned long mfn = 0;
+    unsigned long mfn = -1;
 
     xc_domain_translate_gpfn_list(
         instance->xc_handle,

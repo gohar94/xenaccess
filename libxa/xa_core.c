@@ -89,15 +89,17 @@ int helper_init (xa_instance_t *instance)
     	printf("Got vaddr for swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
 #endif
 
-        memory = linux_access_physical_address(
-                    instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
-        if (NULL == memory){
-            printf("ERROR: failed to get physical addr for kpgd\n");
-            ret = XA_FAILURE;
-            goto error_exit;
+        if (!instance->hvm){
+            memory = linux_access_physical_address(
+                instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
+            if (NULL == memory){
+                printf("ERROR: failed to get physical addr for kpgd\n");
+                ret = XA_FAILURE;
+                goto error_exit;
+            }
+            instance->kpgd = *((uint32_t*)(memory + local_offset));
+            munmap(memory, XA_PAGE_SIZE);
         }
-        instance->kpgd = *((uint32_t*)(memory + local_offset));
-        munmap(memory, XA_PAGE_SIZE);
 #ifdef XA_DEBUG
     	printf("swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
 #endif

@@ -145,7 +145,12 @@ uint32_t linux_pagetable_lookup (
     /* perform the lookup in the page table */
     index = (((virt_address) >> 12) & (1024 - 1));
     pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
-    memory = linux_access_machine_address(instance, pte_entry, &offset);
+    if (instance->hvm){
+        memory = linux_access_physical_address(instance, pte_entry, &offset);
+    }
+    else{
+        memory = linux_access_machine_address(instance, pte_entry, &offset);
+    }
     if (NULL == memory){
         printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
                 pte_entry);
@@ -239,7 +244,12 @@ void *linux_access_user_virtual_address (
 
     /* check the LRU cache */
     if (xa_check_cache_virt(virt_address, pid, &mach_address)){
-        return linux_access_machine_address(instance, mach_address, offset);
+        if (instance->hvm){
+            return linux_access_physical_address(instance, mach_address, offset);
+        }
+        else{
+            return linux_access_machine_address(instance, mach_address, offset);
+        }
     }
 
     /* use kernel page tables */
@@ -254,7 +264,12 @@ void *linux_access_user_virtual_address (
             return NULL;
         }
         xa_update_cache(NULL, virt_address, pid, mach_address);
-        return linux_access_machine_address(instance, mach_address, offset);
+        if (instance->hvm){
+            return linux_access_physical_address(instance, mach_address, offset);
+        }
+        else{
+            return linux_access_machine_address(instance, mach_address, offset);
+        }
     }
 
     /* use user page tables */
@@ -283,7 +298,12 @@ void *linux_access_kernel_symbol (
 
     /* check the LRU cache */
     if (xa_check_cache_sym(symbol, 0, &mach_address)){
-        return linux_access_machine_address(instance, mach_address, offset);
+        if (instance->hvm){
+            return linux_access_physical_address(instance, mach_address, offset);
+        }
+        else{
+            return linux_access_machine_address(instance, mach_address, offset);
+        }
     }
 
     /* get the virtual address of the symbol */
