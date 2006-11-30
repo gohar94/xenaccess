@@ -39,6 +39,7 @@
 
 /* quick local implementation of non ISO C function for use below */
 /*TODO move this into its own file of utility-type functions */
+/*
 char * strdup (const char *s)
 {
     int length = strlen(s) + 1;
@@ -51,6 +52,7 @@ char * strdup (const char *s)
     }
     return ret;
 }
+*/
 
 char *linux_predict_sysmap_name (int id)
 {
