@@ -10,7 +10,6 @@ library_include_HEADERS = $(h_sources)
 
 INCLUDES = -I$(top_srcdir)
 
-lib_LTLIBRARIES= libxenaccess-0.3.la
-libxenaccess_0_3_la_SOURCES= $(h_sources) $(c_sources)
-libxenaccess_0_3_la_LDFLAGS= -version-info $(LIBRARY_VERSION) -release $(RELEASE)
-
+lib_LTLIBRARIES= libxenaccess.la
+libxenaccess_la_SOURCES= $(h_sources) $(c_sources)
+libxenaccess_la_LDFLAGS= -release $(RELEASE)

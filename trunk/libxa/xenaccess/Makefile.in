@@ -57,13 +57,13 @@ am__installdirs = "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(library_includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libxenaccess_0_3_la_LIBADD =
+libxenaccess_la_LIBADD =
 am__objects_1 =
 am__objects_2 = linux_domain_info.lo linux_system_map.lo xa_core.lo \
 	xa_memory.lo linux_memory.lo xa_cache.lo xa_domain_info.lo \
 	xa_pretty_print.lo
-am_libxenaccess_0_3_la_OBJECTS = $(am__objects_1) $(am__objects_2)
-libxenaccess_0_3_la_OBJECTS = $(am_libxenaccess_0_3_la_OBJECTS)
+am_libxenaccess_la_OBJECTS = $(am__objects_1) $(am__objects_2)
+libxenaccess_la_OBJECTS = $(am_libxenaccess_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -75,8 +75,8 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libxenaccess_0_3_la_SOURCES)
-DIST_SOURCES = $(libxenaccess_0_3_la_SOURCES)
+SOURCES = $(libxenaccess_la_SOURCES)
+DIST_SOURCES = $(libxenaccess_la_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -93,7 +93,6 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
-API_VERSION = @API_VERSION@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -126,7 +125,6 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBRARY_NAME = @LIBRARY_NAME@
-LIBRARY_VERSION = @LIBRARY_VERSION@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
@@ -196,9 +194,9 @@ c_sources = linux_domain_info.c linux_system_map.c xa_core.c xa_memory.c linux_m
 library_includedir = $(includedir)/$(LIBRARY_NAME)-$(API_VERSION)/$(LIBRARY_NAME)
 library_include_HEADERS = $(h_sources)
 INCLUDES = -I$(top_srcdir)
-lib_LTLIBRARIES = libxenaccess-0.3.la
-libxenaccess_0_3_la_SOURCES = $(h_sources) $(c_sources)
-libxenaccess_0_3_la_LDFLAGS = -version-info $(LIBRARY_VERSION) -release $(RELEASE)
+lib_LTLIBRARIES = libxenaccess.la
+libxenaccess_la_SOURCES = $(h_sources) $(c_sources)
+libxenaccess_la_LDFLAGS = -release $(RELEASE)
 all: all-recursive
 
 .SUFFIXES:
@@ -259,8 +257,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libxenaccess-0.3.la: $(libxenaccess_0_3_la_OBJECTS) $(libxenaccess_0_3_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(libxenaccess_0_3_la_LDFLAGS) $(libxenaccess_0_3_la_OBJECTS) $(libxenaccess_0_3_la_LIBADD) $(LIBS)
+libxenaccess.la: $(libxenaccess_la_OBJECTS) $(libxenaccess_la_DEPENDENCIES) 
+	$(LINK) -rpath $(libdir) $(libxenaccess_la_LDFLAGS) $(libxenaccess_la_OBJECTS) $(libxenaccess_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

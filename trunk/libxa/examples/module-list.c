@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <stdio.h>
-#include "../xenaccess.h"
+#include <xenaccess/xenaccess.h>
 
 int main (int argc, char **argv)
 {

@@ -2,10 +2,10 @@
 # Process this file with automake to produce Makefile.in
 
 #Build in these directories:
-SUBDIRS= $(LIBRARY_NAME)
+SUBDIRS= $(LIBRARY_NAME) examples
 
 #Distribute these directories:
-DIST_SUBDIRS = $(LIBRARY_NAME)
+DIST_SUBDIRS = $(LIBRARY_NAME) examples
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = xenaccess.pc
