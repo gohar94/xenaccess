@@ -32,8 +32,8 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <stdio.h>
-#include "../xenaccess.h"
-#include "../xa_private.h"
+#include <xenaccess/xenaccess.h>
+#include <xenaccess/xa_private.h>
 
 void printaddr (xa_linux_taskaddr_t taskaddr)
 {

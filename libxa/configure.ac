@@ -1,4 +1,3 @@
-
 dnl --------------------------------
 dnl Initialization macros.
 dnl --------------------------------
@@ -17,30 +16,9 @@ MAJOR_VERSION=0
 MINOR_VERSION=3
 MICRO_VERSION=0
 
-#API version (often = MAJOR_VERSION.MINOR_VERSION)
-API_VERSION=0.3
-AC_SUBST(API_VERSION)
-
-#shared library versioning
-LIBRARY_VERSION=0:3:0
-#                       | | |
-#                +------+ | +---+
-#                |        |     |
-#             current:revision:age
-#                |        |     |
-#                |        |     +- increment if interfaces have been added
-#                |        |        set to zero if interfaces have been removed
-#                                  or changed
-#                |        +- increment if source code has changed
-#                |           set to zero if current is incremented
-#                +- increment if interfaces have been added, removed or changed
-
-
 dnl --------------------------------
 dnl Package name and version number
 dnl --------------------------------
-
-AC_SUBST(LIBRARY_VERSION)
 
 PACKAGE=$LIBRARY_NAME
 AC_SUBST(LIBRARY_NAME)
@@ -68,6 +46,7 @@ dnl -----------------------------------------------
 
 AC_OUTPUT(Makefile \
           xenaccess.pc \
-          xenaccess/Makefile
+          xenaccess/Makefile \
+          examples/Makefile
 )
 

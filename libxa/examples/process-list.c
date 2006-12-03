@@ -32,8 +32,8 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <stdio.h>
-#include "../xenaccess.h"
-#include "../xa_private.h"
+#include <xenaccess/xenaccess.h>
+#include <xenaccess/xa_private.h>
 
 /* offset to each of these fields from the beginning of the struct
    assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
