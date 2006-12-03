@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = module-list$(EXEEXT) process-data$(EXEEXT) \
-	process-list$(EXEEXT)
+	process-list$(EXEEXT) map-symbol$(EXEEXT)
 subdir = examples
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -50,6 +50,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
+am_map_symbol_OBJECTS = map-symbol.$(OBJEXT)
+map_symbol_OBJECTS = $(am_map_symbol_OBJECTS)
+map_symbol_LDADD = $(LDADD)
+map_symbol_DEPENDENCIES =
 am_module_list_OBJECTS = module-list.$(OBJEXT)
 module_list_OBJECTS = $(am_module_list_OBJECTS)
 module_list_LDADD = $(LDADD)
@@ -73,10 +77,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(module_list_SOURCES) $(process_data_SOURCES) \
-	$(process_list_SOURCES)
-DIST_SOURCES = $(module_list_SOURCES) $(process_data_SOURCES) \
-	$(process_list_SOURCES)
+SOURCES = $(map_symbol_SOURCES) $(module_list_SOURCES) \
+	$(process_data_SOURCES) $(process_list_SOURCES)
+DIST_SOURCES = $(map_symbol_SOURCES) $(module_list_SOURCES) \
+	$(process_data_SOURCES) $(process_list_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -193,6 +197,7 @@ LDADD = -lxenaccess -lxenctrl -lxenstore -lm
 module_list_SOURCES = module-list.c
 process_data_SOURCES = process-data.c
 process_list_SOURCES = process-list.c
+map_symbol_SOURCES = map-symbol.c
 all: all-recursive
 
 .SUFFIXES:
@@ -254,6 +259,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+map-symbol$(EXEEXT): $(map_symbol_OBJECTS) $(map_symbol_DEPENDENCIES) 
+	@rm -f map-symbol$(EXEEXT)
+	$(LINK) $(map_symbol_LDFLAGS) $(map_symbol_OBJECTS) $(map_symbol_LDADD) $(LIBS)
 module-list$(EXEEXT): $(module_list_OBJECTS) $(module_list_DEPENDENCIES) 
 	@rm -f module-list$(EXEEXT)
 	$(LINK) $(module_list_LDFLAGS) $(module_list_OBJECTS) $(module_list_LDADD) $(LIBS)
@@ -270,6 +278,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process-data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process-list.Po@am__quote@
