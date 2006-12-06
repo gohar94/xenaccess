@@ -240,15 +240,15 @@ void *linux_access_user_virtual_address (
             uint32_t *offset,
             int pid)
 {
-    uint32_t mach_address = 0;
+    uint32_t address = 0;
 
     /* check the LRU cache */
-    if (xa_check_cache_virt(virt_address, pid, &mach_address)){
+    if (xa_check_cache_virt(virt_address, pid, &address)){
         if (instance->hvm){
-            return linux_access_physical_address(instance, mach_address, offset);
+            return linux_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, mach_address, offset);
+            return linux_access_machine_address(instance, address, offset);
         }
     }
 
@@ -257,18 +257,18 @@ void *linux_access_user_virtual_address (
       Figure out what this should be b/c there still may be a fixed
       mapping range between the page'd addresses and VIRT_START */
     if (!pid){
-        mach_address = linux_pagetable_lookup(
+        address = linux_pagetable_lookup(
                             instance, instance->kpgd, virt_address, 1); 
-        if (!mach_address){
+        if (!address){
             printf("ERROR: address not in page table\n");
             return NULL;
         }
-        xa_update_cache(NULL, virt_address, pid, mach_address);
+        xa_update_cache(NULL, virt_address, pid, address);
         if (instance->hvm){
-            return linux_access_physical_address(instance, mach_address, offset);
+            return linux_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, mach_address, offset);
+            return linux_access_machine_address(instance, address, offset);
         }
     }
 
@@ -277,16 +277,16 @@ void *linux_access_user_virtual_address (
         uint32_t pgd = linux_pid_to_pgd(instance, pid);
 
         if (pgd){
-            mach_address = linux_pagetable_lookup(instance, pgd, virt_address, 0); 
+            address = linux_pagetable_lookup(instance, pgd, virt_address, 0); 
         }
 
-        if (!mach_address){
+        if (!address){
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
-        xa_update_cache(NULL, virt_address, pid, mach_address);
+        xa_update_cache(NULL, virt_address, pid, address);
         return linux_access_machine_address_rw(
-            instance, mach_address, offset, PROT_READ | PROT_WRITE);
+            instance, address, offset, PROT_READ | PROT_WRITE);
     }
 }
 
@@ -294,15 +294,15 @@ void *linux_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
     uint32_t virt_address;
-    uint32_t mach_address;
+    uint32_t address;
 
     /* check the LRU cache */
-    if (xa_check_cache_sym(symbol, 0, &mach_address)){
+    if (xa_check_cache_sym(symbol, 0, &address)){
         if (instance->hvm){
-            return linux_access_physical_address(instance, mach_address, offset);
+            return linux_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, mach_address, offset);
+            return linux_access_machine_address(instance, address, offset);
         }
     }
 

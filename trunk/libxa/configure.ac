@@ -37,6 +37,8 @@ dnl Checks for programs.
 dnl -----------------------------------------------
 
 AC_PROG_CC
+AC_PROG_LEX
+AC_PROG_YACC
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
@@ -47,6 +49,7 @@ dnl -----------------------------------------------
 AC_OUTPUT(Makefile \
           xenaccess.pc \
           xenaccess/Makefile \
+          xenaccess/config/Makefile \
           examples/Makefile
 )
 

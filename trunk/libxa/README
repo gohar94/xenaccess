@@ -1,4 +1,4 @@
-XenAccess v0.2 README
+XenAccess v0.3 README
 by Bryan D. Payne
 =====================
 
@@ -21,27 +21,108 @@ libxenstore (from Xen, access to the xenstore)
 
 Building and Using
 ------------------
-Right now, just type 'make'.  There's no 'make install' yet.  There's no
-'./configure' yet.  Those will come in time.  If you'd like to use things
-right away, you can manually install the library or use LD_PRELOAD to
-load the library in place.  For example:
+Starting with version 0.3, XenAccess uses the standard GNU build system.  To
+compile this library, simply following the steps below:
 
-# ./module-list 
-./module-list: error while loading shared libraries: libxenaccess.so: cannot open shared object file: No such file or directory
-# export LD_PRELOAD=/<path to XenAccess library>/libxenaccess.so
-# ./module-list 
+./configure
+make
+
+The example code will work without installing the library.  However, you may
+choose to install the library into the prefix specified to 'configure' by:
+
+make install
+
+The default installation prefix is /usr/local.
+
+A quick way to see XenAccess in action is to try out the example code.  You
+should be running Xen, and running the example code as root in domain0.  You
+should have at least one user domain running linux.  Note the domain ID using
+the 'xm list' command:
+
+[root@bluemoon libxa]# xm list
+Name                                      ID Mem(MiB) VCPUs State   Time(s)
+Domain-0                                   0     1229     2 r----- 137356.4
+Fedora-HVM                                 4      384     1 -b----   2292.6
+fc5                                        5      384     1 -b----     15.4
+[root@bluemoon libxa]# 
+
+Then you can run the examples as follows:
+
+[root@bluemoon libxa]# cd examples/
+[root@bluemoon examples]# ./module-list 5
 ipv6
-autofs4
-af_packet
 binfmt_misc
-md
-unix
+lp
+parport_pc
+parport
+nvram
+usbcore
+[root@bluemoon examples]# ./module-list 4
+autofs4
+hidp
+rfcomm
+l2cap
+bluetooth
+sunrpc
+ipv6
+parport_pc
+lp
+parport
+floppy
+8139cp
+8139too
+mii
+pcspkr
+serio_raw
 dm_snapshot
 dm_zero
 dm_mirror
+dm_mod
 ext3
 jbd
-dm_mod
+[root@bluemoon examples]# 
+
+Note that the example code works for both para-virtualized (i.e., PV) and
+fully-virtualized (i.e., HVM) domains.  However, the example code uses hard
+coded offsets to locate information in the running kernels, so you may find
+that it fails on some kernels, where the offsets are incorrect:
+
+[root@bluemoon examples]# ./process-list 5
+[    1] init
+[    2] migration/0
+[    3] ksoftirqd/0
+[    4] watchdog/0
+[    5] events/0
+[    6] khelper
+[    7] kthread
+[    8] xenwatch
+[    9] xenbus
+[   15] kblockd/0
+[   57] pdflush
+[   58] pdflush
+[   60] aio/0
+[   59] kswapd0
+[  578] kseriod
+[  685] kpsmoused
+[  710] khubd
+[  978] dhclient
+[ 1006] syslogd
+[ 1009] klogd
+[ 1021] sshd
+[ 1027] mingetty
+[root@bluemoon examples]# ./process-list 4
+[1408237823] ?
+[14941936] ?S?
+[    0] 
+[    0] 
+ERROR: address not in page table
+failed to map memory for process list pointer: Success
+[root@bluemoon examples]# 
+
+Here we see that 'process-list' works on domain id 5 (the PV domain running
+the 2.6.16.29-xen kernel that comes with Xen-3.0.3), but not on domain 4
+(an HVM domain running Fedora Core 6 with the 2.6.18-1.2849.fc6 kernel).
+This type of behavior is simply a current limitation of XenAccess.
 
 
 Problems?

@@ -34,6 +34,7 @@
 
 #include <xenctrl.h>
 
+/* uncomment this to enable debug output */
 #define XA_DEBUG
 
 #define XA_SUCCESS 0
@@ -47,6 +48,8 @@
 typedef struct xa_instance{
     int xc_handle;          /* handle to xenctrl library (libxc) */
     uint32_t domain_id;     /* domid that we are accessing */
+    char *domain_name;      /* domain name that we are accessing */
+    char *sysmap;           /* system map file for domain's running kernel */
     uint32_t kpgd;          /* kernel page global directory */
     uint32_t init_task;     /* address of task struct for init */
     int os_type;            /* type of os: XA_OS_LINUX, etc */
