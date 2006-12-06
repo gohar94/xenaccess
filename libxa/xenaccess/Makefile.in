@@ -57,7 +57,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(library_includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libxenaccess_la_LIBADD =
+libxenaccess_la_DEPENDENCIES = config/libconfig.la
 am__objects_1 =
 am__objects_2 = linux_domain_info.lo linux_system_map.lo xa_core.lo \
 	xa_memory.lo linux_memory.lo xa_cache.lo xa_domain_info.lo \
@@ -123,6 +123,9 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LEX = @LEX@
+LEXLIB = @LEXLIB@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
 LIBOBJS = @LIBOBJS@
 LIBRARY_NAME = @LIBRARY_NAME@
 LIBS = @LIBS@
@@ -145,6 +148,7 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+YACC = @YACC@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
@@ -188,14 +192,15 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-SUBDIRS = 
+SUBDIRS = config
 h_sources = xenaccess.h xa_private.h
 c_sources = linux_domain_info.c linux_system_map.c xa_core.c xa_memory.c linux_memory.c xa_cache.c xa_domain_info.c xa_pretty_print.c
-library_includedir = $(includedir)/$(LIBRARY_NAME)-$(API_VERSION)/$(LIBRARY_NAME)
+library_includedir = $(includedir)/$(LIBRARY_NAME)
 library_include_HEADERS = $(h_sources)
 INCLUDES = -I$(top_srcdir)
 lib_LTLIBRARIES = libxenaccess.la
 libxenaccess_la_SOURCES = $(h_sources) $(c_sources)
+libxenaccess_la_LIBADD = config/libconfig.la
 libxenaccess_la_LDFLAGS = -release $(RELEASE)
 all: all-recursive
 

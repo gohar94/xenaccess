@@ -10,3 +10,11 @@ list is in no particular order...
 * add function that returns active domid(s)
 * get page global directory via control register in CPU instead of 
   using os-specific symbol information ??
+
+========================================================
+Items needed before 0.3 release
+* configure file for reading system map file location for target domain
+* check that 'make install' has desired effect
+* does configure check for xenctrl and xenstore library?
+* get ID / Date auto filled for each source file
+* update AUTHORS file with new files

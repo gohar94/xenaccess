@@ -37,23 +37,6 @@
 #include <xs.h>
 #include <xa_private.h>
 
-/* quick local implementation of non ISO C function for use below */
-/*TODO move this into its own file of utility-type functions */
-/*
-char * strdup (const char *s)
-{
-    int length = strlen(s) + 1;
-    char *ret = malloc(length);
-    if (NULL == ret){
-    }
-    else{
-        memset(ret, 0, length);
-        memcpy(ret, s, length);
-    }
-    return ret;
-}
-*/
-
 char *linux_predict_sysmap_name (int id)
 {
     char *kernel = NULL;
@@ -67,11 +50,8 @@ char *linux_predict_sysmap_name (int id)
         goto error_exit;
     }
 
-    /* tmp hard code for testing */
+    /* we can't predict for hvm domains */
     else if (strcmp(kernel, "/usr/lib/xen/boot/hvmloader") == 0){
-        /*sysmap = strdup("/boot/System.map-2.6.15-1.2054_FC5");*/
-        /*sysmap = strdup("/boot/System.map-2.6.18-1.2239.fc5");*/
-        sysmap = strdup("/boot/System.map-2.6.15-bdpcustom");
         goto error_exit;
     }
 
@@ -92,21 +72,5 @@ char *linux_predict_sysmap_name (int id)
 
 error_exit:
     if (kernel) free(kernel);
-printf("sysmap = '%s'\n", sysmap);
     return sysmap;
 }
-
-/* -- USED ONLY FOR TEST / DEBUGGING */
-/*
-int main(int argc, char **argv) {
-    printf("sysmap --> '%s'\n", xa_predict_sysmap_name(2));
-    return(0);
-}
-*/
-
-/*
-use the following line to compile
-
-gcc `xml2-config --cflags --libs` -I/usr/local/include/libvirt -L/usr/local/lib -lvirt -g  -o xa_domain_info xa_domain_info.c 
-*/
-

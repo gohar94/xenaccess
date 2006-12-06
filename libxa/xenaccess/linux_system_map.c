@@ -36,7 +36,7 @@
 #include <string.h>
 #include "xa_private.h"
 
-/* 80 chars is more than enough for one line of system.map */
+/* 200 chars is more than enough for one line of system.map */
 #define MAX_ROW_LENGTH 200
 
 int get_system_map_row (FILE *f, char *row, char *symbol, int position)
@@ -90,17 +90,22 @@ error_exit:
 int linux_system_map_symbol_to_address (
         xa_instance_t *instance, char *symbol, uint32_t *address)
 {
-    char *system_map = linux_predict_sysmap_name(instance->domain_id);
-
     FILE *f = NULL;
     char *row = NULL;
     int ret = XA_SUCCESS;
+
+    if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
+        instance->sysmap = linux_predict_sysmap_name(instance->domain_id);
+    }
 
     if ((row = malloc(MAX_ROW_LENGTH)) == NULL ){
         ret = XA_FAILURE;
         goto error_exit;
     }
-    if ((f = fopen(system_map, "r")) == NULL){
+    if ((f = fopen(instance->sysmap, "r")) == NULL){
+        printf("ERROR: could not find System.map file after checking:\n");
+        printf("\t%s\n", instance->sysmap);
+        printf("To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -112,7 +117,6 @@ int linux_system_map_symbol_to_address (
     *address = (uint32_t) strtoul(row, NULL, 16);
 
 error_exit:
-    if (system_map) free(system_map);
     if (row) free(row);
     if (f) fclose(f);
     return ret;

@@ -1,0 +1,8 @@
+
+New to version 0.3
+* support for HVM domains
+* addition of configuration file for System map location
+* integration of the GNU build system
+* removed libvirt dependency
+* new example for mapping a kernel symbol's page
+* various bug fixes

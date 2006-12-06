@@ -30,7 +30,10 @@
  * $Date$
  */
 
+#include <string.h>
 #include <sys/mman.h>
+#include <xs.h>
+#include "config/config_parser.h"
 #include "xenaccess.h"
 #include "xa_private.h"
 
@@ -41,6 +44,60 @@ int set_os_type (int *os_type)
      * to verify that the domain is really running linux */
     *os_type = XA_OS_LINUX;
     return XA_SUCCESS;
+}
+
+int read_config_file (xa_instance_t *instance)
+{
+    extern FILE *yyin;
+    int ret = XA_SUCCESS;
+    xa_config_entry_t *entry;
+    struct xs_handle *xsh = NULL;
+    xs_transaction_t xth = XBT_NULL;
+    char *tmp = NULL;
+
+    yyin = fopen("/etc/xenaccess.conf", "r");
+    if (NULL == yyin){
+        printf("WARNING: config file not found at /etc/xenaccess.conf\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+
+    /* convert domain id to domain name */
+    tmp = malloc(100);
+    if (NULL == tmp){
+        printf("ERROR: failed to allocate memory for tmp variable\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    memset(tmp, 0, 100);
+    sprintf(tmp, "/local/domain/%d/name", instance->domain_id);
+    xsh = xs_domain_open();
+    instance->domain_name = xs_read(xsh, xth, tmp, NULL);
+    if (NULL == instance->domain_name){
+        printf("ERROR: domain id %d is not running\n", instance->domain_id);
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+#ifdef XA_DEBUG
+    printf("Got domain name from id (%d ==> %s).\n",
+           instance->domain_id, instance->domain_name);
+#endif
+
+    xa_parse_config(instance->domain_name);
+    entry = xa_get_config();
+
+    /* copy the values from entry into instance struct */
+    instance->sysmap = strdup(entry->sysmap);
+#ifdef XA_DEBUG
+    printf("Got sysmap (%s).\n", instance->sysmap);
+#endif
+
+error_exit:
+    if (tmp) free(tmp);
+    if (yyin) fclose(yyin);
+    if (xsh) xs_daemon_close(xsh);
+
+    return ret;
 }
 
 /* given a xa_instance_t struct with the xc_handle and the
@@ -65,6 +122,11 @@ int helper_init (xa_instance_t *instance)
     printf("Got domain info.\n");
 #endif
 
+    /* read in configure file information */
+    if (read_config_file(instance) == XA_FAILURE){
+        printf("WARNING: failed to read configureation file\n");
+    }
+    
     /* init instance->os_type */
     if (set_os_type(&(instance->os_type)) == XA_FAILURE){
         ret = XA_FAILURE;
@@ -86,7 +148,7 @@ int helper_init (xa_instance_t *instance)
             goto error_exit;
         }
 #ifdef XA_DEBUG
-    	printf("Got vaddr for swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+        printf("Got vaddr for swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
 #endif
 
         if (!instance->hvm){
@@ -101,7 +163,7 @@ int helper_init (xa_instance_t *instance)
             munmap(memory, XA_PAGE_SIZE);
         }
 #ifdef XA_DEBUG
-    	printf("swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+        printf("swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
 #endif
 
         memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
@@ -113,6 +175,7 @@ int helper_init (xa_instance_t *instance)
         instance->init_task =
             *((uint32_t*)(memory + local_offset + XALINUX_TASKS_OFFSET));
     }
+
 
 error_exit:
     return ret;

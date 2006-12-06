@@ -112,7 +112,10 @@ int xa_ishvm (int id)
     xsh = xs_domain_open();
     ostype = xs_read(xsh, xth, tmp, NULL);
 
-    if (strcmp(ostype, "hvm") == 0){
+    if (NULL == ostype){
+        goto error_exit;
+    }
+    else if (strcmp(ostype, "hvm") == 0){
         ret = 1;
     }
 
