@@ -27,8 +27,8 @@
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  *
- * $Id$
- * $Date$
+ * $Id: xa_private.h 36 2006-11-30 01:38:20Z bdpayne $
+ * $Date: 2006-11-29 20:38:20 -0500 (Wed, 29 Nov 2006) $
  */
 #ifndef XA_PRIVATE_H
 #define XA_PRIVATE_H

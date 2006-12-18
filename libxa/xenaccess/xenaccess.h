@@ -26,8 +26,8 @@
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  *
- * $Id$
- * $Date$
+ * $Id: xenaccess.h 43 2006-12-06 06:23:30Z bdpayne $
+ * $Date: 2006-12-06 01:23:30 -0500 (Wed, 06 Dec 2006) $
  */
 #ifndef LIB_XEN_ACCESS_H
 #define LIB_XEN_ACCESS_H

@@ -13,8 +13,9 @@ list is in no particular order...
 
 ========================================================
 Items needed before 0.3 release
-* configure file for reading system map file location for target domain
 * check that 'make install' has desired effect
 * does configure check for xenctrl and xenstore library?
 * get ID / Date auto filled for each source file
 * update AUTHORS file with new files
+* turn off debug output
+* update readme with info on config file usage
