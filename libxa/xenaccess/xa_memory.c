@@ -27,7 +27,7 @@
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  *
- * $Id: xa_memory.c 36 2006-11-30 01:38:20Z bdpayne $
+ * $Id$
  * $Date: 2006-11-29 20:38:20 -0500 (Wed, 29 Nov 2006) $
  */
 
