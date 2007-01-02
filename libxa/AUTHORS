@@ -6,6 +6,7 @@ to release their work under the GNU GPL.
 
 Bryan D. Payne (bryan@thepaynes.cc)
   entire files:
+    README
     examples/map-symbol.c
     examples/module-list.c
     examples/process-data.c
@@ -25,3 +26,15 @@ Bryan D. Payne (bryan@thepaynes.cc)
     xenaccess/config/lexicon.l
   modifications
     n/a
+
+Tomas Kouba (tomas@jikos.cz)
+  entire files:
+  modifications:
+    README
+    configure.ac
+    xenaccess/xa_memory.c
+    xenaccess/linux_memory.c
+    xenaccess/xa_private.h
+    xenaccess/xa_cache.c
+    xenaccess/xa_pretty_print.c
+

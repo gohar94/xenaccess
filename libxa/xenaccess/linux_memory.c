@@ -106,6 +106,7 @@ error_exit:
     return pgd;
 }
 
+/* TODO: make this portable (PAE, x86_64) */
 /* converty address to machine address via page tables */
 uint32_t linux_pagetable_lookup (
             xa_instance_t *instance,
@@ -180,20 +181,13 @@ void *linux_access_machine_address_rw (
         uint32_t *offset, int prot)
 {
     unsigned long mfn;
-    uint32_t bitmask;
     int i;
 
     /* machine frame number = machine address >> PAGE_SHIFT */
     mfn = mach_address >> XC_PAGE_SHIFT;
 
     /* get the offset */
-    /*TODO why build this by hand everytime? */
-    bitmask = 1;
-    for (i = 0; i < XC_PAGE_SHIFT - 1; ++i){
-        bitmask <<= 1;
-        bitmask += 1;
-    }
-    *offset = mach_address & bitmask;
+    *offset = (XC_PAGE_SIZE-1) & mach_address;
 
     /* access the memory */
     /*TODO allow r/rw to be passed as an argument to this function */
@@ -213,13 +207,7 @@ void *linux_access_physical_address (
     pfn = phys_address >> XC_PAGE_SHIFT;
 
     /* get the offset */
-    /*TODO why build this by hand everytime? */
-    bitmask = 1;
-    for (i = 0; i < XC_PAGE_SHIFT - 1; ++i){
-        bitmask <<= 1;
-        bitmask += 1;
-    }
-    *offset = phys_address & bitmask;
+    *offset = (XC_PAGE_SIZE-1) & phys_address;
 
     /* access the memory */
     /*TODO allow r/rw to be passed as an argument to this function */

@@ -52,6 +52,17 @@ Fedora-HVM {
     sysmap = "/boot/System.map-2.6.18-1.2798.fc6";
 }
 
+In general, the configuration file contains records that look like:
+
+<domain name> {
+    <key> = <value>;
+}
+
+Currently, the only available key is 'sysmap'.  In the future, additional
+keys may be added as needed.  The list of keys is provided below:
+
+- sysmap: path to the System.map file corresponding to the domain's kernel
+
 
 Using XenAccess
 ---------------
