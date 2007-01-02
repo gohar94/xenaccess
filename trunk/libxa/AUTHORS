@@ -20,5 +20,8 @@ Bryan D. Payne (bryan@thepaynes.cc)
     xenaccess/xa_pretty_print.c
     xenaccess/xa_private.h
     xenaccess/xenaccess.h
+    xenaccess/config/config_parser.h
+    xenaccess/config/grammar.y
+    xenaccess/config/lexicon.l
   modifications
     n/a
