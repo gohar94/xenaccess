@@ -19,8 +19,8 @@ libxenstore (from Xen, access to the xenstore)
 --> Note: XenAccess no longer uses libvirt or libxml2.
 
 
-Building and Using
-------------------
+Building
+--------
 Starting with version 0.3, XenAccess uses the standard GNU build system.  To
 compile this library, simply following the steps below:
 
@@ -34,6 +34,27 @@ make install
 
 The default installation prefix is /usr/local.
 
+
+Configuration File
+------------------
+XenAccess will attempt to locate the system map files for your running
+domains by looking in /boot.  If this fails, or if you are trying to
+access an HVM domain, then you must explictily specify the location of
+a domain's system map file using the XenAccess configuration file.
+
+The XenAccess configuration file must be located at /etc/xenaccess.conf.
+The file format is simple, containing just the domain name and the location
+of its system map file.  For example, if your domain name is Fedora-HVM and
+your system map file is /boot/System.map-2.6.18-1.2798.fc6, then you would
+place the following entry in the configuration file:
+
+Fedora-HVM {
+    sysmap = "/boot/System.map-2.6.18-1.2798.fc6";
+}
+
+
+Using XenAccess
+---------------
 A quick way to see XenAccess in action is to try out the example code.  You
 should be running Xen, and running the example code as root in domain0.  You
 should have at least one user domain running linux.  Note the domain ID using
