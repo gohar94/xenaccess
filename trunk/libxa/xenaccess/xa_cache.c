@@ -119,6 +119,7 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
         }
     }
 
+    /* TODO: shouldn't the cached memory be munmap()ed? */
     /* do we need to remove anything from the cache? */
     if (current_cache_size >= XA_CACHE_SIZE){
         xa_cache_entry_t oldest = cache_head;

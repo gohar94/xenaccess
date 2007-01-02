@@ -36,7 +36,7 @@ void print_hex (unsigned char *data, int length)
 {
     int i, j, numrows, index;
 
-    numrows = (int) ceil((double) ((double) length / 16.0));
+    numrows = (length+15)>>4;
     
     for (i = 0; i < numrows; ++i){
         /* print the byte count */

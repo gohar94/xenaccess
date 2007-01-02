@@ -87,7 +87,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         live_pfn_to_mfn_frame_list = xc_map_foreign_batch(
             instance->xc_handle, instance->domain_id, PROT_READ,
             live_pfn_to_mfn_frame_list_list,
-            (nr_pfns+(1024*1024)-1)/(1024*1024) );
+            (nr_pfns+(XA_PFN_PER_FRAME*XA_PFN_PER_FRAME)-1)/(XA_PFN_PER_FRAME*XA_PFN_PER_FRAME) );
         if (live_pfn_to_mfn_frame_list == NULL){
             printf("ERROR: failed to init live_pfn_to_mfn_frame_list\n");
             goto error_exit;
@@ -95,7 +95,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 
         live_pfn_to_mfn_table = xc_map_foreign_batch(
             instance->xc_handle, instance->domain_id, PROT_READ,
-            live_pfn_to_mfn_frame_list, (nr_pfns+1023)/1024 );
+            live_pfn_to_mfn_frame_list, (nr_pfns+XA_PFN_PER_FRAME-1)/XA_PFN_PER_FRAME );
         if (live_pfn_to_mfn_table  == NULL){
             printf("ERROR: failed to init live_pfn_to_mfn_table\n");
             goto error_exit;
