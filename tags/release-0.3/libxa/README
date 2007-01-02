@@ -1,0 +1,196 @@
+XenAccess v0.3 README
+by Bryan D. Payne
+=====================
+
+Disclaimer
+----------
+This code is still very young.  The API is subject to change often.  The code
+may crash and do other bad things.  So, have fun, play around, but don't
+expect clean polished code just yet :-)
+
+
+Dependencies
+------------
+The following libraries are used in building this code:
+
+libxc (from Xen, the Xen Control library)
+libxenstore (from Xen, access to the xenstore)
+
+--> Note: XenAccess no longer uses libvirt or libxml2.
+
+
+Building
+--------
+Starting with version 0.3, XenAccess uses the standard GNU build system.  To
+compile this library, simply following the steps below:
+
+./configure
+make
+
+The example code will work without installing the library.  However, you may
+choose to install the library into the prefix specified to 'configure' by:
+
+make install
+
+The default installation prefix is /usr/local.
+
+
+Configuration File
+------------------
+XenAccess will attempt to locate the system map files for your running
+domains by looking in /boot.  If this fails, or if you are trying to
+access an HVM domain, then you must explictily specify the location of
+a domain's system map file using the XenAccess configuration file.
+
+The XenAccess configuration file must be located at /etc/xenaccess.conf.
+The file format is simple, containing just the domain name and the location
+of its system map file.  For example, if your domain name is Fedora-HVM and
+your system map file is /boot/System.map-2.6.18-1.2798.fc6, then you would
+place the following entry in the configuration file:
+
+Fedora-HVM {
+    sysmap = "/boot/System.map-2.6.18-1.2798.fc6";
+}
+
+In general, the configuration file contains records that look like:
+
+<domain name> {
+    <key> = <value>;
+}
+
+Currently, the only available key is 'sysmap'.  In the future, additional
+keys may be added as needed.  The list of keys is provided below:
+
+- sysmap: path to the System.map file corresponding to the domain's kernel
+
+
+Using XenAccess
+---------------
+A quick way to see XenAccess in action is to try out the example code.  You
+should be running Xen, and running the example code as root in domain0.  You
+should have at least one user domain running linux.  Note the domain ID using
+the 'xm list' command:
+
+[root@bluemoon libxa]# xm list
+Name                                      ID Mem(MiB) VCPUs State   Time(s)
+Domain-0                                   0     1229     2 r----- 137356.4
+Fedora-HVM                                 4      384     1 -b----   2292.6
+fc5                                        5      384     1 -b----     15.4
+[root@bluemoon libxa]# 
+
+Then you can run the examples as follows:
+
+[root@bluemoon libxa]# cd examples/
+[root@bluemoon examples]# ./module-list 5
+ipv6
+binfmt_misc
+lp
+parport_pc
+parport
+nvram
+usbcore
+[root@bluemoon examples]# ./module-list 4
+autofs4
+hidp
+rfcomm
+l2cap
+bluetooth
+sunrpc
+ipv6
+parport_pc
+lp
+parport
+floppy
+8139cp
+8139too
+mii
+pcspkr
+serio_raw
+dm_snapshot
+dm_zero
+dm_mirror
+dm_mod
+ext3
+jbd
+[root@bluemoon examples]# 
+
+Note that the example code works for both para-virtualized (i.e., PV) and
+fully-virtualized (i.e., HVM) domains.  However, the example code uses hard
+coded offsets to locate information in the running kernels, so you may find
+that it fails on some kernels, where the offsets are incorrect:
+
+[root@bluemoon examples]# ./process-list 5
+[    1] init
+[    2] migration/0
+[    3] ksoftirqd/0
+[    4] watchdog/0
+[    5] events/0
+[    6] khelper
+[    7] kthread
+[    8] xenwatch
+[    9] xenbus
+[   15] kblockd/0
+[   57] pdflush
+[   58] pdflush
+[   60] aio/0
+[   59] kswapd0
+[  578] kseriod
+[  685] kpsmoused
+[  710] khubd
+[  978] dhclient
+[ 1006] syslogd
+[ 1009] klogd
+[ 1021] sshd
+[ 1027] mingetty
+[root@bluemoon examples]# ./process-list 4
+[1408237823] ?
+[14941936] ?S?
+[    0] 
+[    0] 
+ERROR: address not in page table
+failed to map memory for process list pointer: Success
+[root@bluemoon examples]# 
+
+Here we see that 'process-list' works on domain id 5 (the PV domain running
+the 2.6.16.29-xen kernel that comes with Xen-3.0.3), but not on domain 4
+(an HVM domain running Fedora Core 6 with the 2.6.18-1.2849.fc6 kernel).
+This type of behavior is simply a current limitation of XenAccess.
+
+
+Problems?
+---------
+Several people have reported problems with the example code.  Most often
+the module-list example will work, but one or both of the process-* examples
+fail.  Unfortunately, this is a side effect of the use of offsets in 
+XenAccess.  The software is basically guessing where certain data is
+located in the domU memory.  If the domU kernel is compiled differently
+than the standard xen kernel, then the kernel data structures will be in
+different locations.  The end result is a failure of these examples.
+
+All hope is not lost!  This code is still in the early stages of development
+and I made the decision to push it out sooner than later.  I am planning on
+addressing these issues in time by adding code that will do a better job of
+dynamically determining the correct location in memory for each data
+structure.  Watching the mailing list for announcements of updated versions
+that address this and other issues.
+
+
+Want to Help?
+-------------
+One of the motivations for starting this project was to create a place where
+everyone interested in using introspection could come together and share
+ideas.  Introspection has many potential uses and it doesn't make sense for
+everyone to keep rewriting code to do this.  Instead, let's use XenAccess as
+a common base and spend our time exploring all of the interesting things that
+introspection can be used for.  
+
+If you'd like to add features to the code, please drop me a line on the
+mailing list.  I'm always happy to take new ideas, code patches, and even
+add developers to the group, depending on how you would like to get invovled.
+
+
+Questions?
+----------
+The mailing list is the best place to get your questions answered:
+
+    http://lists.sourceforge.net/lists/listinfo/xenaccess-devel
