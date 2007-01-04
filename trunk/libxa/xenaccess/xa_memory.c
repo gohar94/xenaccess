@@ -120,7 +120,8 @@ error_exit:
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
     return xc_map_foreign_range(
-        instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
+        /*instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);*/
+        instance->xc_handle, instance->domain_id, 1, prot, mfn);
 }
 
 void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
@@ -135,7 +136,8 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
     }
     else{
         return xc_map_foreign_range(
-            instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);
+            /*instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);*/
+            instance->xc_handle, instance->domain_id, 1, prot, mfn);
     }
 }
 
