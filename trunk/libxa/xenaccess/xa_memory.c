@@ -36,21 +36,6 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
-unsigned long p2m_hvm (xa_instance_t *instance, unsigned long pfn)
-{
-    unsigned long mfn = -1;
-
-    xc_domain_translate_gpfn_list(
-        instance->xc_handle,
-        instance->domain_id,
-        1,
-        &pfn,
-        &mfn
-    );
-
-    return mfn;
-}
-
 /* convert a pfn to a mfn based on the live mapping tables */
 unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 {
@@ -64,7 +49,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
     unsigned long ret = -1;
 
     if (instance->hvm){
-        return p2m_hvm(instance, pfn);
+        return pfn;
     }
 
     if (NULL == instance->live_pfn_to_mfn_table){
