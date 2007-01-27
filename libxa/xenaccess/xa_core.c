@@ -204,6 +204,18 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
         return XA_FAILURE;
     }
 
+/* example of getting version information from xen */
+/*
+{
+int cmd = XENVER_extraversion;
+void *arg = malloc(sizeof(xen_extraversion_t));
+int rc = xc_version(xc_handle, cmd, arg);
+printf("--> rc = %d\n", rc);
+printf("--> arg = %s\n", (char*)arg);
+free(arg);
+}
+*/
+
     /* populate struct with critical values */
     instance->xc_handle = xc_handle;
     instance->domain_id = domain_id;
