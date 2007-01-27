@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = module-list$(EXEEXT) process-data$(EXEEXT) \
-	process-list$(EXEEXT) map-symbol$(EXEEXT)
+	process-list$(EXEEXT) map-symbol$(EXEEXT) map-addr$(EXEEXT)
 subdir = examples
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -50,6 +50,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
+am_map_addr_OBJECTS = map-addr.$(OBJEXT)
+map_addr_OBJECTS = $(am_map_addr_OBJECTS)
+map_addr_LDADD = $(LDADD)
+map_addr_DEPENDENCIES =
 am_map_symbol_OBJECTS = map-symbol.$(OBJEXT)
 map_symbol_OBJECTS = $(am_map_symbol_OBJECTS)
 map_symbol_LDADD = $(LDADD)
@@ -77,10 +81,12 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(map_symbol_SOURCES) $(module_list_SOURCES) \
-	$(process_data_SOURCES) $(process_list_SOURCES)
-DIST_SOURCES = $(map_symbol_SOURCES) $(module_list_SOURCES) \
-	$(process_data_SOURCES) $(process_list_SOURCES)
+SOURCES = $(map_addr_SOURCES) $(map_symbol_SOURCES) \
+	$(module_list_SOURCES) $(process_data_SOURCES) \
+	$(process_list_SOURCES)
+DIST_SOURCES = $(map_addr_SOURCES) $(map_symbol_SOURCES) \
+	$(module_list_SOURCES) $(process_data_SOURCES) \
+	$(process_list_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -202,6 +208,7 @@ module_list_SOURCES = module-list.c
 process_data_SOURCES = process-data.c
 process_list_SOURCES = process-list.c
 map_symbol_SOURCES = map-symbol.c
+map_addr_SOURCES = map-addr.c
 all: all-recursive
 
 .SUFFIXES:
@@ -263,6 +270,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+map-addr$(EXEEXT): $(map_addr_OBJECTS) $(map_addr_DEPENDENCIES) 
+	@rm -f map-addr$(EXEEXT)
+	$(LINK) $(map_addr_LDFLAGS) $(map_addr_OBJECTS) $(map_addr_LDADD) $(LIBS)
 map-symbol$(EXEEXT): $(map_symbol_OBJECTS) $(map_symbol_DEPENDENCIES) 
 	@rm -f map-symbol$(EXEEXT)
 	$(LINK) $(map_symbol_LDFLAGS) $(map_symbol_OBJECTS) $(map_symbol_LDADD) $(LIBS)
@@ -282,6 +292,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map-addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map-symbol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process-data.Po@am__quote@
