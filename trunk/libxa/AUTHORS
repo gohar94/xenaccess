@@ -38,3 +38,8 @@ Tomas Kouba (tomas@jikos.cz)
     xenaccess/xa_cache.c
     xenaccess/xa_pretty_print.c
 
+Stephan Creutz (stephan.creutz@inf.tu-dresden.de)
+  entire files:
+  modifications
+    xenaccess/linux_system_map.c
+

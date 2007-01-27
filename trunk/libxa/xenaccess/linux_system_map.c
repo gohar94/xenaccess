@@ -65,6 +65,7 @@ int get_system_map_row (FILE *f, char *row, char *symbol, int position)
             while (curpos < MAX_ROW_LENGTH){
                 if (isspace(row[curpos])){
                     row[curpos] = '\0';
+                    break;
                 }
                 ++curpos;
             }
