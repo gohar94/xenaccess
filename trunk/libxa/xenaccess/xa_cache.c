@@ -88,6 +88,11 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
 {
     xa_cache_entry_t new_entry = NULL;
 
+    /* is cache enabled? */
+    if (XA_CACHE_SIZE == 0){
+        return 1;
+    }
+
     /* does anything match the passed symbol_name? */
     /* if so, update other entries */
     if (symbol_name){
