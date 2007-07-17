@@ -7,3 +7,25 @@ list is in no particular order...
 * create some kind of clean api abtraction for memory that spans multiple pages
 * show additional example applications
 * add function that returns active domid(s)
+
+
+# Windows Support
+
+## xa_core.c
+* set_os_type() should actually determine OS
+  -- auto detect would be ideal
+  -- but perhaps hard code into config file for now?
+* symbol to address mappings
+  -- ntoskrnl.dll in memory has an export table that provides some mappings 
+  -- also consider symbolic information used by debugger tools
+  -- "dumpbin ntoskrnl.exe /exports"  RVA --> symbol
+* location to page global directory (same as swapper_pg_dir)
+  -- store in instance->kpgd()
+* init_task??
+  -- used only when looking for a specific process in memory
+  -- need to figure out how windows stores task information
+
+## all files
+* refactor code to pull architecture-specific memory code out of the linux
+  part of the libraries and into a general section
+  -- assumption is that xenaccess will only support x86 for now
