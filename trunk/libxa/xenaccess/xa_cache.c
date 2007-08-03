@@ -173,7 +173,7 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
         new_entry->symbol_name = strndup(symbol_name, MAX_SYM_LEN);
     }
     else{
-        new_entry->symbol_name = NULL;
+        new_entry->symbol_name = strndup("", MAX_SYM_LEN);
     }
     new_entry->virt_address = virt_address;
     new_entry->mach_address = mach_address;
