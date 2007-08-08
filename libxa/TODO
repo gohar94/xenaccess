@@ -7,6 +7,7 @@ list is in no particular order...
 * create some kind of clean api abtraction for memory that spans multiple pages
 * show additional example applications
 * add function that returns active domid(s)
+* add output of version number when run with full debug output
 
 
 # Windows Support

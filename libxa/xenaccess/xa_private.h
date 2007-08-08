@@ -55,6 +55,20 @@
 #define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->pgd */
 
 
+/*------------------------------
+ * Utility function from xa_util
+ */
+
+/**
+ * Get the specifid bit from a given register entry.
+ *
+ * @param[in] reg The register contents to parse (e.g., CR0, CR3, etc)
+ * @param[in] bit The number of the bit to check.
+ * @param[out] zero if the bit in question is zero, else one
+ */
+int xa_get_bit (unsigned long reg, int bit);
+
+
 /*-------------------------------------
  * Definitions to support the LRU cache
  */

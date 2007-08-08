@@ -36,15 +36,7 @@
 #include "config/config_parser.h"
 #include "xenaccess.h"
 #include "xa_private.h"
-
-/* determine what type of OS is running in the requested domain */
-int set_os_type (int *os_type)
-{
-    /*TODO for now we only support linux.  But this should be changed
-     * to verify that the domain is really running linux */
-    *os_type = XA_OS_LINUX;
-    return XA_SUCCESS;
-}
+#include <xen/arch-x86/xen.h>
 
 int read_config_file (xa_instance_t *instance)
 {
@@ -87,9 +79,33 @@ int read_config_file (xa_instance_t *instance)
     entry = xa_get_config();
 
     /* copy the values from entry into instance struct */
-    instance->sysmap = strdup(entry->sysmap);
+    instance->sysmap = strndup(entry->sysmap, CONFIG_STR_LENGTH);
 #ifdef XA_DEBUG
     printf("Got sysmap (%s).\n", instance->sysmap);
+#endif
+    
+    if (strncmp(entry->ostype, "Linux", CONFIG_STR_LENGTH) == 0){
+        instance->os_type = XA_OS_LINUX;
+    }
+    else if (strncmp(entry->ostype, "Windows", CONFIG_STR_LENGTH) == 0){
+        instance->os_type = XA_OS_WINDOWS;
+    }
+    else{
+        /*TODO This is nasty, find a better solution here */
+        printf("WARNING: Unknown or undefined OS type, assuming Linux.\n");
+        instance->os_type = XA_OS_LINUX;
+    }
+#ifdef XA_DEBUG
+    printf("Got ostype (%s).\n", entry->ostype);
+    if (instance->os_type == XA_OS_LINUX){
+        printf("Using Linux OS type.\n");
+    }
+    else if (instance->os_type == XA_OS_WINDOWS){
+        printf("Using Windows OS type.\n");
+    }
+    else{
+        printf("OS type is not defined.\n");
+    }
 #endif
 
 error_exit:
@@ -97,6 +113,40 @@ error_exit:
     if (yyin) fclose(yyin);
     if (xsh) xs_daemon_close(xsh);
 
+    return ret;
+}
+
+/* check that this domain uses a paging method that we support */
+/* currently we only support linear non-PAE with 4k page sizes */
+int get_page_info (xa_instance_t *instance)
+{
+    int ret = 0, i = 0, j = 0;
+    vcpu_guest_context_t ctxt;
+    if ((ret = xc_vcpu_getcontext(
+                instance->xc_handle,
+                instance->domain_id,
+                0, /*TODO vcpu, assuming only 1 for now */
+                &ctxt)) != 0){
+        printf("Error getting context information\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+
+    /*TODO check that the correct bits are set and set ret accordingly */
+    ret = XA_SUCCESS;
+
+/*
+    for (j = 0; j < 5; j++){
+        printf("CR%d = 0x%.8x\n", j, ctxt.ctrlreg[j]);
+        for (i = 0; i < 32; ++i){
+            if (xa_get_bit(ctxt.ctrlreg[j], i)){
+                printf(" bit %d is set\n", i);
+            }
+        }
+    }
+*/
+
+error_exit:
     return ret;
 }
 
@@ -127,17 +177,26 @@ int helper_init (xa_instance_t *instance)
         printf("WARNING: failed to read configureation file\n");
     }
     
-    /* init instance->os_type */
-    if (set_os_type(&(instance->os_type)) == XA_FAILURE){
+    /* determine the page sizes and layout for target OS */
+    if (get_page_info(instance) == XA_FAILURE){
+        printf("ERROR: memory layout not supported\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
 #ifdef XA_DEBUG
-    printf("Got OS type.\n");
+    printf("Memory layout supported.\n");
 #endif
 
     /* init instance->hvm */
     instance->hvm = xa_ishvm(instance->domain_id);
+#ifdef XA_DEBUG
+    if (instance->hvm){
+        printf("Viewing an HVM domain.\n");
+    }
+    else{
+        printf("Viewing a PV domain.\n");
+    }
+#endif
 
     /* setup os-specific stuff */
     if (instance->os_type == XA_OS_LINUX){

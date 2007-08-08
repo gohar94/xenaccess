@@ -35,6 +35,7 @@
 typedef struct xa_config_entry{
     char domain_name[CONFIG_STR_LENGTH];
     char sysmap[CONFIG_STR_LENGTH];
+    char ostype[CONFIG_STR_LENGTH];
 } xa_config_entry_t;
 
 void xa_parse_config(char *td);

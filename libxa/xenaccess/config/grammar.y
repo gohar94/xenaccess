@@ -55,6 +55,7 @@ void entry_done ()
     if (strncmp(tmp_entry.domain_name, target_domain, CONFIG_STR_LENGTH) == 0){
         memcpy(entry.domain_name, tmp_entry.domain_name, CONFIG_STR_LENGTH);
         memcpy(entry.sysmap, tmp_entry.sysmap, CONFIG_STR_LENGTH);
+        memcpy(entry.ostype, tmp_entry.ostype, CONFIG_STR_LENGTH);
         /* copy over other values here as they are added */
     }
 }
@@ -78,6 +79,7 @@ void xa_parse_config(char *td)
 }
 
 %token         SYSMAPTOK
+%token         OSTYPETOK
 %token<str>    WORD
 %token<str>    FILENAME
 %token         QUOTE
@@ -107,7 +109,10 @@ assignments:
         ;
 
 assignment:
+        |
         sysmap_assignment
+        |
+        ostype_assignment
         ;
 
 sysmap_assignment:
@@ -115,6 +120,14 @@ sysmap_assignment:
         {
             snprintf(tmp_str, CONFIG_STR_LENGTH,"%s", $4);
             memcpy(tmp_entry.sysmap, tmp_str, CONFIG_STR_LENGTH);
+        }
+        ;
+
+ostype_assignment:
+        OSTYPETOK EQUALS QUOTE WORD QUOTE 
+        {
+            snprintf(tmp_str, CONFIG_STR_LENGTH,"%s", $4);
+            memcpy(tmp_entry.ostype, tmp_str, CONFIG_STR_LENGTH);
         }
         ;
 %%
