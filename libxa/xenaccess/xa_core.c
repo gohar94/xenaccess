@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -71,7 +71,7 @@ int read_config_file (xa_instance_t *instance)
         goto error_exit;
     }
 #ifdef XA_DEBUG
-    printf("Got domain name from id (%d ==> %s).\n",
+    printf("--got domain name from id (%d ==> %s).\n",
            instance->domain_id, instance->domain_name);
 #endif
 
@@ -79,9 +79,9 @@ int read_config_file (xa_instance_t *instance)
     entry = xa_get_config();
 
     /* copy the values from entry into instance struct */
-    instance->sysmap = strndup(entry->sysmap, CONFIG_STR_LENGTH);
+    instance->sysmap = strdup(entry->sysmap);
 #ifdef XA_DEBUG
-    printf("Got sysmap (%s).\n", instance->sysmap);
+    printf("--got sysmap from config (%s).\n", instance->sysmap);
 #endif
     
     if (strncmp(entry->ostype, "Linux", CONFIG_STR_LENGTH) == 0){
@@ -96,15 +96,15 @@ int read_config_file (xa_instance_t *instance)
         instance->os_type = XA_OS_LINUX;
     }
 #ifdef XA_DEBUG
-    printf("Got ostype (%s).\n", entry->ostype);
+    printf("--got ostype from config (%s).\n", entry->ostype);
     if (instance->os_type == XA_OS_LINUX){
-        printf("Using Linux OS type.\n");
+        printf("**set instance->os_type to Linux.\n");
     }
     else if (instance->os_type == XA_OS_WINDOWS){
-        printf("Using Windows OS type.\n");
+        printf("**set instance->os_type to Windows.\n");
     }
     else{
-        printf("OS type is not defined.\n");
+        printf("**set instance->os_type to unknown.\n");
     }
 #endif
 
@@ -120,31 +120,41 @@ error_exit:
 /* currently we only support linear non-PAE with 4k page sizes */
 int get_page_info (xa_instance_t *instance)
 {
-    int ret = 0, i = 0, j = 0;
+    int ret = XA_SUCCESS;
+    int i = 0, j = 0;
     vcpu_guest_context_t ctxt;
     if ((ret = xc_vcpu_getcontext(
                 instance->xc_handle,
                 instance->domain_id,
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
-        printf("Error getting context information\n");
+        printf("ERROR: failed to get context information.\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
 
-    /*TODO check that the correct bits are set and set ret accordingly */
-    ret = XA_SUCCESS;
+    /* For details on the registers involved in the x86 paging configuation
+       see the Intel 64 and IA-32 Architectures Software Developer's Manual,
+       Volume 3A: System Programming Guide, Part 1. */
 
-/*
-    for (j = 0; j < 5; j++){
-        printf("CR%d = 0x%.8x\n", j, ctxt.ctrlreg[j]);
-        for (i = 0; i < 32; ++i){
-            if (xa_get_bit(ctxt.ctrlreg[j], i)){
-                printf(" bit %d is set\n", i);
-            }
-        }
+    /* PG Flag --> CR0, bit 31 == 1 --> paging enabled */
+    if (!xa_get_bit(ctxt.ctrlreg[0], 31)){
+        printf("ERROR: Paging disabled for this VM, not supported.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
     }
-*/
+    /* PAE Flag --> CR4, bit 5 == 0 --> pae disabled */
+    if (xa_get_bit(ctxt.ctrlreg[4], 5)){
+        printf("ERROR: PAE enabled for this VM, not supported.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    /* PSE Flag --> CR4, bit 4 == 0 --> pse disabled */
+    if (xa_get_bit(ctxt.ctrlreg[4], 4)){
+        printf("ERROR: PSE enabled for this VM, not supported.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
 
 error_exit:
     return ret;
@@ -169,7 +179,7 @@ int helper_init (xa_instance_t *instance)
         goto error_exit;
     }
 #ifdef XA_DEBUG
-    printf("Got domain info.\n");
+    printf("--got domain info.\n");
 #endif
 
     /* read in configure file information */
@@ -180,25 +190,29 @@ int helper_init (xa_instance_t *instance)
     /* determine the page sizes and layout for target OS */
     if (get_page_info(instance) == XA_FAILURE){
         printf("ERROR: memory layout not supported\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+
+        /*TODO Bypass this for Windows right now so that I can implement PSE*/
+        if (instance->os_type != XA_OS_WINDOWS){
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
     }
 #ifdef XA_DEBUG
-    printf("Memory layout supported.\n");
+    printf("--got memory layout.\n");
 #endif
 
     /* init instance->hvm */
     instance->hvm = xa_ishvm(instance->domain_id);
 #ifdef XA_DEBUG
     if (instance->hvm){
-        printf("Viewing an HVM domain.\n");
+        printf("**set instance->hvm to true (HVM).\n");
     }
     else{
-        printf("Viewing a PV domain.\n");
+        printf("**set instance->hvm to false (PV).\n");
     }
 #endif
 
-    /* setup os-specific stuff */
+    /* setup Linux specific stuff */
     if (instance->os_type == XA_OS_LINUX){
         if (linux_system_map_symbol_to_address(
                  instance, "swapper_pg_dir", &instance->kpgd) == XA_FAILURE){
@@ -207,11 +221,11 @@ int helper_init (xa_instance_t *instance)
             goto error_exit;
         }
 #ifdef XA_DEBUG
-        printf("Got vaddr for swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+        printf("--got vaddr for swapper_pg_dir (0x%.8x).\n", instance->kpgd);
 #endif
 
         if (!instance->hvm){
-            memory = linux_access_physical_address(
+            memory = xa_access_physical_address(
                 instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
             if (NULL == memory){
                 printf("ERROR: failed to get physical addr for kpgd\n");
@@ -222,7 +236,7 @@ int helper_init (xa_instance_t *instance)
             munmap(memory, XA_PAGE_SIZE);
         }
 #ifdef XA_DEBUG
-        printf("swapper_pg_dir = 0x%.8x.\n", instance->kpgd);
+        printf("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 #endif
 
         memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
@@ -235,6 +249,21 @@ int helper_init (xa_instance_t *instance)
             *((uint32_t*)(memory + local_offset + XALINUX_TASKS_OFFSET));
     }
 
+    /* setup Windows specific stuff */
+    if (instance->os_type == XA_OS_WINDOWS){
+        /* get base address for kernel image in memory */
+        memory = xa_access_physical_address(instance, 0x004de000, &local_offset);
+        if (NULL == memory){
+            printf("ERROR: failed to get physical addr for ntoskrnl\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        printf("offset = 0x%.8x\n", local_offset);
+        print_hex(memory, XA_PAGE_SIZE);
+
+        /* get address for page directory (likely from system process) */
+        /* get address start of process list */
+    }
 
 error_exit:
     return ret;

@@ -30,3 +30,30 @@ list is in no particular order...
 * refactor code to pull architecture-specific memory code out of the linux
   part of the libraries and into a general section
   -- assumption is that xenaccess will only support x86 for now
+
+## Useful information
+* Windows user/kernel split is at 2GB/2GB, so the kernel offset is 0x80000000
+* PFN database at 0x80c00000
+* PTE base at 0xc0000000
+* each process has only one page directory
+* page size is 0x1000 bytes (4k)
+* PAE enabled (?)
+* kernel image loaded at physical address 0x004de000
+* ntoskrnl.exe is the first module on PsLoadedModuleList
+* PsInitialSystemProcess symbol from ntoskrnl can be start of enumerating
+  the processes.  Take the value of this symbol (which is a RVA) and add
+  it to the PA for the kernel image to get the PA for the symbol
+     e.g., 0x4de000 (PA)  + 0x90ef4 (RVA)  = 0x56eef4 (PA)
+
+* one method for getting the ntoskrnl base address is to do the following:
+  (1) find the base address of the IDT (which can be obtained with a SIDT
+      call or by looking in the IDTR register.
+      --> So actually the IDT base address etc is contained within AMDV’s
+          VMCB or VT’s VMCS (i.e., for HVM domains it's in the VT hardware)
+  (2) walk backwards in memory until you find the MZ that signifies the start
+      of the PE image
+  (3) that's it, you are done!
+
+* No swapper_pg_dir in windows, try just finding the system process and then
+  looking at it's page table as this is the one copied for all new processes
+  so the kernel region of it should be good to use.

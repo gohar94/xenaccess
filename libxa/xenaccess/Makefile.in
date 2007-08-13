@@ -57,7 +57,7 @@ libxenaccess_la_DEPENDENCIES = config/libconfig.la
 am__objects_1 =
 am__objects_2 = linux_domain_info.lo linux_system_map.lo xa_core.lo \
 	xa_memory.lo linux_memory.lo xa_cache.lo xa_domain_info.lo \
-	xa_pretty_print.lo xa_util.lo
+	xa_pretty_print.lo xa_util.lo windows_memory.lo
 am_libxenaccess_la_OBJECTS = $(am__objects_1) $(am__objects_2)
 libxenaccess_la_OBJECTS = $(am_libxenaccess_la_OBJECTS)
 libxenaccess_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -207,7 +207,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = config
 h_sources = xenaccess.h xa_private.h
-c_sources = linux_domain_info.c linux_system_map.c xa_core.c xa_memory.c linux_memory.c xa_cache.c xa_domain_info.c xa_pretty_print.c xa_util.c
+c_sources = linux_domain_info.c linux_system_map.c xa_core.c xa_memory.c linux_memory.c xa_cache.c xa_domain_info.c xa_pretty_print.c xa_util.c windows_memory.c
 library_includedir = $(includedir)/$(LIBRARY_NAME)
 library_include_HEADERS = $(h_sources)
 INCLUDES = -I$(top_srcdir)
@@ -287,6 +287,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linux_domain_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linux_memory.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linux_system_map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/windows_memory.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xa_cache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xa_core.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xa_domain_info.Plo@am__quote@
