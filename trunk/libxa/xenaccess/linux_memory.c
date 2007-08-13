@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -124,7 +124,7 @@ uint32_t linux_pagetable_lookup (
     index = (((virt_address) >> 22) & (1024 - 1));
     pgd_entry = pgd + (index * sizeof(uint32_t));
     if (kernel){
-        memory = linux_access_physical_address(
+        memory = xa_access_physical_address(
                 instance, pgd_entry - XA_PAGE_OFFSET, &offset);
     }
     else{
@@ -147,10 +147,10 @@ uint32_t linux_pagetable_lookup (
     index = (((virt_address) >> 12) & (1024 - 1));
     pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
     if (instance->hvm){
-        memory = linux_access_physical_address(instance, pte_entry, &offset);
+        memory = xa_access_physical_address(instance, pte_entry, &offset);
     }
     else{
-        memory = linux_access_machine_address(instance, pte_entry, &offset);
+        memory = xa_access_machine_address(instance, pte_entry, &offset);
     }
     if (NULL == memory){
         printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
@@ -166,53 +166,6 @@ uint32_t linux_pagetable_lookup (
     /* finally grab the location in memory */
     index = virt_address & 4095;
     return ((pte_entry & 0xfffff000) + index);
-}
-
-/* maps the page associated with the machine address */
-void *linux_access_machine_address (
-        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
-{
-    return linux_access_machine_address_rw(
-                instance, mach_address, offset, PROT_READ);
-}
-
-void *linux_access_machine_address_rw (
-        xa_instance_t *instance, uint32_t mach_address,
-        uint32_t *offset, int prot)
-{
-    unsigned long mfn;
-    int i;
-
-    /* machine frame number = machine address >> PAGE_SHIFT */
-    mfn = mach_address >> XC_PAGE_SHIFT;
-
-    /* get the offset */
-    *offset = (XC_PAGE_SIZE-1) & mach_address;
-
-    /* access the memory */
-    /*TODO allow r/rw to be passed as an argument to this function */
-    /* return xa_mmap_pfn(instance, PROT_READ | PROT_WRITE, pfn); */
-    return xa_mmap_mfn(instance, prot, mfn);
-}
-
-/* maps the page associated with a physical address */
-void *linux_access_physical_address (
-        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
-{
-    unsigned long pfn;
-    uint32_t bitmask;
-    int i;
-
-    /* page frame number = physical address >> PAGE_SHIFT */
-    pfn = phys_address >> XC_PAGE_SHIFT;
-
-    /* get the offset */
-    *offset = (XC_PAGE_SIZE-1) & phys_address;
-
-    /* access the memory */
-    /*TODO allow r/rw to be passed as an argument to this function */
-    /* return xa_mmap_pfn(instance, PROT_READ | PROT_WRITE, pfn); */
-    return xa_mmap_pfn(instance, PROT_READ, pfn);
 }
 
 void *linux_access_virtual_address (
@@ -233,10 +186,10 @@ void *linux_access_user_virtual_address (
     /* check the LRU cache */
     if (xa_check_cache_virt(virt_address, pid, &address)){
         if (instance->hvm){
-            return linux_access_physical_address(instance, address, offset);
+            return xa_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, address, offset);
+            return xa_access_machine_address(instance, address, offset);
         }
     }
 
@@ -253,10 +206,10 @@ void *linux_access_user_virtual_address (
         }
         xa_update_cache(NULL, virt_address, pid, address);
         if (instance->hvm){
-            return linux_access_physical_address(instance, address, offset);
+            return xa_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, address, offset);
+            return xa_access_machine_address(instance, address, offset);
         }
     }
 
@@ -273,7 +226,7 @@ void *linux_access_user_virtual_address (
             return NULL;
         }
         xa_update_cache(NULL, virt_address, pid, address);
-        return linux_access_machine_address_rw(
+        return xa_access_machine_address_rw(
             instance, address, offset, PROT_READ | PROT_WRITE);
     }
 }
@@ -287,10 +240,10 @@ void *linux_access_kernel_symbol (
     /* check the LRU cache */
     if (xa_check_cache_sym(symbol, 0, &address)){
         if (instance->hvm){
-            return linux_access_physical_address(instance, address, offset);
+            return xa_access_physical_address(instance, address, offset);
         }
         else{
-            return linux_access_machine_address(instance, address, offset);
+            return xa_access_machine_address(instance, address, offset);
         }
     }
 

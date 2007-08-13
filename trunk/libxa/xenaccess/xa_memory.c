@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -142,31 +142,6 @@ void *xa_access_kernel_symbol (
 void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
-/* test code */
-/*
-    unsigned long mfn;
-    uint32_t bitmask;
-    int i;
-
-    mfn = xc_translate_foreign_address(
-            instance->xc_handle,
-            instance->domain_id,
-            0,
-            virt_address
-    );
-
-    bitmask = 1;
-    for (i = 0; i < XC_PAGE_SHIFT - 1; ++i){
-        bitmask <<= 1;
-        bitmask += 1;
-    }
-    *offset = virt_address & bitmask;
-
-    return xa_mmap_mfn(instance, PROT_READ, mfn);
-*/
-/* end test code */
-
-
     if (instance->os_type == XA_OS_LINUX){
         return linux_access_virtual_address(instance, virt_address, offset);
     }
@@ -191,3 +166,45 @@ void *xa_access_user_virtual_address (
         return NULL;
     }
 }
+
+void *xa_access_physical_address (
+        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
+{
+    unsigned long pfn;
+    uint32_t bitmask;
+    int i;
+    
+    /* page frame number = physical address >> PAGE_SHIFT */
+    pfn = phys_address >> XC_PAGE_SHIFT;
+    
+    /* get the offset */
+    *offset = (XC_PAGE_SIZE-1) & phys_address;
+    
+    /* access the memory */
+    return xa_mmap_pfn(instance, PROT_READ, pfn);
+}
+
+void *xa_access_machine_address (
+        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
+{
+    return xa_access_machine_address_rw(
+                instance, mach_address, offset, PROT_READ);
+}
+
+void *xa_access_machine_address_rw (
+        xa_instance_t *instance, uint32_t mach_address,
+        uint32_t *offset, int prot)
+{
+    unsigned long mfn;
+    int i;
+
+    /* machine frame number = machine address >> PAGE_SHIFT */
+    mfn = mach_address >> XC_PAGE_SHIFT;
+
+    /* get the offset */
+    *offset = (XC_PAGE_SIZE-1) & mach_address;
+
+    /* access the memory */
+    return xa_mmap_mfn(instance, prot, mfn);
+}
+
