@@ -68,6 +68,15 @@
  */
 int xa_get_bit (unsigned long reg, int bit);
 
+/**
+ * Typical debug print function.  Only produces output when XA_DEBUG is
+ * defined (usually in xenaccess.h) at compile time.
+ */
+#ifndef XA_DEBUG
+#define xa_dbprint(format, args...) ((void)0)
+#else
+void xa_dbprint(char *format, ...);
+#endif
 
 /*-------------------------------------
  * Definitions to support the LRU cache
@@ -202,10 +211,64 @@ void *xa_access_machine_address (
  * @param[in] mach_address Requested machine address.
  * @param[out] offset Offset of the address in returned page.
  * @param[in] prot Desired memory protection (see 'man mmap' for values).
+ *
+ * @return Address of a page copy with content like mach_address.
  */
 void *xa_access_machine_address_rw (
         xa_instance_t *instance, uint32_t mach_address,
         uint32_t *offset, int prot);
+
+/**
+ * Covert virtual address to machine address via page table lookup.
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] pgd Page directory to use for this lookup.
+ * @param[in] virt_address Virtual address to convert.
+ * @param[in] kernel 0 for user space lookup, 1 for kernel lookup
+ *
+ * @return Machine address resulting from page table lookup.
+ */
+uint32_t xa_pagetable_lookup (
+            xa_instance_t *instance, uint32_t pgd,
+            uint32_t virt_address, int kernel);
+
+/** 
+ * Memory maps page in domU that contains given virtual address
+ * and belongs to process \a pid. 
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] virt_address Requested virtual address.
+ * @param[out] offset Offset of the address in returned page.
+ * @param[in] pid Id of the process in which the virt_address is.
+ *
+ * @return Address of a page copy that contains virt_address.
+ */
+void *xa_access_user_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address,
+        uint32_t *offset, int pid);
+
+/**
+ * Memory maps page in domU that contains given virtual address.
+ * The func is mainly useful for accessing kernel memory.
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] virt_address Requested virtual address.
+ * @param[out] offset Offset of the address in returned page.
+ *
+ * @return Address of a page copy that contains virt_address.
+ */
+void *xa_access_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
+
+/**
+ * Find the address of the page global directory for a given PID
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] pid The process to lookup.
+ *
+ * @return Address of pgd, or zero if no address could be found.
+ */
+uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid);
 
 /**
  * Gets address of a symbol in domU virtual memory. It uses System.map
@@ -231,34 +294,6 @@ int linux_system_map_symbol_to_address (
  */
 void *linux_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset);
-
-/** 
- * Memory maps page in domU that contains given virtual address
- * and belongs to process \a pid. 
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] virt_address Requested virtual address.
- * @param[out] offset Offset of the address in returned page.
- * @param[in] pid Id of the process in which the virt_address is.
- *
- * @return Address of a page copy that contains virt_address.
- */
-void *linux_access_user_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address,
-        uint32_t *offset, int pid);
-
-/**
- * Memory maps page in domU that contains given virtual address.
- * The func is mainly useful for accessing kernel memory.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] virt_address Requested virtual address.
- * @param[out] offset Offset of the address in returned page.
- *
- * @return Address of a page copy that contains virt_address.
- */
-void *linux_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 
 /**
  * \deprecated Tries to guess the right System.map file for the

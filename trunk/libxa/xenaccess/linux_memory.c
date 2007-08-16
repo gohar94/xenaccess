@@ -68,11 +68,11 @@ unsigned char *linux_get_taskstruct (
         if (task_pid == pid){
             return memory;
         }
-        munmap(memory, XA_PAGE_SIZE);
+        munmap(memory, instance->page_size);
     }
 
 error_exit:
-    if (memory) munmap(memory, XA_PAGE_SIZE);
+    if (memory) munmap(memory, instance->page_size);
     return NULL;
 }
 
@@ -92,7 +92,7 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
     memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
-    munmap(memory, XA_PAGE_SIZE);
+    munmap(memory, instance->page_size);
     memory = xa_access_virtual_address(instance, ptr, &offset);
     if (NULL == memory){
         printf("ERROR: failed to follow mm pointer");
@@ -102,133 +102,8 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
     pgd = *((uint32_t*)(memory + offset + XALINUX_PGD_OFFSET));
 
 error_exit:
-    if (memory) munmap(memory, XA_PAGE_SIZE);
+    if (memory) munmap(memory, instance->page_size);
     return pgd;
-}
-
-/* TODO: make this portable (PAE, x86_64) */
-/* converty address to machine address via page tables */
-uint32_t linux_pagetable_lookup (
-            xa_instance_t *instance,
-            uint32_t pgd,
-            uint32_t virt_address,
-            int kernel)
-{
-    uint32_t index = 0;
-    uint32_t offset = 0;
-    uint32_t pgd_entry = 0;
-    uint32_t pte_entry = 0;
-    unsigned char *memory = NULL;
-
-    /* perform the lookup in the global directory */
-    index = (((virt_address) >> 22) & (1024 - 1));
-    pgd_entry = pgd + (index * sizeof(uint32_t));
-    if (kernel){
-        memory = xa_access_physical_address(
-                instance, pgd_entry - XA_PAGE_OFFSET, &offset);
-    }
-    else{
-        memory = linux_access_virtual_address(instance, pgd_entry, &offset);
-    }
-    if (NULL == memory){
-        printf("ERROR: pgd entry lookup failed (phys addr = 0x%.8x)\n",
-                pgd_entry - XA_PAGE_OFFSET);
-        printf("** pgd = 0x%.8x\n", pgd);
-        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
-        printf("** vaddr = 0x%.8x\n", virt_address);
-        return 0;
-    }
-    pgd_entry = *((uint32_t*)(memory + offset));
-    munmap(memory, XA_PAGE_SIZE);
-
-    /* no page middle directory since we are assuming no PAE for now */
-
-    /* perform the lookup in the page table */
-    index = (((virt_address) >> 12) & (1024 - 1));
-    pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
-    if (instance->hvm){
-        memory = xa_access_physical_address(instance, pte_entry, &offset);
-    }
-    else{
-        memory = xa_access_machine_address(instance, pte_entry, &offset);
-    }
-    if (NULL == memory){
-        printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
-                pte_entry);
-        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
-        printf("** pte_entry = 0x%.8x\n", pte_entry);
-        printf("** vaddr = 0x%.8x\n", virt_address);
-        return 0;
-    }
-    pte_entry = *((uint32_t*)(memory + offset));
-    munmap(memory, XA_PAGE_SIZE);
-    
-    /* finally grab the location in memory */
-    index = virt_address & 4095;
-    return ((pte_entry & 0xfffff000) + index);
-}
-
-void *linux_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
-{
-    return linux_access_user_virtual_address(instance, virt_address, offset, 0);
-}
-
-/* maps the page associated with a virtual address */
-void *linux_access_user_virtual_address (
-            xa_instance_t *instance,
-            uint32_t virt_address,
-            uint32_t *offset,
-            int pid)
-{
-    uint32_t address = 0;
-
-    /* check the LRU cache */
-    if (xa_check_cache_virt(virt_address, pid, &address)){
-        if (instance->hvm){
-            return xa_access_physical_address(instance, address, offset);
-        }
-        else{
-            return xa_access_machine_address(instance, address, offset);
-        }
-    }
-
-    /* use kernel page tables */
-    /*TODO HYPERVISOR_VIRT_START = 0xFC000000 so we can't go over that.
-      Figure out what this should be b/c there still may be a fixed
-      mapping range between the page'd addresses and VIRT_START */
-    if (!pid){
-        address = linux_pagetable_lookup(
-                            instance, instance->kpgd, virt_address, 1); 
-        if (!address){
-            printf("ERROR: address not in page table\n");
-            return NULL;
-        }
-        xa_update_cache(NULL, virt_address, pid, address);
-        if (instance->hvm){
-            return xa_access_physical_address(instance, address, offset);
-        }
-        else{
-            return xa_access_machine_address(instance, address, offset);
-        }
-    }
-
-    /* use user page tables */
-    else{
-        uint32_t pgd = linux_pid_to_pgd(instance, pid);
-
-        if (pgd){
-            address = linux_pagetable_lookup(instance, pgd, virt_address, 0); 
-        }
-
-        if (!address){
-            printf("ERROR: address not in page table (0x%x)\n", virt_address);
-            return NULL;
-        }
-        xa_update_cache(NULL, virt_address, pid, address);
-        return xa_access_machine_address_rw(
-            instance, address, offset, PROT_READ | PROT_WRITE);
-    }
 }
 
 void *linux_access_kernel_symbol (
@@ -239,12 +114,7 @@ void *linux_access_kernel_symbol (
 
     /* check the LRU cache */
     if (xa_check_cache_sym(symbol, 0, &address)){
-        if (instance->hvm){
-            return xa_access_physical_address(instance, address, offset);
-        }
-        else{
-            return xa_access_machine_address(instance, address, offset);
-        }
+        return xa_access_machine_address(instance, address, offset);
     }
 
     /* get the virtual address of the symbol */
@@ -273,7 +143,7 @@ int xa_linux_get_taskaddr (
 
     /* copy the information out of the memory descriptor */
     memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
-    munmap(memory, XA_PAGE_SIZE);
+    munmap(memory, instance->page_size);
     memory = xa_access_virtual_address(instance, ptr, &offset);
     if (NULL == memory){
         printf("ERROR: failed to follow mm pointer (0x%x)\n", ptr);
@@ -288,6 +158,6 @@ int xa_linux_get_taskaddr (
     return XA_SUCCESS;
 
 error_exit:
-    if (memory) munmap(memory, XA_PAGE_SIZE);
+    if (memory) munmap(memory, instance->page_size);
     return XA_FAILURE;
 }

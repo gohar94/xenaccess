@@ -70,19 +70,15 @@ int read_config_file (xa_instance_t *instance)
         ret = XA_FAILURE;
         goto error_exit;
     }
-#ifdef XA_DEBUG
-    printf("--got domain name from id (%d ==> %s).\n",
-           instance->domain_id, instance->domain_name);
-#endif
+    xa_dbprint("--got domain name from id (%d ==> %s).\n",
+               instance->domain_id, instance->domain_name);
 
     xa_parse_config(instance->domain_name);
     entry = xa_get_config();
 
     /* copy the values from entry into instance struct */
     instance->sysmap = strdup(entry->sysmap);
-#ifdef XA_DEBUG
-    printf("--got sysmap from config (%s).\n", instance->sysmap);
-#endif
+    xa_dbprint("--got sysmap from config (%s).\n", instance->sysmap);
     
     if (strncmp(entry->ostype, "Linux", CONFIG_STR_LENGTH) == 0){
         instance->os_type = XA_OS_LINUX;
@@ -96,15 +92,15 @@ int read_config_file (xa_instance_t *instance)
         instance->os_type = XA_OS_LINUX;
     }
 #ifdef XA_DEBUG
-    printf("--got ostype from config (%s).\n", entry->ostype);
+    xa_dbprint("--got ostype from config (%s).\n", entry->ostype);
     if (instance->os_type == XA_OS_LINUX){
-        printf("**set instance->os_type to Linux.\n");
+        xa_dbprint("**set instance->os_type to Linux.\n");
     }
     else if (instance->os_type == XA_OS_WINDOWS){
-        printf("**set instance->os_type to Windows.\n");
+        xa_dbprint("**set instance->os_type to Windows.\n");
     }
     else{
-        printf("**set instance->os_type to unknown.\n");
+        xa_dbprint("**set instance->os_type to unknown.\n");
     }
 #endif
 
@@ -150,14 +146,27 @@ int get_page_info (xa_instance_t *instance)
         goto error_exit;
     }
     /* PSE Flag --> CR4, bit 4 == 0 --> pse disabled */
-    if (xa_get_bit(ctxt.ctrlreg[4], 4)){
-        printf("ERROR: PSE enabled for this VM, not supported.\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
+    instance->pse = xa_get_bit(ctxt.ctrlreg[4], 4);
 
 error_exit:
     return ret;
+}
+
+void init_page_offset (xa_instance_t *instance)
+{
+    if (XA_OS_LINUX == instance->os_type){
+        instance->page_offset = 0xc0000000;
+    }
+    else if (XA_OS_WINDOWS == instance->os_type){
+        instance->page_offset = 0x80000000;
+    }
+    else{
+        instance->page_offset = 0;
+    }
+
+    /* assume 4k pages for now, update when 4M page is found */
+    instance->page_shift = 12;
+    instance->page_size = 1 << instance->page_shift;
 }
 
 /* given a xa_instance_t struct with the xc_handle and the
@@ -178,9 +187,7 @@ int helper_init (xa_instance_t *instance)
         ret = XA_FAILURE;
         goto error_exit;
     }
-#ifdef XA_DEBUG
-    printf("--got domain info.\n");
-#endif
+    xa_dbprint("--got domain info.\n");
 
     /* read in configure file information */
     if (read_config_file(instance) == XA_FAILURE){
@@ -190,25 +197,22 @@ int helper_init (xa_instance_t *instance)
     /* determine the page sizes and layout for target OS */
     if (get_page_info(instance) == XA_FAILURE){
         printf("ERROR: memory layout not supported\n");
-
-        /*TODO Bypass this for Windows right now so that I can implement PSE*/
-        if (instance->os_type != XA_OS_WINDOWS){
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
+        ret = XA_FAILURE;
+        goto error_exit;
     }
-#ifdef XA_DEBUG
-    printf("--got memory layout.\n");
-#endif
+    xa_dbprint("--got memory layout.\n");
+
+    /* setup the correct page offset size for the target OS */
+    init_page_offset(instance);
 
     /* init instance->hvm */
     instance->hvm = xa_ishvm(instance->domain_id);
 #ifdef XA_DEBUG
     if (instance->hvm){
-        printf("**set instance->hvm to true (HVM).\n");
+        xa_dbprint("**set instance->hvm to true (HVM).\n");
     }
     else{
-        printf("**set instance->hvm to false (PV).\n");
+        xa_dbprint("**set instance->hvm to false (PV).\n");
     }
 #endif
 
@@ -220,24 +224,21 @@ int helper_init (xa_instance_t *instance)
             ret = XA_FAILURE;
             goto error_exit;
         }
-#ifdef XA_DEBUG
-        printf("--got vaddr for swapper_pg_dir (0x%.8x).\n", instance->kpgd);
-#endif
+        xa_dbprint("--got vaddr for swapper_pg_dir (0x%.8x).\n",
+                   instance->kpgd);
 
         if (!instance->hvm){
             memory = xa_access_physical_address(
-                instance, instance->kpgd - XA_PAGE_OFFSET, &local_offset);
+                instance, instance->kpgd-instance->page_offset, &local_offset);
             if (NULL == memory){
                 printf("ERROR: failed to get physical addr for kpgd\n");
                 ret = XA_FAILURE;
                 goto error_exit;
             }
             instance->kpgd = *((uint32_t*)(memory + local_offset));
-            munmap(memory, XA_PAGE_SIZE);
+            munmap(memory, instance->page_size);
         }
-#ifdef XA_DEBUG
-        printf("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
-#endif
+        xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 
         memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
         if (NULL == memory){
@@ -247,22 +248,46 @@ int helper_init (xa_instance_t *instance)
         }
         instance->init_task =
             *((uint32_t*)(memory + local_offset + XALINUX_TASKS_OFFSET));
+        munmap(memory, instance->page_size);
     }
 
     /* setup Windows specific stuff */
     if (instance->os_type == XA_OS_WINDOWS){
+        uint32_t sysproc = 0;
+
         /* get base address for kernel image in memory */
-        memory = xa_access_physical_address(instance, 0x004de000, &local_offset);
+        /*TODO find this dynamically */
+        instance->ntoskrnl = 0x004d7000;
+
+        /* get address for page directory (likely from system process) */
+        /*TODO find this dynamically */
+        sysproc = 0x000897d4; /* RVA ptr to PsInitialSystemProcess */
+        sysproc += instance->ntoskrnl; /* PA ptr to PsInitialSystemProcess */
+        memory = xa_access_physical_address(instance, sysproc, &local_offset);
         if (NULL == memory){
-            printf("ERROR: failed to get physical addr for ntoskrnl\n");
+            printf("ERROR: failed to resolve pointer for system process\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
-        printf("offset = 0x%.8x\n", local_offset);
-        print_hex(memory, XA_PAGE_SIZE);
+        sysproc = *((uint32_t*)(memory + local_offset)); /* VA to PsInit.. */
+        munmap(memory, instance->page_size);
+        /*TODO create macro for this value to be PAGE_OFFSET */
+        sysproc -= 0x80000000; /* PA to PsInit.. */
+        xa_dbprint("**got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
 
-        /* get address for page directory (likely from system process) */
+        memory = xa_access_physical_address(instance, sysproc, &local_offset);
+        if (NULL == memory){
+            printf("ERROR: failed to resolve pointer for system process\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        instance->kpgd = *((uint32_t*)(memory + local_offset + 0x18));
+        instance->kpgd += instance->page_offset; /* store vaddr */
+        munmap(memory, instance->page_size);
+        xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
+
         /* get address start of process list */
+        /*TODO get this from above --> PA to PsInit.. */
     }
 
 error_exit:
