@@ -104,8 +104,8 @@ error_exit:
 
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
+    xa_dbprint("--MapMFN: Mapping mfn = %lu.\n", mfn);
     return xc_map_foreign_range(
-        /*instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);*/
         instance->xc_handle, instance->domain_id, 1, prot, mfn);
 }
 
@@ -120,10 +120,78 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
         return NULL;
     }
     else{
+        xa_dbprint("--MapPFN: Mapping mfn = %lu.\n", mfn);
         return xc_map_foreign_range(
-            /*instance->xc_handle, instance->domain_id, XC_PAGE_SIZE, prot, mfn);*/
             instance->xc_handle, instance->domain_id, 1, prot, mfn);
     }
+}
+
+/* TODO: make this more flexible (e.g., PAE) */
+/* convert address to machine address via page tables */
+uint32_t xa_pagetable_lookup (
+            xa_instance_t *instance,
+            uint32_t pgd,
+            uint32_t virt_address,
+            int kernel)
+{
+    uint32_t index = 0;
+    uint32_t offset = 0;
+    uint32_t pgd_entry = 0;
+    uint32_t pte_entry = 0;
+    unsigned char *memory = NULL;
+
+    /* perform the lookup in the global directory */
+    index = (((virt_address) >> 22) & (1024 - 1));
+    xa_dbprint("--PTLookup: pgd index = 0x%.8x.\n", index);
+    pgd_entry = pgd + (index * sizeof(uint32_t));
+    xa_dbprint("--PTLookup: pgd_entry address = 0x%.8x.\n", pgd_entry);
+    if (kernel){
+        memory = xa_access_physical_address(
+                instance, pgd_entry - instance->page_offset, &offset);
+    }
+    else{
+        memory = xa_access_virtual_address(instance, pgd_entry, &offset);
+    }
+    if (NULL == memory){
+        printf("ERROR: pgd entry lookup failed (phys addr = 0x%.8x)\n",
+                pgd_entry - instance->page_offset);
+        printf("** pgd = 0x%.8x\n", pgd);
+        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
+        printf("** vaddr = 0x%.8x\n", virt_address);
+        return 0;
+    }
+    pgd_entry = *((uint32_t*)(memory + offset));
+    xa_dbprint("--PTLookup: pgd_entry = 0x%.8x.\n", pgd_entry);
+    munmap(memory, instance->page_size);
+    if (instance->pse && xa_get_bit(pgd_entry, 7)){
+        xa_dbprint("--PTLookup: page size is 4MB.\n");
+        index = virt_address & 0x3fffff;
+        return ((pgd_entry & 0xffc00000) + index);
+    }
+
+    /* no page middle directory since we are assuming no PAE for now */
+
+    /* perform the lookup in the page table */
+    index = (((virt_address) >> 12) & (1024 - 1));
+    xa_dbprint("--PTLookup: pte index = 0x%.8x.\n", index);
+    pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
+    xa_dbprint("--PTLookup: pte_entry address = 0x%.8x.\n", pte_entry);
+    memory = xa_access_machine_address(instance, pte_entry, &offset);
+    if (NULL == memory){
+        printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
+                pte_entry);
+        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
+        printf("** pte_entry = 0x%.8x\n", pte_entry);
+        printf("** vaddr = 0x%.8x\n", virt_address);
+        return 0;
+    }
+    pte_entry = *((uint32_t*)(memory + offset));
+    xa_dbprint("--PTLookup: pte_entry = 0x%.8x.\n", pte_entry);
+    munmap(memory, instance->page_size);
+
+    /* finally grab the location in memory */
+    index = virt_address & 0xfff;
+    return ((pte_entry & 0xfffff000) + index);
 }
 
 void *xa_access_kernel_symbol (
@@ -139,46 +207,82 @@ void *xa_access_kernel_symbol (
     }
 }
 
-void *xa_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
+/* finds the address of the page global directory for a given pid */
+uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
 {
     if (instance->os_type == XA_OS_LINUX){
-        return linux_access_virtual_address(instance, virt_address, offset);
-    }
-    else{
-        return NULL;
-    }
-}
-
-void *xa_access_user_virtual_address (
-            xa_instance_t *instance,
-            uint32_t virt_address,
-            uint32_t *offset,
-            int pid)
-{
-    if (instance->os_type == XA_OS_LINUX){
-        return linux_access_user_virtual_address(
-                    instance, virt_address, offset, pid);
+        return linux_pid_to_pgd(instance, pid);
     }
 
     /*TODO we do not yet support any other OSes */
     else{
-        return NULL;
+        return 0;
     }
+}
+
+void *xa_access_user_virtual_address (
+        xa_instance_t *instance,
+        uint32_t virt_address,
+        uint32_t *offset,
+        int pid)
+{
+    uint32_t address = 0;
+
+    /* check the LRU cache */
+    if (xa_check_cache_virt(virt_address, pid, &address)){
+        return xa_access_machine_address(instance, address, offset);
+    }
+
+    /* use kernel page tables */
+    /*TODO HYPERVISOR_VIRT_START = 0xFC000000 so we can't go over that.
+      Figure out what this should be b/c there still may be a fixed
+      mapping range between the page'd addresses and VIRT_START */
+    if (!pid){
+        address = xa_pagetable_lookup(
+                            instance, instance->kpgd, virt_address, 1);
+        if (!address){
+            printf("ERROR: address not in page table\n");
+            return NULL;
+        }
+        xa_update_cache(NULL, virt_address, pid, address);
+        return xa_access_machine_address(instance, address, offset);
+    }
+
+    /* use user page tables */
+    else{
+        uint32_t pgd = xa_pid_to_pgd(instance, pid);
+
+        if (pgd){
+            address = xa_pagetable_lookup(instance, pgd, virt_address, 0);
+        }
+
+        if (!address){
+            printf("ERROR: address not in page table (0x%x)\n", virt_address);
+            return NULL;
+        }
+        xa_update_cache(NULL, virt_address, pid, address);
+        return xa_access_machine_address_rw(
+            instance, address, offset, PROT_READ | PROT_WRITE);
+    }
+}
+
+void *xa_access_virtual_address (
+        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
+{
+    return xa_access_user_virtual_address(instance, virt_address, offset, 0);
 }
 
 void *xa_access_physical_address (
         xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
 {
     unsigned long pfn;
-    uint32_t bitmask;
     int i;
     
     /* page frame number = physical address >> PAGE_SHIFT */
-    pfn = phys_address >> XC_PAGE_SHIFT;
+    pfn = phys_address >> instance->page_shift;
     
     /* get the offset */
-    *offset = (XC_PAGE_SIZE-1) & phys_address;
+    *offset = (instance->page_size-1) & phys_address;
     
     /* access the memory */
     return xa_mmap_pfn(instance, PROT_READ, pfn);
@@ -199,10 +303,10 @@ void *xa_access_machine_address_rw (
     int i;
 
     /* machine frame number = machine address >> PAGE_SHIFT */
-    mfn = mach_address >> XC_PAGE_SHIFT;
+    mfn = mach_address >> instance->page_shift;
 
     /* get the offset */
-    *offset = (XC_PAGE_SIZE-1) & mach_address;
+    *offset = (instance->page_size-1) & mach_address;
 
     /* access the memory */
     return xa_mmap_mfn(instance, prot, mfn);

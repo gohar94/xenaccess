@@ -30,6 +30,11 @@
  * $Date: 2006-11-29 20:38:20 -0500 (Wed, 29 Nov 2006) $
  */
 
+#include <stdio.h>
+#include <stdarg.h>
+#include "xenaccess.h"
+#include "xa_private.h"
+
 int xa_get_bit (unsigned long reg, int bit)
 {
     unsigned long mask = 1 << bit;
@@ -41,3 +46,13 @@ int xa_get_bit (unsigned long reg, int bit)
     }
 }
 
+#ifndef XA_DEBUG
+/* Nothing */
+#else
+void xa_dbprint(char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stdout, format, args);
+    va_end(args);
+}
+#endif

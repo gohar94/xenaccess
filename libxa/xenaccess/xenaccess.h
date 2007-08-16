@@ -35,25 +35,28 @@
 #include <xenctrl.h>
 
 /* uncomment this to enable debug output */
-#define XA_DEBUG
+//#define XA_DEBUG
 
 #define XA_SUCCESS 0
 #define XA_FAILURE -1
 #define XA_OS_LINUX 0
 #define XA_OS_WINDOWS 1  /* not yet supported */
 #define XA_OS_NETBSD 2   /* not yet supported */
-#define XA_PAGE_SIZE XC_PAGE_SIZE
-#define XA_PAGE_OFFSET 0xc0000000
 
 typedef struct xa_instance{
     int xc_handle;          /* handle to xenctrl library (libxc) */
     uint32_t domain_id;     /* domid that we are accessing */
     char *domain_name;      /* domain name that we are accessing */
     char *sysmap;           /* system map file for domain's running kernel */
+    uint32_t page_offset;   /* page offset for this instance */
+    uint32_t page_shift;    /* page shift for last mapped page */
+    uint32_t page_size;     /* page size for last mapped page */
     uint32_t kpgd;          /* kernel page global directory */
     uint32_t init_task;     /* address of task struct for init */
+    uint32_t ntoskrnl;      /* base physical address for ntoskrnl image */
     int os_type;            /* type of os: XA_OS_LINUX, etc */
     int hvm;                /* nonzero if HVM domain */
+    int pse;                /* nonzero if PSE is enabled */
     xc_dominfo_t info;      /* libxc info: domid, ssidref, stats, etc */
     unsigned long *live_pfn_to_mfn_table;
     unsigned long nr_pfns;
