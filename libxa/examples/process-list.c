@@ -67,7 +67,7 @@ int main (int argc, char **argv)
     }
     memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
     list_head = next_process;
-    munmap(memory, XA_PAGE_SIZE);
+    munmap(memory, xai.page_size);
 
     /* walk the task list */
     while (1){
@@ -105,16 +105,16 @@ int main (int argc, char **argv)
         name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
         memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
         printf("[%5d] %s\n", pid, name);
-        munmap(memory, XA_PAGE_SIZE);
+        munmap(memory, xai.page_size);
     }
 
 error_exit:
 
+    /* sanity check to unmap shared pages */
+    if (memory) munmap(memory, xai.page_size);
+
     /* cleanup any memory associated with the XenAccess instance */
     xa_destroy(&xai);
-
-    /* sanity check to unmap shared pages */
-    if (memory) munmap(memory, XA_PAGE_SIZE);
 
     return 0;
 }

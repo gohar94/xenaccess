@@ -88,16 +88,16 @@ int main (int argc, char **argv)
         perror("failed to map memory");
         goto error_exit;
     }
-    print_hex(memory, XA_PAGE_SIZE);
+    print_hex(memory, xai.page_size);
     printf("offset = 0x%x\n", offset);
 
 error_exit:
 
+    /* sanity check to unmap shared pages */
+    if (memory) munmap(memory, xai.page_size);
+
     /* cleanup any memory associated with the XenAccess instance */
     xa_destroy(&xai);
-
-    /* sanity check to unmap shared pages */
-    if (memory) munmap(memory, XA_PAGE_SIZE);
 
     return 0;
 }

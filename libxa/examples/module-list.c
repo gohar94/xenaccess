@@ -58,7 +58,7 @@ int main (int argc, char **argv)
     }
     memcpy(&next_module, memory + offset, 4);
     list_head = next_module;
-    munmap(memory, XA_PAGE_SIZE);
+    munmap(memory, xai.page_size);
 
     /* walk the module list */
     while (1){
@@ -91,16 +91,16 @@ int main (int argc, char **argv)
            for mode details */
         name = (char *) (memory + offset + 8);
         printf("%s\n", name);
-        munmap(memory, XA_PAGE_SIZE);
+        munmap(memory, xai.page_size);
     }
 
 error_exit:
 
+    /* sanity check to unmap shared pages */
+    if (memory) munmap(memory, xai.page_size);
+
     /* cleanup any memory associated with the XenAccess instance */
     xa_destroy(&xai);
-
-    /* sanity check to unmap shared pages */
-    if (memory) munmap(memory, XA_PAGE_SIZE);
 
     return 0;
 }
