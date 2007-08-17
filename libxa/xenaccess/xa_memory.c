@@ -197,7 +197,7 @@ uint32_t xa_pagetable_lookup (
 void *xa_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
-    if (instance->os_type == XA_OS_LINUX){
+    if (XA_OS_LINUX == instance->os_type){
         return linux_access_kernel_symbol(instance, symbol, offset);
     }
 
@@ -210,8 +210,11 @@ void *xa_access_kernel_symbol (
 /* finds the address of the page global directory for a given pid */
 uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
 {
-    if (instance->os_type == XA_OS_LINUX){
+    if (XA_OS_LINUX == instance->os_type){
         return linux_pid_to_pgd(instance, pid);
+    }
+    else if (XA_OS_WINDOWS == instance->os_type){
+        return windows_pid_to_pgd(instance, pid);
     }
 
     /*TODO we do not yet support any other OSes */
@@ -251,6 +254,7 @@ void *xa_access_user_virtual_address (
     /* use user page tables */
     else{
         uint32_t pgd = xa_pid_to_pgd(instance, pid);
+        xa_dbprint("--UserVirt: pgd for pid=%d is 0x%.8x.\n", pid, pgd);
 
         if (pgd){
             address = xa_pagetable_lookup(instance, pgd, virt_address, 0);

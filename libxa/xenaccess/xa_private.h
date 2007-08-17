@@ -54,6 +54,10 @@
 #define XALINUX_PGD_OFFSET 9 * 4      /* mm_struct->pgd */
 #define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->pgd */
 
+/* offsets for Windows fields */
+#define XAWIN_TASKS_OFFSET 0x88       /* EPROCESS->ActiveProcessLinks */
+#define XAWIN_PDBASE_OFFSET 0x18      /* EPROCESS->Pcb->DirectoryTableBase */
+#define XAWIN_PID_OFFSET 0x84         /* EPROCESS->UniqueProcessId */
 
 /*------------------------------
  * Utility function from xa_util
