@@ -283,11 +283,12 @@ int helper_init (xa_instance_t *instance)
         }
         instance->kpgd = *((uint32_t*)(memory + local_offset + 0x18));
         instance->kpgd += instance->page_offset; /* store vaddr */
-        munmap(memory, instance->page_size);
         xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 
         /* get address start of process list */
-        /*TODO get this from above --> PA to PsInit.. */
+        instance->init_task =
+            *((uint32_t*)(memory + local_offset + XAWIN_TASKS_OFFSET));
+        munmap(memory, instance->page_size);
     }
 
 error_exit:

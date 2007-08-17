@@ -35,48 +35,71 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
-/* finds the task struct for a given pid */
-/*
-unsigned char *windows_get_taskstruct (
+/* finds the EPROCESS struct for a given pid */
+unsigned char *windows_get_EPROCESS (
         xa_instance_t *instance, int pid, uint32_t *offset)
-*/
+{
+    unsigned char *memory = NULL;
+    uint32_t list_head = 0, next_process = 0;
+    int task_pid = 0;
+
+    /* first we need a pointer to this pid's EPROCESS struct */
+    next_process = instance->init_task;
+    list_head = next_process;
+
+    while (1){
+        memory = xa_access_virtual_address(instance, next_process, offset);
+        if (NULL == memory){
+            printf("ERROR: failed to get EPROCESS list next pointer");
+            goto error_exit;
+        }
+        memcpy(&next_process, memory + *offset, 4);
+
+        /* if we are back at the list head, we are done */
+        if (list_head == next_process){
+            goto error_exit;
+        }
+
+        memcpy(&task_pid,
+               memory + *offset + XAWIN_PID_OFFSET - XAWIN_TASKS_OFFSET,
+               4
+        );
+
+        /* if pid matches, then we found what we want */
+        if (task_pid == pid){
+            return memory;
+        }
+        munmap(memory, instance->page_size);
+    }
+
+error_exit:
+    if (memory) munmap(memory, instance->page_size);
+    return NULL;
+}
 
 /* finds the address of the page global directory for a given pid */
-/*
 uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
-*/
+{
+    unsigned char *memory = NULL;
+    uint32_t pgd = 0, ptr = 0, offset = 0;
 
-/*
-uint32_t windows_pagetable_lookup (
-            xa_instance_t *instance,
-            uint32_t pgd,
-            uint32_t virt_address,
-            int kernel)
-*/
+    /* first we need a pointer to this pid's EPROCESS struct */
+    memory = windows_get_EPROCESS(instance, pid, &offset);
+    if (NULL == memory){
+        printf("ERROR: could not find EPROCESS struct for pid = %d\n", pid);
+        goto error_exit;
+    }
 
-/* maps the page associated with the machine address */
-/*
-void *windows_access_machine_address (
-        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
+    /* now follow the pointer to the memory descriptor and
+       grab the pgd value */
+    pgd = *((uint32_t*)(memory+offset+XAWIN_PDBASE_OFFSET-XAWIN_TASKS_OFFSET));
+    pgd += instance->page_offset;
+    munmap(memory, instance->page_size);
 
-void *windows_access_machine_address_rw (
-        xa_instance_t *instance, uint32_t mach_address,
-        uint32_t *offset, int prot)
-*/
-
-/*
-void *windows_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
-*/
-
-/* maps the page associated with a virtual address */
-/*
-void *windows_access_user_virtual_address (
-            xa_instance_t *instance,
-            uint32_t virt_address,
-            uint32_t *offset,
-            int pid)
-*/
+error_exit:
+    if (memory) munmap(memory, instance->page_size);
+    return pgd;
+}
 
 /*
 void *windows_access_kernel_symbol (
