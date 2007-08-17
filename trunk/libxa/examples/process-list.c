@@ -42,6 +42,12 @@
 #define PID_OFFSET 39 * 4     /* task_struct->pid */
 #define NAME_OFFSET 108 * 4   /* task_struct->comm */
 
+/* offsets for Windows XP SP2.  These can be looked up using windbg
+   using the following command:  dt _eprocess -r1 */
+#define ActiveProcessLinks_OFFSET 0x88
+#define UniqueProcessId_OFFSET 0x84
+#define ImageFileName_OFFSET 0x174
+
 int main (int argc, char **argv)
 {
     xa_instance_t xai;
@@ -59,13 +65,26 @@ int main (int argc, char **argv)
         goto error_exit;
     }
 
-    /* get the head of the task list */
-    memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
-    if (NULL == memory){
-        perror("failed to get process list head");
-        goto error_exit;
+    /* get the head of the list */
+    if (XA_OS_LINUX == xai.os_type){
+        memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
+        if (NULL == memory){
+            perror("failed to get process list head");
+            goto error_exit;
+        }    
+        memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
     }
-    memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
+    else if (XA_OS_WINDOWS == xai.os_type){
+        memory = xa_access_virtual_address(&xai, 0x82bcbb98, &offset);
+        if (NULL == memory){
+            perror("failed to get EPROCESS for PsInitialSystemProcess");
+            goto error_exit;
+        }
+        memcpy(&next_process, memory + offset + ActiveProcessLinks_OFFSET, 4);
+        name = (char *) (memory + offset + ImageFileName_OFFSET);
+        memcpy(&pid, memory + offset + UniqueProcessId_OFFSET, 4);
+        printf("[%5d] %s\n", pid, name);
+    }
     list_head = next_process;
     munmap(memory, xai.page_size);
 
@@ -102,8 +121,23 @@ int main (int argc, char **argv)
            code cleaner, if not more fragile.  In a real app, you'd
            want to do this a little more robust :-)  See
            include/linux/sched.h for mode details */
-        name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
-        memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
+        if (XA_OS_LINUX == xai.os_type){
+            name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
+            memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
+        }
+
+        /* Same note applies to the way that Windows data is parsed */
+        else if (XA_OS_WINDOWS == xai.os_type){
+            name = (char *) (memory + offset + ImageFileName_OFFSET -
+                   ActiveProcessLinks_OFFSET);
+            memcpy(&pid, memory + offset + UniqueProcessId_OFFSET -
+                   ActiveProcessLinks_OFFSET, 4);
+        }
+
+        /* trivial sanity check on data */
+        if (pid < 0){
+            continue;
+        }
         printf("[%5d] %s\n", pid, name);
         munmap(memory, xai.page_size);
     }
