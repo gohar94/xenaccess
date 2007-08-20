@@ -52,12 +52,15 @@
 #define XALINUX_PID_OFFSET 39 * 4     /* task_struct->pid */
 #define XALINUX_NAME_OFFSET 108 * 4   /* task_struct->comm */
 #define XALINUX_PGD_OFFSET 9 * 4      /* mm_struct->pgd */
-#define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->pgd */
+#define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->start_code */
 
 /* offsets for Windows fields */
 #define XAWIN_TASKS_OFFSET 0x88       /* EPROCESS->ActiveProcessLinks */
 #define XAWIN_PDBASE_OFFSET 0x18      /* EPROCESS->Pcb->DirectoryTableBase */
 #define XAWIN_PID_OFFSET 0x84         /* EPROCESS->UniqueProcessId */
+#define XAWIN_PEB_OFFSET 0x1b0        /* EPROCESS->Peb */
+#define XAWIN_IBA_OFFSET 0x8          /* EPROCESS->Peb->ImageBaseAddress */
+#define XAWIN_PH_OFFSET 0x18          /* EPROCESS->Peb->ProcessHeap */
 
 /*------------------------------
  * Utility function from xa_util
