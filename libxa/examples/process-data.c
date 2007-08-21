@@ -35,7 +35,7 @@
 #include <xenaccess/xenaccess.h>
 #include <xenaccess/xa_private.h>
 
-void printaddr (xa_linux_taskaddr_t taskaddr)
+void linux_printaddr (xa_linux_taskaddr_t taskaddr)
 {
     printf("start_code = 0x%.8lx\n", taskaddr.start_code);
     printf("end_code = 0x%.8lx\n", taskaddr.end_code);
@@ -50,10 +50,17 @@ void printaddr (xa_linux_taskaddr_t taskaddr)
     printf("env_end = 0x%.8lx\n", taskaddr.env_end);
 }
 
+void windows_printaddr (xa_windows_peb_t peb)
+{
+    printf("ImageBaseAddress = 0x%.8x\n", peb.ImageBaseAddress);
+    printf("ProcessHeap = 0x%.8x\n", peb.ProcessHeap);
+}
+
 int main (int argc, char **argv)
 {
     xa_instance_t xai;
     xa_linux_taskaddr_t taskaddr;
+    xa_windows_peb_t peb;
     unsigned char *memory = NULL;
     uint32_t offset = 0;
 
@@ -71,19 +78,38 @@ int main (int argc, char **argv)
     }
 
     /* get the relavent addresses for this process */
-    if (xa_linux_get_taskaddr(&xai, pid, &taskaddr) == XA_FAILURE){
-        perror("failed to get task addresses");
-        goto error_exit;
+    if (XA_OS_LINUX == xai.os_type){
+        if (xa_linux_get_taskaddr(&xai, pid, &taskaddr) == XA_FAILURE){
+            perror("failed to get task addresses");
+            goto error_exit;
+        }
+    }
+    else if (XA_OS_WINDOWS == xai.os_type){
+        if (xa_windows_get_peb(&xai, pid, &peb) == XA_FAILURE){
+            perror("failed to get process addresses from peb");
+            goto error_exit;
+        }
     }
 
     /* print out the process address information */
     printf("Memory descriptor addresses for pid = %d:\n", pid);
-    printaddr(taskaddr);
+    if (XA_OS_LINUX == xai.os_type){
+        linux_printaddr(taskaddr);
+    }
+    else if (XA_OS_WINDOWS == xai.os_type){
+        windows_printaddr(peb);
+    }
 
     /* grab the memory at the start of the code segment
        for this process and print it out */
-    memory = xa_access_user_virtual_address(
-                &xai, taskaddr.start_code, &offset, pid);
+    if (XA_OS_LINUX == xai.os_type){
+        memory = xa_access_user_virtual_address(
+                 &xai, taskaddr.start_code, &offset, pid);
+    }
+    else if (XA_OS_WINDOWS == xai.os_type){
+        memory = xa_access_user_virtual_address(
+                 &xai, peb.ImageBaseAddress, &offset, pid);
+    }
     if (NULL == memory){
         perror("failed to map memory");
         goto error_exit;

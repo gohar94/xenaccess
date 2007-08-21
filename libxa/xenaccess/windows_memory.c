@@ -115,8 +115,40 @@ void *windows_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 */
 
-/* fills the taskaddr struct for a given linux process */
-/*
-int xa_windows_get_taskaddr (
-        xa_instance_t *instance, int pid, xa_linux_taskaddr_t *taskaddr)
-*/
+/* fills the taskaddr struct for a given windows process */
+int xa_windows_get_peb (
+        xa_instance_t *instance, int pid, xa_windows_peb_t *peb)
+{
+    unsigned char *memory;
+    uint32_t ptr = 0, offset = 0;
+
+    /* find the right EPROCESS struct */
+    memory = windows_get_EPROCESS(instance, pid, &offset);
+    if (NULL == memory){
+        printf("ERROR: could not find EPROCESS struct for pid = %d\n", pid);
+        goto error_exit;
+    }
+    ptr = *((uint32_t*)(memory+offset+xawin_peb_offset-xawin_tasks_offset));
+    munmap(memory, instance->page_size);
+
+    /* map the PEB struct */
+    memory = xa_access_user_virtual_address(instance, ptr, &offset, pid);
+    if (NULL == memory){
+        printf("ERROR: could not find PEB struct for pid = %d\n", pid);
+        goto error_exit;
+    }
+
+    /* copy appropriate values into peb struct */
+    memcpy(peb->ImageBaseAddress,
+           memory + offset + xawin_iba_offset - xawin_tasks_offset,
+           sizeof(uint32_t));
+    memcpy(peb->ProcessHeap,
+           memory + offset + xawin_ph_offset - xawin_tasks_offset,
+           sizeof(uint32_t));
+    munmap(memory, instance->page_size);
+    return XA_SUCCESS;
+
+error_exit:
+    if (memory) munmap(memory, instance->page_size);
+    return XA_FAILURE;
+}

@@ -64,7 +64,7 @@ typedef struct xa_instance{
 
 /* This struct holds the task addresses that are found in a task's
    memory descriptor.  One can fill the values in the struct using
-   the linux_get_taskaddr(...) function.  The comments next to each
+   the xa_linux_get_taskaddr(...) function.  The comments next to each
    entry are taken from Bovet & Cesati's excellent book Understanding
    the Linux Kernel 3rd Ed, p354. */
 typedef struct xa_linux_taskaddr{
@@ -80,6 +80,15 @@ typedef struct xa_linux_taskaddr{
     unsigned long env_start;   /* initial address of environmental variables */
     unsigned long env_end;     /* final address of environmental variables */
 } xa_linux_taskaddr_t;
+
+/* This struct holds process information found in the PEB, which is 
+   part of the EPROCESS structure.  One can fill the values in the
+   struct using the xa_windows_get_peb(...) function.  Note that this
+   struct does not contain all information from the PEB. */
+typedef struct xa_windows_peb{
+    uint32_t ImageBaseAddress;
+    uint32_t ProcessHeap;
+} xa_windows_peb_t;
 
 /*--------------------------------------------------------
  * Initialization and Destruction functions from xa_core.c
@@ -158,6 +167,12 @@ void *xa_access_user_virtual_address (
  */
 int xa_linux_get_taskaddr (
         xa_instance_t *instance, int pid, xa_linux_taskaddr_t *taskaddr);
+
+/*-----------------------------
+ * Windows-specific functionality
+ */
+int xa_windows_get_peb (
+        xa_instance_t *instance, int pid, xa_windows_peb_t *peb);
 
 
 #endif /* LIB_XEN_ACCESS_H */
