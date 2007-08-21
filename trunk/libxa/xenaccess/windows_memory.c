@@ -35,6 +35,15 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
+/* Globals */
+int xawin_tasks_offset = 0x88;
+int xawin_pdbase_offset = 0x18;
+int xawin_pid_offset = 0x84;
+int xawin_peb_offset = 0x1b0;
+int xawin_iba_offset = 0x8;
+int xawin_ph_offset = 0x18;
+
+
 /* finds the EPROCESS struct for a given pid */
 unsigned char *windows_get_EPROCESS (
         xa_instance_t *instance, int pid, uint32_t *offset)
@@ -61,7 +70,7 @@ unsigned char *windows_get_EPROCESS (
         }
 
         memcpy(&task_pid,
-               memory + *offset + XAWIN_PID_OFFSET - XAWIN_TASKS_OFFSET,
+               memory + *offset + xawin_pid_offset - xawin_tasks_offset,
                4
         );
 
@@ -92,7 +101,7 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
 
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
-    pgd = *((uint32_t*)(memory+offset+XAWIN_PDBASE_OFFSET-XAWIN_TASKS_OFFSET));
+    pgd = *((uint32_t*)(memory+offset+xawin_pdbase_offset-xawin_tasks_offset));
     pgd += instance->page_offset;
     munmap(memory, instance->page_size);
 

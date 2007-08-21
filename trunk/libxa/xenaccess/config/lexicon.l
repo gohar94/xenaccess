@@ -35,9 +35,22 @@
 %}
 
 %%
+linux_tasks             return LINUX_TASKS;
+linux_mm                return LINUX_MM;
+linux_pid               return LINUX_PID;
+linux_name              return LINUX_NAME;
+linux_pgd               return LINUX_PGD;
+linux_addr              return LINUX_ADDR;
+win_tasks               return WIN_TASKS;
+win_pdbase              return WIN_PDBASE;
+win_pid                 return WIN_PID;
+win_peb                 return WIN_PEB;
+win_iba                 return WIN_IBA;
+win_ph                  return WIN_PH;
 sysmap                  return SYSMAPTOK;
 ostype                  return OSTYPETOK;
-[a-zA-Z0-9.-]+          yylval.str = strdup(yytext); return WORD;
+0x[0-9a-fA-F]|[1-9][0-9]+ yylval.str = strdup(yytext); return NUM;
+[a-zA-Z][a-zA-Z0-9.-]+  yylval.str = strdup(yytext); return WORD;
 [a-zA-Z0-9\/.-]+        yylval.str = strdup(yytext); return FILENAME;
 \"                      return QUOTE;
 \{                      return OBRACE;
