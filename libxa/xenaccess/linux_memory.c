@@ -34,6 +34,15 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
+
+/* Globals */
+int xalinux_tasks_offset    = 0x60;
+int xalinux_mm_offset       = 0x78;
+int xalinux_pid_offset      = 0x9c;
+int xalinux_name_offset     = 0x1b0;
+int xalinux_pgd_offset      = 0x24;
+int xalinux_addr_offset     = 0x80;
+
 /* finds the task struct for a given pid */
 unsigned char *linux_get_taskstruct (
         xa_instance_t *instance, int pid, uint32_t *offset)
@@ -60,7 +69,7 @@ unsigned char *linux_get_taskstruct (
         }
 
         memcpy(&task_pid,
-               memory + *offset + XALINUX_PID_OFFSET - XALINUX_TASKS_OFFSET,
+               memory + *offset + xalinux_pid_offset - xalinux_tasks_offset,
                4
         );
         
@@ -91,15 +100,15 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
 
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
-    memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
+    memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
     munmap(memory, instance->page_size);
     memory = xa_access_virtual_address(instance, ptr, &offset);
     if (NULL == memory){
         printf("ERROR: failed to follow mm pointer");
         goto error_exit;
     }
-    /* memcpy(&pgd, memory + offset + XALINUX_PGD_OFFSET, 4); */
-    pgd = *((uint32_t*)(memory + offset + XALINUX_PGD_OFFSET));
+    /* memcpy(&pgd, memory + offset + xalinux_pgd_offset, 4); */
+    pgd = *((uint32_t*)(memory + offset + xalinux_pgd_offset));
 
 error_exit:
     if (memory) munmap(memory, instance->page_size);
@@ -142,7 +151,7 @@ int xa_linux_get_taskaddr (
     }
 
     /* copy the information out of the memory descriptor */
-    memcpy(&ptr, memory + offset + XALINUX_MM_OFFSET - XALINUX_TASKS_OFFSET, 4);
+    memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
     munmap(memory, instance->page_size);
     memory = xa_access_virtual_address(instance, ptr, &offset);
     if (NULL == memory){
@@ -151,7 +160,7 @@ int xa_linux_get_taskaddr (
     }
     memcpy(
         taskaddr,
-        memory + offset + XALINUX_ADDR_OFFSET,
+        memory + offset + xalinux_addr_offset,
         sizeof(xa_linux_taskaddr_t)
     );
 

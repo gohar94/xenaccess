@@ -32,10 +32,28 @@
 
 #define CONFIG_STR_LENGTH 1024
 
-typedef struct xa_config_entry{
+typedef struct xa_config_entry {
     char domain_name[CONFIG_STR_LENGTH];
     char sysmap[CONFIG_STR_LENGTH];
     char ostype[CONFIG_STR_LENGTH];
+    union {
+        struct linux_offsets {
+            int tasks;
+            int mm;
+            int pid;
+            int name;
+            int pgd;
+            int addr; 
+        } linux_offsets;
+        struct windows_offsets {
+            int tasks; 
+            int pdbase;
+            int pid;
+            int peb;
+            int iba;
+            int ph;
+        } windows_offsets;
+    } offsets;
 } xa_config_entry_t;
 
 void xa_parse_config(char *td);

@@ -91,6 +91,46 @@ int read_config_file (xa_instance_t *instance)
         printf("WARNING: Unknown or undefined OS type, assuming Linux.\n");
         instance->os_type = XA_OS_LINUX;
     }
+
+    /* Copy config info based on OS type */
+    if(XA_OS_LINUX == instance->os_type){
+	    xa_dbprint("--reading in linux offsets from config file.\n");
+        if(entry->offsets.linux_offsets.tasks)
+            xalinux_tasks_offset = entry->offsets.linux_offsets.tasks;
+
+        if(entry->offsets.linux_offsets.mm)
+            xalinux_mm_offset = entry->offsets.linux_offsets.mm;
+
+        if(entry->offsets.linux_offsets.pid)
+            xalinux_pid_offset = entry->offsets.linux_offsets.pid;
+
+        if(entry->offsets.linux_offsets.name)
+            xalinux_name_offset = entry->offsets.linux_offsets.name;
+
+        if(entry->offsets.linux_offsets.addr)
+            xalinux_addr_offset = entry->offsets.linux_offsets.addr;
+    }
+    else if (XA_OS_WINDOWS == instance->os_type){
+	    xa_dbprint("--reading in windows offsets from config file.\n");
+       if(entry->offsets.windows_offsets.tasks)
+            xawin_tasks_offset = entry->offsets.windows_offsets.tasks;
+
+        if(entry->offsets.windows_offsets.pdbase) 
+            xawin_pdbase_offset = entry->offsets.windows_offsets.pdbase;
+
+        if(entry->offsets.windows_offsets.pid) 
+            xawin_pid_offset = entry->offsets.windows_offsets.pid;
+
+        if(entry->offsets.windows_offsets.peb) 
+            xawin_peb_offset = entry->offsets.windows_offsets.peb;
+
+        if(entry->offsets.windows_offsets.iba) 
+            xawin_iba_offset = entry->offsets.windows_offsets.iba;
+
+        if(entry->offsets.windows_offsets.ph) 
+            xawin_ph_offset = entry->offsets.windows_offsets.ph;
+    }
+
 #ifdef XA_DEBUG
     xa_dbprint("--got ostype from config (%s).\n", entry->ostype);
     if (instance->os_type == XA_OS_LINUX){
@@ -247,7 +287,7 @@ int helper_init (xa_instance_t *instance)
             goto error_exit;
         }
         instance->init_task =
-            *((uint32_t*)(memory + local_offset + XALINUX_TASKS_OFFSET));
+            *((uint32_t*)(memory + local_offset + xalinux_tasks_offset));
         munmap(memory, instance->page_size);
     }
 
@@ -287,7 +327,7 @@ int helper_init (xa_instance_t *instance)
 
         /* get address start of process list */
         instance->init_task =
-            *((uint32_t*)(memory + local_offset + XAWIN_TASKS_OFFSET));
+            *((uint32_t*)(memory + local_offset + xawin_tasks_offset));
         munmap(memory, instance->page_size);
     }
 

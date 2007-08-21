@@ -46,21 +46,22 @@
 
 /* offset to each of these fields from the beginning of the struct
    assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
-   is defined in the guest's kernel (this is the default in xen) */
-#define XALINUX_TASKS_OFFSET 24 * 4   /* task_struct->tasks */
-#define XALINUX_MM_OFFSET 30 * 4      /* task_struct->mm */
-#define XALINUX_PID_OFFSET 39 * 4     /* task_struct->pid */
-#define XALINUX_NAME_OFFSET 108 * 4   /* task_struct->comm */
-#define XALINUX_PGD_OFFSET 9 * 4      /* mm_struct->pgd */
-#define XALINUX_ADDR_OFFSET 32 * 4    /* mm_struct->start_code */
+   is defined in the guest's kernel (this is the default in xen)
+   These are defined in the OS specific memory files */
+extern int xalinux_tasks_offset;    /* task_struct->tasks */
+extern int xalinux_mm_offset;       /* task_struct->mm */
+extern int xalinux_pid_offset;      /* task_struct->pid */
+extern int xalinux_name_offset;     /* task_struct->name */
+extern int xalinux_pgd_offset;      /* mm_struct->pgd */
+extern int xalinux_addr_offset;     /* mm_struct->start_code */
 
 /* offsets for Windows fields */
-#define XAWIN_TASKS_OFFSET 0x88       /* EPROCESS->ActiveProcessLinks */
-#define XAWIN_PDBASE_OFFSET 0x18      /* EPROCESS->Pcb->DirectoryTableBase */
-#define XAWIN_PID_OFFSET 0x84         /* EPROCESS->UniqueProcessId */
-#define XAWIN_PEB_OFFSET 0x1b0        /* EPROCESS->Peb */
-#define XAWIN_IBA_OFFSET 0x8          /* EPROCESS->Peb->ImageBaseAddress */
-#define XAWIN_PH_OFFSET 0x18          /* EPROCESS->Peb->ProcessHeap */
+extern int xawin_tasks_offset;      /* EPROCESS->ActiveProcessLinks */
+extern int xawin_pdbase_offset;     /* EPROCESS->Pcb->DirectoryTableBase */
+extern int xawin_pid_offset;        /* EPROCESS->UniqueProcessId */
+extern int xawin_peb_offset;        /* EPROCESS->Peb */
+extern int xawin_iba_offset;        /* EPROCESS->Peb->ImageBaseAddress */
+extern int xawin_ph_offset;         /* EPROCESS->Peb->ProcessHeap */
 
 /*------------------------------
  * Utility function from xa_util
