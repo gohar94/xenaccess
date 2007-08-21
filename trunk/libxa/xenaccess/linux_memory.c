@@ -163,6 +163,7 @@ int xa_linux_get_taskaddr (
         memory + offset + xalinux_addr_offset,
         sizeof(xa_linux_taskaddr_t)
     );
+    munmap(memory, instance->page_size);
 
     return XA_SUCCESS;
 

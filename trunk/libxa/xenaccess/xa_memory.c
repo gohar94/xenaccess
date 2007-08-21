@@ -140,6 +140,8 @@ uint32_t xa_pagetable_lookup (
     uint32_t pte_entry = 0;
     unsigned char *memory = NULL;
 
+    xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", virt_address);
+
     /* perform the lookup in the global directory */
     index = (((virt_address) >> 22) & (1024 - 1));
     xa_dbprint("--PTLookup: pgd index = 0x%.8x.\n", index);
@@ -163,6 +165,10 @@ uint32_t xa_pagetable_lookup (
     pgd_entry = *((uint32_t*)(memory + offset));
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x.\n", pgd_entry);
     munmap(memory, instance->page_size);
+    if (!xa_get_bit(pgd_entry, 0)){ /* is page in phys memory? */
+        printf("ERROR: requested page is not in physical memory\n");
+        return 0;
+    }
     if (instance->pse && xa_get_bit(pgd_entry, 7)){
         xa_dbprint("--PTLookup: page size is 4MB.\n");
         index = virt_address & 0x3fffff;
@@ -244,7 +250,7 @@ void *xa_access_user_virtual_address (
         address = xa_pagetable_lookup(
                             instance, instance->kpgd, virt_address, 1);
         if (!address){
-            printf("ERROR: address not in page table\n");
+            printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
         xa_update_cache(NULL, virt_address, pid, address);
