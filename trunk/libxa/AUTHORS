@@ -49,6 +49,7 @@ Stephan Creutz (stephan.creutz@inf.tu-dresden.de)
 Hajime Inoue (hinoue@ccsl.carleton.ca)
   entire files:
   modifications:
+    README
     xenaccess/linux_memory.c
     xenaccess/windows_memory.c
     xenaccess/xa_core.c
