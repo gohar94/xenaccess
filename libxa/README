@@ -49,8 +49,32 @@ your system map file is /boot/System.map-2.6.18-1.2798.fc6, then you would
 place the following entry in the configuration file:
 
 Fedora-HVM {
-    sysmap = "/boot/System.map-2.6.18-1.2798.fc6";
+    sysmap      = "/boot/System.map-2.6.18-1.2798.fc6";
+    ostype      = "Linux";
+    linux_tasks = 268;
+    linux_mm    = 276;
+    linux_pid   = 312;
+    linux_name  = 548;
+    linux_pgd   = 40;
+    linux_addr  = 132;
 }
+
+or for Windows:
+
+WinXPSP2 {
+    ostype      = "Windows";
+    win_tasks   = 0x88;
+    win_pdbase  = 0x18;
+    win_pid     = 0x84;
+    win_peb     = 0x1b0;
+    win_iba     = 0x8;
+    win_ph      = 0x18;
+}
+
+You need not specify offsets.  Default values are found within
+linux_memory.c and windows_memory.c, respectively.  However, you will
+probably need to calculate these values if you do not use the kernel
+distributed with xen.
 
 In general, the configuration file contains records that look like:
 
@@ -58,11 +82,30 @@ In general, the configuration file contains records that look like:
     <key> = <value>;
 }
 
-Currently, the only available key is 'sysmap'.  In the future, additional
-keys may be added as needed.  The list of keys is provided below:
+Currently there are 14 different keys available.  Only ostype is common
+between Windows and Linux guests.
 
-- sysmap: path to the System.map file corresponding to the domain's kernel
+The list of keys is provided below:
 
+sysmap:         The path to the System.map file corresponding to the
+                domain's Linux kernel.
+ostype:         Linux or Windows guests are supported.
+
+linux_tasks:    The number of bytes (offset) from the start of the
+                struct until task_struct->tasks.  All of these
+                offsets are in linux/sched.h.
+linux_mm:       Offset to task_struct->mm.
+linux_pid:      Offset to task_struct->pid.
+linux_name:     Offset to task_struct->name.
+linux_pgd:      Offset to task_struct->pgd.
+linux_addr:     Offset to task_struct->start_code.
+
+win_tasks:      Offset to EPROCESS->ActiveProcessLinks.
+win_pdbase:     Offset to EPROCESS->Pcb->DirectoryTableBase.
+win_pid:        Offset to EPROCESS->UniqueProcessId.
+win_peb:        Offset to EPROCESS->Peb.
+win_iba:        Offset to EPROCESS->Peb->ImageBaseAddress.
+win_ph_offset:  Offset to EPROCESS->Peb->ProcessHeap.
 
 Using XenAccess
 ---------------
