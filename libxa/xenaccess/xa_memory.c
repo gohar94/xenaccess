@@ -200,6 +200,12 @@ uint32_t xa_pagetable_lookup (
     return ((pte_entry & 0xfffff000) + index);
 }
 
+/* expose virtual to physical mapping via api call */
+uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address)
+{
+    return xa_pagetable_lookup(instance, instance->kpgd, virt_address, 1);
+}
+
 void *xa_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
