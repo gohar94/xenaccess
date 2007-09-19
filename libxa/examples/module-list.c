@@ -32,6 +32,8 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <stdio.h>
+//#include <locale.h>
+//#include <wchar.h>
 #include <xenaccess/xenaccess.h>
 
 int main (int argc, char **argv)
@@ -40,6 +42,7 @@ int main (int argc, char **argv)
     unsigned char *memory = NULL;
     uint32_t offset, next_module, list_head;
     char *name = NULL;
+    wchar_t *wname = NULL;
 
     /* this is the domain ID that we are looking at */
     uint32_t dom = atoi(argv[1]);
@@ -50,11 +53,28 @@ int main (int argc, char **argv)
         goto error_exit;
     }
 
+    /* setup locale for unicode parsing on windows */
+    //if (XA_OS_WINDOWS == xai.os_type){
+    //    if (!setlocale(LC_CTYPE, "")){
+    //        printf("failed to set locale for unicode output\n");
+    //        goto error_exit;
+    //    }
+    //}
+
     /* get the head of the module list */
-    memory = xa_access_kernel_symbol(&xai, "modules", &offset);
-    if (NULL == memory){
-        perror("failed to get module list head");
-        goto error_exit;
+    if (XA_OS_LINUX == xai.os_type){
+        memory = xa_access_kernel_symbol(&xai, "modules", &offset);
+        if (NULL == memory){
+            perror("failed to get module list head");
+            goto error_exit;
+        }
+    }
+    else if (XA_OS_WINDOWS == xai.os_type){
+        memory = xa_access_virtual_address(&xai, 0x8055a620, &offset);
+        if (NULL == memory){
+            perror("failed to get PsLoadedModuleList");
+            goto error_exit;
+        }
     }
     memcpy(&next_module, memory + offset, 4);
     list_head = next_module;
@@ -89,8 +109,26 @@ int main (int argc, char **argv)
            directly following the next / prev pointers.  This is why you
            can just add 8 to get the name.  See include/linux/module.h
            for mode details */
-        name = (char *) (memory + offset + 8);
-        printf("%s\n", name);
+        if (XA_OS_LINUX == xai.os_type){
+            name = (char *) (memory + offset + 8);
+            printf("%s\n", name);
+        }
+        else if (XA_OS_WINDOWS == xai.os_type){
+            //wname = (wchar_t *) (memory + offset + 0x4c);
+            //wprintf("%ls\n", wname);
+            //below is a total hack to bypass unicode support
+            int i = 0;
+            char *tmpname = (char *) (memory + offset + 0x4c);
+            name = malloc(28);
+            memset(name, 0, 28);
+            for (i = 0; i < 28; i++){
+                if (i%2 == 0){
+                    name[i/2] = tmpname[i];
+                }
+            }
+            printf("%s\n", name);
+            free(name);
+        }
         munmap(memory, xai.page_size);
     }
 
