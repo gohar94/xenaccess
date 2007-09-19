@@ -166,7 +166,7 @@ uint32_t xa_pagetable_lookup (
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x.\n", pgd_entry);
     munmap(memory, instance->page_size);
     if (!xa_get_bit(pgd_entry, 0)){ /* is page in phys memory? */
-        printf("ERROR: requested page is not in physical memory\n");
+        printf("ERROR: requested page table is not in physical memory\n");
         return 0;
     }
     if (instance->pse && xa_get_bit(pgd_entry, 7)){
@@ -194,6 +194,10 @@ uint32_t xa_pagetable_lookup (
     pte_entry = *((uint32_t*)(memory + offset));
     xa_dbprint("--PTLookup: pte_entry = 0x%.8x.\n", pte_entry);
     munmap(memory, instance->page_size);
+    if (!xa_get_bit(pte_entry, 0)){ /* is page in phys memory? */
+        printf("ERROR: requested page is not in physical memory\n");
+        return 0;
+    }
 
     /* finally grab the location in memory */
     index = virt_address & 0xfff;
