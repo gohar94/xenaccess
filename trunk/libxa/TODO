@@ -1,3 +1,10 @@
+Updates needed for 0.4 release
+* finish setting up windows support
+* update README and example config file
+* address TODO spots where appropriate
+* support for PV on xen 3.1
+
+
 Here's a list of things that I'd like to do in the future with this code.  This
 list is in no particular order...
 

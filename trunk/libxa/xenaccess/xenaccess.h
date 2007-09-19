@@ -162,6 +162,16 @@ void *xa_access_user_virtual_address (
         xa_instance_t *instance, uint32_t virt_address,
         uint32_t *offset, int pid);
 
+/**
+ * Performs the translation from a kernel virtual address to a
+ * physical address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] virt_address Desired kernel virtual address to translate
+ * @return Physical address, or zero on failure
+ */
+uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address);
+
 /*-----------------------------
  * Linux-specific functionality
  */
