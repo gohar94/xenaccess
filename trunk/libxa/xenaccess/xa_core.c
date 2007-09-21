@@ -180,13 +180,12 @@ int get_page_info (xa_instance_t *instance)
         goto error_exit;
     }
     /* PAE Flag --> CR4, bit 5 == 0 --> pae disabled */
-    if (xa_get_bit(ctxt.ctrlreg[4], 5)){
-        printf("ERROR: PAE enabled for this VM, not supported.\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
+    instance->pae = xa_get_bit(ctxt.ctrlreg[4], 5);
+    xa_dbprint("**set instance->pae = %d\n", instance->pae);
+
     /* PSE Flag --> CR4, bit 4 == 0 --> pse disabled */
     instance->pse = xa_get_bit(ctxt.ctrlreg[4], 4);
+    xa_dbprint("**set instance->pse = %d\n", instance->pse);
 
 error_exit:
     return ret;
@@ -313,7 +312,7 @@ int helper_init (xa_instance_t *instance)
         munmap(memory, instance->page_size);
         /*TODO create macro for this value to be PAGE_OFFSET */
         sysproc -= 0x80000000; /* PA to PsInit.. */
-        xa_dbprint("**got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
+        xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
 
         memory = xa_access_physical_address(instance, sysproc, &local_offset);
         if (NULL == memory){

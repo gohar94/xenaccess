@@ -35,6 +35,84 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
+uint32_t xa_read_long_mach (xa_instance_t *instance, uint32_t maddr)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint32_t value = 0;
+    memory = xa_access_machine_address(instance, maddr, &offset);
+    if (NULL != memory){
+        value = *((uint32_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint64_t xa_read_long_long_mach (xa_instance_t *instance, uint32_t maddr)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint64_t value = 0;
+    memory = xa_access_machine_address(instance, maddr, &offset);
+    if (NULL != memory){
+        value = *((uint64_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint32_t xa_read_long_phys (xa_instance_t *instance, uint32_t paddr)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint32_t value = 0;
+    memory = xa_access_physical_address(instance, paddr, &offset);
+    if (NULL != memory){
+        value = *((uint32_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint64_t xa_read_long_long_phys (xa_instance_t *instance, uint32_t paddr)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint64_t value = 0;
+    memory = xa_access_physical_address(instance, paddr, &offset);
+    if (NULL != memory){
+        value = *((uint64_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint32_t value = 0;
+    memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
+    if (NULL != memory){
+        value = *((uint32_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint64_t xa_read_long_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint64_t value = 0;
+    memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
+    if (NULL != memory){
+        value = *((uint64_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
 int xa_get_bit (unsigned long reg, int bit)
 {
     unsigned long mask = 1 << bit;
