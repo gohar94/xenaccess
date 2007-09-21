@@ -126,82 +126,212 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
     }
 }
 
-/* TODO: make this more flexible (e.g., PAE) */
+/* bit flag testing */
+int entry_present (unsigned long entry){
+    return xa_get_bit(entry, 0);
+}
+
+int page_size_flag (unsigned long entry){
+    return xa_get_bit(entry, 7);
+}
+
+/* page directory pointer table */
+uint32_t get_pdptb (uint32_t pdpr){
+    return pdpr & 0xFFFFFFE0;
+}
+
+uint32_t pdpi_index (uint32_t pdpi){
+    return (pdpi >> 30) * sizeof(uint64_t);
+}
+
+uint64_t get_pdpi (
+        xa_instance_t *instance, uint32_t vaddr, uint32_t cr3, int k)
+{
+    uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
+    xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
+    return xa_read_long_long_phys(instance, pdpi_entry);
+    if (k){
+        return xa_read_long_long_phys(instance, pdpi_entry-instance->page_offset);
+    }
+    else{
+        return xa_read_long_long_virt(instance, pdpi_entry, 0);
+    }
+}
+
+/* page directory */
+uint32_t pgd_index (xa_instance_t *instance, uint32_t address){
+    if (!instance->pae){
+        return (((address) >> 22) & 0x3FF) * sizeof(uint32_t);
+    }
+    else{
+        return (((address) >> 21) & 0x1FF) * sizeof(uint64_t);
+    }
+}
+
+uint32_t pdba_base_nopae (uint32_t pdpe){
+    return pdpe & 0xFFFFF000;
+}
+
+uint64_t pdba_base_pae (uint64_t pdpe){
+    return pdpe & 0xFFFFFF000ULL;
+}
+
+uint32_t get_pgd_nopae (
+        xa_instance_t *instance, uint32_t vaddr, uint32_t pdpe, int k)
+{
+    uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
+    xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
+    if (k){
+        return xa_read_long_phys(instance, pgd_entry-instance->page_offset);
+    }
+    else{
+        return xa_read_long_virt(instance, pgd_entry, 0);
+    }
+}
+
+uint64_t get_pgd_pae (
+        xa_instance_t *instance, uint32_t vaddr, uint64_t pdpe, int k)
+{
+    uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
+    xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
+    if (k){
+        return xa_read_long_long_phys(instance, pgd_entry-instance->page_offset);
+    }
+    else{
+        return xa_read_long_long_virt(instance, pgd_entry, 0);
+    }
+}
+
+/* page table */
+uint32_t pte_index (xa_instance_t *instance, uint32_t address){
+    if (!instance->pae){
+        return (((address) >> 12) & 0x3FF) * sizeof(uint32_t);
+    }
+    else{
+        return (((address) >> 12) & 0x1FF) * sizeof(uint64_t); 
+    }
+}
+        
+uint32_t pte_pfn_nopae (uint32_t pte){
+    return pte & 0xFFFFF000;
+}
+
+uint64_t pte_pfn_pae (uint64_t pte){
+    return pte & 0xFFFFFF000ULL;
+}
+
+uint32_t ptba_base_nopae (uint32_t pde){
+    return pde & 0xFFFFF000;
+}
+
+uint64_t ptba_base_pae (uint64_t pde){
+    return pde & 0xFFFFFF000ULL;
+}
+
+uint32_t get_pte_nopae (xa_instance_t *instance, uint32_t vaddr, uint32_t pgd){
+    uint32_t pte_entry = ptba_base_nopae(pgd) + pte_index(instance, vaddr);
+    return xa_read_long_mach(instance, pte_entry);
+}
+
+uint64_t get_pte_pae (xa_instance_t *instance, uint32_t vaddr, uint64_t pgd){
+    uint32_t pte_entry = ptba_base_pae(pgd) + pte_index(instance, vaddr);
+    return xa_read_long_long_mach(instance, pte_entry);
+}
+
+/* page */
+uint32_t get_paddr_nopae (uint32_t vaddr, uint32_t pte){
+    return pte_pfn_nopae(pte) | (vaddr & 0xFFF);
+}
+
+uint64_t get_paddr_pae (uint32_t vaddr, uint64_t pte){
+    return pte_pfn_pae(pte) | (vaddr & 0xFFF);
+}
+
+/*TODO does this need specific pae / nopae versions? */
+uint32_t get_large_paddr (
+        xa_instance_t *instance, uint32_t vaddr, uint32_t pgd_entry)
+{
+    if (!instance->pae){
+        return (pgd_entry & 0xFFC00000) | (vaddr & 0x3FFFFF);
+    }
+    else{
+        return (pgd_entry & 0xFFE00000) | (vaddr & 0x1FFFFF);
+    }
+}
+
+/* translation */
+uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
+{
+    uint32_t paddr = 0;
+    uint32_t pgd, pte;
+        
+    xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", vaddr);
+    xa_dbprint("--PTLookup: cr3 = 0x%.8x\n", cr3);
+    pgd = get_pgd_nopae(instance, vaddr, cr3, k);
+    xa_dbprint("--PTLookup: pgd = 0x%.8x\n", pgd);
+        
+    if (entry_present(pgd)){
+        if (page_size_flag(pgd)){
+            paddr = get_large_paddr(instance, vaddr, pgd);
+            xa_dbprint("--PTLookup: 4MB page\n", pgd);
+        }
+        else{
+            pte = get_pte_nopae(instance, vaddr, pgd);
+            xa_dbprint("--PTLookup: pte = 0x%.8x\n", pte);
+            if (entry_present(pte)){
+                paddr = get_paddr_nopae(vaddr, pte);
+            }
+        }
+    }
+    xa_dbprint("--PTLookup: paddr = 0x%.8x\n", paddr);
+    return paddr;
+}
+
+uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
+{
+    uint32_t paddr = 0;
+    uint64_t pdpe, pgd, pte;
+        
+    xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", vaddr);
+    xa_dbprint("--PTLookup: cr3 = 0x%.8x\n", cr3);
+    pdpe = get_pdpi(instance, vaddr, cr3, k);
+    xa_dbprint("--PTLookup: pdpe = 0x%.8x\n", pdpe);
+    if (!entry_present(pdpe)){
+        return paddr;
+    }
+    pgd = get_pgd_pae(instance, vaddr, pdpe, k);
+    xa_dbprint("--PTLookup: pgd = 0x%.8x\n", pgd);
+
+    if (entry_present(pgd)){
+        if (page_size_flag(pgd)){
+            paddr = get_large_paddr(instance, vaddr, pgd);
+            xa_dbprint("--PTLookup: 4MB page\n", pgd);
+        }
+        else{
+            pte = get_pte_pae(instance, vaddr, pgd);
+            xa_dbprint("--PTLookup: pte = 0x%.8x\n", pte);
+            if (entry_present(pte)){
+                paddr = get_paddr_pae(vaddr, pte);
+            }
+        }
+    }
+    xa_dbprint("--PTLookup: paddr = 0x%.8x\n", paddr);
+    return paddr;
+}
+
 /* convert address to machine address via page tables */
 uint32_t xa_pagetable_lookup (
             xa_instance_t *instance,
-            uint32_t pgd,
-            uint32_t virt_address,
+            uint32_t cr3,
+            uint32_t vaddr,
             int kernel)
 {
-    uint32_t index = 0;
-    uint32_t offset = 0;
-    uint32_t pgd_entry = 0;
-    uint32_t pte_entry = 0;
-    unsigned char *memory = NULL;
-
-    xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", virt_address);
-
-    /* perform the lookup in the global directory */
-    index = (((virt_address) >> 22) & (1024 - 1));
-    xa_dbprint("--PTLookup: pgd index = 0x%.8x.\n", index);
-    pgd_entry = pgd + (index * sizeof(uint32_t));
-    xa_dbprint("--PTLookup: pgd_entry address = 0x%.8x.\n", pgd_entry);
-    if (kernel){
-        memory = xa_access_physical_address(
-                instance, pgd_entry - instance->page_offset, &offset);
+    if (instance->pae){
+        return v2p_pae(instance, cr3, vaddr, kernel);
     }
     else{
-        memory = xa_access_virtual_address(instance, pgd_entry, &offset);
+        return v2p_nopae(instance, cr3, vaddr, kernel);
     }
-    if (NULL == memory){
-        printf("ERROR: pgd entry lookup failed (phys addr = 0x%.8x)\n",
-                pgd_entry - instance->page_offset);
-        printf("** pgd = 0x%.8x\n", pgd);
-        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
-        printf("** vaddr = 0x%.8x\n", virt_address);
-        return 0;
-    }
-    pgd_entry = *((uint32_t*)(memory + offset));
-    xa_dbprint("--PTLookup: pgd_entry = 0x%.8x.\n", pgd_entry);
-    munmap(memory, instance->page_size);
-    if (!xa_get_bit(pgd_entry, 0)){ /* is page in phys memory? */
-        printf("ERROR: requested page table is not in physical memory\n");
-        return 0;
-    }
-    if (instance->pse && xa_get_bit(pgd_entry, 7)){
-        xa_dbprint("--PTLookup: page size is 4MB.\n");
-        index = virt_address & 0x3fffff;
-        return ((pgd_entry & 0xffc00000) + index);
-    }
-
-    /* no page middle directory since we are assuming no PAE for now */
-
-    /* perform the lookup in the page table */
-    index = (((virt_address) >> 12) & (1024 - 1));
-    xa_dbprint("--PTLookup: pte index = 0x%.8x.\n", index);
-    pte_entry = (pgd_entry & 0xfffff000) + (index * sizeof(uint32_t));
-    xa_dbprint("--PTLookup: pte_entry address = 0x%.8x.\n", pte_entry);
-    memory = xa_access_machine_address(instance, pte_entry, &offset);
-    if (NULL == memory){
-        printf("ERROR: pte entry lookup failed (mach addr = 0x%.8x)\n",
-                pte_entry);
-        printf("** pgd_entry = 0x%.8x\n", pgd_entry);
-        printf("** pte_entry = 0x%.8x\n", pte_entry);
-        printf("** vaddr = 0x%.8x\n", virt_address);
-        return 0;
-    }
-    pte_entry = *((uint32_t*)(memory + offset));
-    xa_dbprint("--PTLookup: pte_entry = 0x%.8x.\n", pte_entry);
-    munmap(memory, instance->page_size);
-    if (!xa_get_bit(pte_entry, 0)){ /* is page in phys memory? */
-        printf("ERROR: requested page is not in physical memory\n");
-        return 0;
-    }
-
-    /* finally grab the location in memory */
-    index = virt_address & 0xfff;
-    return ((pte_entry & 0xfffff000) + index);
 }
 
 /* expose virtual to physical mapping via api call */

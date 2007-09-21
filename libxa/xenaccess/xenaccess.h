@@ -56,6 +56,7 @@ typedef struct xa_instance{
     uint32_t ntoskrnl;      /* base physical address for ntoskrnl image */
     int os_type;            /* type of os: XA_OS_LINUX, etc */
     int hvm;                /* nonzero if HVM domain */
+    int pae;                /* nonzero if PAE is enabled */
     int pse;                /* nonzero if PSE is enabled */
     xc_dominfo_t info;      /* libxc info: domid, ssidref, stats, etc */
     unsigned long *live_pfn_to_mfn_table;
@@ -171,6 +172,62 @@ void *xa_access_user_virtual_address (
  * @return Physical address, or zero on failure
  */
 uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address);
+
+/**
+ * Reads a long (32 bit) value from memory, given a machine address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] maddr Machine address to read from
+ * @return value from memory
+ */
+uint32_t xa_read_long_mach (xa_instance_t *instance, uint32_t maddr);
+
+/**
+ * Reads a long long (64 bit) value from memory, given a machine address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] maddr Machine address to read from
+ * @return value from memory
+ */
+uint64_t xa_read_long_long_mach (xa_instance_t *instance, uint32_t maddr);
+
+/**
+ * Reads a long (32 bit) value from memory, given a physical address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] paddr Physical address to read from
+ * @return value from memory
+ */
+uint32_t xa_read_long_phys (xa_instance_t *instance, uint32_t paddr);
+
+/**
+ * Reads a long long (64 bit) value from memory, given a physical address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] paddr Physical address to read from
+ * @return value from memory
+ */
+uint64_t xa_read_long_long_phys (xa_instance_t *instance, uint32_t paddr);
+
+/**
+ * Reads a long (32 bit) value from memory, given a virtual address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] vaddr Virtual address to read from
+ * @param[in] pid Pid of the virtual address space (0 for kernel)
+ * @return value from memory
+ */
+uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
+
+/**
+ * Reads a long long (64 bit) value from memory, given a virtual address.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] vaddr Virtual address to read from
+ * @param[in] pid Pid of the virtual address space (0 for kernel)
+ * @return value from memory
+ */
+uint64_t xa_read_long_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
 
 /*-----------------------------
  * Linux-specific functionality

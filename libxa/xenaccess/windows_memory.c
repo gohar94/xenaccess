@@ -139,10 +139,10 @@ int xa_windows_get_peb (
     }
 
     /* copy appropriate values into peb struct */
-    memcpy(peb->ImageBaseAddress,
+    memcpy(&peb->ImageBaseAddress,
            memory + offset + xawin_iba_offset - xawin_tasks_offset,
            sizeof(uint32_t));
-    memcpy(peb->ProcessHeap,
+    memcpy(&peb->ProcessHeap,
            memory + offset + xawin_ph_offset - xawin_tasks_offset,
            sizeof(uint32_t));
     munmap(memory, instance->page_size);
