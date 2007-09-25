@@ -259,6 +259,64 @@ uint32_t get_large_paddr (
     }
 }
 
+/* "buffalo" routines
+ * see "Using Every Part of the Buffalo in Windows Memory Analysis" by
+ * Jesse D. Kornblum for details. 
+ * for now, just test the bits and print out details */
+int get_transition_bit(uint32_t entry)
+{
+    return xa_get_bit(entry, 11);
+}
+
+int get_prototype_bit(uint32_t entry)
+{
+    return xa_get_bit(entry, 10);
+}
+
+void buffalo_nopae (xa_instance_t *instance, uint32_t entry, int pde)
+{
+    /* similar techniques are surely doable in linux, but for now
+     * this is only testing for windows domains */
+    if (!instance->os_type == XA_OS_WINDOWS){
+        return;
+    }
+
+    if (!get_transition_bit(entry) && !get_prototype_bit(entry)){
+        uint32_t pfnum = (entry >> 1) & 0xF;
+        uint32_t pfframe = entry & 0xFFFFF000;
+
+        /* pagefile */
+        if (pfnum != 0 && pfframe != 0){
+            xa_dbprint("--Buffalo: page file = %d, frame = 0x%.8x\n",
+                pfnum, pfframe);
+        }
+        /* demand zero */
+        else if (pfnum == 0 && pfframe == 0){
+            xa_dbprint("--Buffalo: demand zero page\n");
+        }
+    }
+
+    else if (get_transition_bit(entry) && !get_prototype_bit(entry)){
+        /* transition */
+        xa_dbprint("--Buffalo: page in transition\n");
+    }
+
+    else if (!pde && get_prototype_bit(entry)){
+        /* prototype */
+        xa_dbprint("--Buffalo: prototype entry\n");
+    }
+
+    else if (entry == 0){
+        /* zero */
+        xa_dbprint("--Buffalo: entry is zero\n");
+    }
+
+    else{
+        /* zero */
+        xa_dbprint("--Buffalo: unknown\n");
+    }
+}
+
 /* translation */
 uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
 {
@@ -281,7 +339,13 @@ uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
             if (entry_present(pte)){
                 paddr = get_paddr_nopae(vaddr, pte);
             }
+            else{
+                buffalo_nopae(instance, pte, 1);
+            }
         }
+    }
+    else{
+        buffalo_nopae(instance, pgd, 0);
     }
     xa_dbprint("--PTLookup: paddr = 0x%.8x\n", paddr);
     return paddr;
