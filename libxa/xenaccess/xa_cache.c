@@ -53,6 +53,8 @@ int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address)
             current->last_used = time(NULL);
             *mach_address = current->mach_address;
             ret = 1;
+            xa_dbprint("++Cache hit (%s --> 0x%.8x)\n",
+                symbol_name, *mach_address);
             goto exit;
         }
         current = current->next;
@@ -62,18 +64,26 @@ exit:
     return ret;
 }
 
-int xa_check_cache_virt (uint32_t virt_address, int pid, uint32_t *mach_address)
+int xa_check_cache_virt (xa_instance_t *instance,
+                         uint32_t virt_address,
+                         int pid,
+                         uint32_t *mach_address)
 {
     xa_cache_entry_t current;
     int ret = 0;
+    uint32_t lookup = virt_address & ~(instance->page_size - 1);
 
     current = cache_head;
     while (current != NULL){
-        if ((current->virt_address == virt_address) && (current->pid == pid) &&
+        if ((current->virt_address == lookup) &&
+            (current->pid == pid) &&
             (current->mach_address)){
             current->last_used = time(NULL);
-            *mach_address = current->mach_address;
+            *mach_address = (current->mach_address |
+                (virt_address & (instance->page_size - 1)));
             ret = 1;
+            xa_dbprint("++Cache hit (0x%.8x --> 0x%.8x, 0x%.8x)\n",
+                virt_address, *mach_address, current->mach_address);
             goto exit;
         }
         current = current->next;
@@ -83,10 +93,15 @@ exit:
     return ret;
 }
 
-int xa_update_cache (char *symbol_name, uint32_t virt_address,
-                  int pid, uint32_t mach_address)
+int xa_update_cache (xa_instance_t *instance,
+                     char *symbol_name,
+                     uint32_t virt_address,
+                     int pid,
+                     uint32_t mach_address)
 {
     xa_cache_entry_t new_entry = NULL;
+    uint32_t vlookup = virt_address & ~(instance->page_size - 1);
+    uint32_t mlookup = mach_address & ~(instance->page_size - 1);
 
     /* is cache enabled? */
     if (XA_CACHE_SIZE == 0){
@@ -100,9 +115,17 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
         while (current != NULL){
             if (strncmp(current->symbol_name, symbol_name, MAX_SYM_LEN) == 0){
                 current->last_used = time(NULL);
-                current->virt_address = virt_address;
+                current->virt_address = 0;
                 current->pid = pid;
-                current->mach_address = mach_address;
+                if (mach_address){
+                    current->mach_address = mach_address;
+                }
+                else{
+                    current->mach_address =
+                        xa_translate_kv2p(instance, virt_address);
+                }
+                xa_dbprint("++Cache set (%s --> 0x%.8x)\n",
+                    symbol_name, current->mach_address);
                 goto exit;
             }
             current = current->next;
@@ -114,10 +137,12 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
     if (virt_address){
         xa_cache_entry_t current = cache_head;
         while (current != NULL){
-            if (current->virt_address == virt_address){
+            if (current->virt_address == vlookup){
                 current->last_used = time(NULL);
                 current->pid = pid;
-                current->mach_address = mach_address;
+                current->mach_address = mlookup;
+                xa_dbprint("++Cache set (0x%.8x --> 0x%.8x)\n",
+                    vlookup, mlookup);
                 goto exit;
             }
             current = current->next;
@@ -171,12 +196,23 @@ int xa_update_cache (char *symbol_name, uint32_t virt_address,
     new_entry->last_used = time(NULL);
     if (symbol_name){
         new_entry->symbol_name = strndup(symbol_name, MAX_SYM_LEN);
+        new_entry->virt_address = 0;
+        if (mach_address){
+            new_entry->mach_address = mach_address;
+        }
+        else{
+            new_entry->mach_address =
+                xa_translate_kv2p(instance, virt_address);
+        }
+        xa_dbprint("++Cache set (%s --> 0x%.8x)\n",
+            symbol_name, new_entry->mach_address);
     }
     else{
         new_entry->symbol_name = strndup("", MAX_SYM_LEN);
+        new_entry->virt_address = vlookup;
+        new_entry->mach_address = mlookup;
+        xa_dbprint("++Cache set (0x%.8x --> 0x%.8x)\n", vlookup, mlookup);
     }
-    new_entry->virt_address = virt_address;
-    new_entry->mach_address = mach_address;
     new_entry->pid = pid;
 
     /* add it to the end of the list */

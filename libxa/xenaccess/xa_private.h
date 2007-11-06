@@ -115,11 +115,14 @@ int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address);
 /**
  * Check if \a virt_address is in the LRU cache.
  * 
+ * @param[in] instance libxa instance
  * @param[in] virt_address Virtual address in space of guest process.
  * @param[in] pid Id of the process.
  * @param[out] mach_address Machine address of the symbol.
  */
-int xa_check_cache_virt (uint32_t virt_address, int pid,
+int xa_check_cache_virt (xa_instance_t *instance,
+                         uint32_t virt_address,
+                         int pid,
                          uint32_t *mach_address);
 
 /**
@@ -127,13 +130,17 @@ int xa_check_cache_virt (uint32_t virt_address, int pid,
  * associated virtual address (address space of host process),
  * pid and machine address (see memory chapter in Xen developers doc).
  *
+ * @param[in] instance libxa instance
  * @param[in] symbol_name Name of the cached symbol
  * @param[in] virt_address Virtual address of the symbol
  * @param[in] pid Id of the process associated with symbol
  * @param[in] mach_address Machine address
  */
-int xa_update_cache (char *symbol_name, uint32_t virt_address,
-                     int pid, uint32_t mach_address);
+int xa_update_cache (xa_instance_t *instance,
+                     char *symbol_name,
+                     uint32_t virt_address,
+                     int pid,
+                     uint32_t mach_address);
 
 
 /*--------------------------------------------

@@ -442,7 +442,7 @@ void *xa_access_user_virtual_address (
     uint32_t address = 0;
 
     /* check the LRU cache */
-    if (xa_check_cache_virt(virt_address, pid, &address)){
+    if (xa_check_cache_virt(instance, virt_address, pid, &address)){
         return xa_access_machine_address(instance, address, offset);
     }
 
@@ -457,7 +457,7 @@ void *xa_access_user_virtual_address (
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
-        xa_update_cache(NULL, virt_address, pid, address);
+        xa_update_cache(instance, NULL, virt_address, pid, address);
         return xa_access_machine_address(instance, address, offset);
     }
 
@@ -474,7 +474,7 @@ void *xa_access_user_virtual_address (
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
-        xa_update_cache(NULL, virt_address, pid, address);
+        xa_update_cache(instance, NULL, virt_address, pid, address);
         return xa_access_machine_address_rw(
             instance, address, offset, PROT_READ | PROT_WRITE);
     }
