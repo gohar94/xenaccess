@@ -132,7 +132,7 @@ void *linux_access_kernel_symbol (
         return NULL;
     }
 
-    xa_update_cache(symbol, virt_address, 0, 0);
+    xa_update_cache(instance, symbol, virt_address, 0, 0);
     return xa_access_virtual_address(instance, virt_address, offset);
 }
 
