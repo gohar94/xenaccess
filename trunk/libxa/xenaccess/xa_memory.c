@@ -104,7 +104,7 @@ error_exit:
 
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
-    xa_dbprint("--MapMFN: Mapping mfn = %lu.\n", mfn);
+    xa_dbprint("--MapMFN: Mapping mfn = 0x%.8x.\n", (unsigned int)mfn);
     return xc_map_foreign_range(
         instance->xc_handle, instance->domain_id, 1, prot, mfn);
 }
