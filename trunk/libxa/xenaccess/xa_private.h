@@ -89,31 +89,23 @@ void xa_dbprint(char *format, ...);
 /*-------------------------------------
  * Definitions to support the LRU cache
  */
-#define XA_CACHE_SIZE 10
-
-struct xa_cache_entry{
-    time_t last_used;
-    char *symbol_name;
-    uint32_t virt_address;
-    uint32_t mach_address;
-    int pid;
-    struct xa_cache_entry *next;
-    struct xa_cache_entry *prev;
-};
-typedef struct xa_cache_entry* xa_cache_entry_t;
+#define XA_CACHE_SIZE 25
 
 /**
- * Check if \a symbol_name is in the LRU cache.
+ * Check if a symbol_name is in the LRU cache.
  *
+ * @param[in] instance libxa instance
  * @param[in] symbol_name Name of the requested symbol.
  * @param[in] pid Id of the associated process.
  * @param[out] mach_address Machine address of the symbol.
  */
-int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address);
-
+int xa_check_cache_sym (xa_instance_t *instance,
+                        char *symbol_name,
+                        int pid,
+                        uint32_t *mach_address);
 
 /**
- * Check if \a virt_address is in the LRU cache.
+ * Check if a virt_address is in the LRU cache.
  * 
  * @param[in] instance libxa instance
  * @param[in] virt_address Virtual address in space of guest process.
@@ -323,9 +315,10 @@ char *linux_predict_sysmap_name (int id);
 /**
  * Releases the cache.
  *
+ * @param[in] instance libxa instance
  * @return 0 for success. -1 for failure.
  */
-int xa_destroy_cache ();
+int xa_destroy_cache (xa_instance_t *instance);
 
 /**
  * Gets name of the kernel for given \a id.

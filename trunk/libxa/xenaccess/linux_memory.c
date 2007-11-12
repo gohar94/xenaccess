@@ -122,7 +122,7 @@ void *linux_access_kernel_symbol (
     uint32_t address;
 
     /* check the LRU cache */
-    if (xa_check_cache_sym(symbol, 0, &address)){
+    if (xa_check_cache_sym(instance, symbol, 0, &address)){
         return xa_access_machine_address(instance, address, offset);
     }
 

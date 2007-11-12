@@ -342,7 +342,7 @@ int helper_destroy (xa_instance_t *instance)
         munmap(instance->live_pfn_to_mfn_table, instance->nr_pfns*4);
     }
 
-    xa_destroy_cache();
+    xa_destroy_cache(instance);
 
     return XA_SUCCESS;
 }
@@ -374,6 +374,9 @@ free(arg);
     instance->domain_id = domain_id;
     instance->live_pfn_to_mfn_table = NULL;
     instance->nr_pfns = 0;
+    instance->cache_head = NULL;
+    instance->cache_tail = NULL;
+    instance->current_cache_size = 0;
     
     /* fill in rest of the information */
     return helper_init(instance);

@@ -37,16 +37,15 @@
 
 #define MAX_SYM_LEN 512
 
-xa_cache_entry_t cache_head = NULL;
-xa_cache_entry_t cache_tail = NULL;
-int current_cache_size = 0;
-
-int xa_check_cache_sym (char *symbol_name, int pid, uint32_t *mach_address)
+int xa_check_cache_sym (xa_instance_t *instance,
+                        char *symbol_name,
+                        int pid,
+                        uint32_t *mach_address)
 {
     xa_cache_entry_t current;
     int ret = 0;
 
-    current = cache_head;
+    current = instance->cache_head;
     while (current != NULL){
         if ((strncmp(current->symbol_name, symbol_name, MAX_SYM_LEN) == 0) &&
             (current->pid == pid) && (current->mach_address)){
@@ -73,7 +72,7 @@ int xa_check_cache_virt (xa_instance_t *instance,
     int ret = 0;
     uint32_t lookup = virt_address & ~(instance->page_size - 1);
 
-    current = cache_head;
+    current = instance->cache_head;
     while (current != NULL){
         if ((current->virt_address == lookup) &&
             (current->pid == pid) &&
@@ -111,7 +110,7 @@ int xa_update_cache (xa_instance_t *instance,
     /* does anything match the passed symbol_name? */
     /* if so, update other entries */
     if (symbol_name){
-        xa_cache_entry_t current = cache_head;
+        xa_cache_entry_t current = instance->cache_head;
         while (current != NULL){
             if (strncmp(current->symbol_name, symbol_name, MAX_SYM_LEN) == 0){
                 current->last_used = time(NULL);
@@ -135,7 +134,7 @@ int xa_update_cache (xa_instance_t *instance,
     /* does anything match the passed virt_address? */
     /* if so, update other entries */
     if (virt_address){
-        xa_cache_entry_t current = cache_head;
+        xa_cache_entry_t current = instance->cache_head;
         while (current != NULL){
             if (current->virt_address == vlookup){
                 current->last_used = time(NULL);
@@ -150,9 +149,9 @@ int xa_update_cache (xa_instance_t *instance,
     }
 
     /* do we need to remove anything from the cache? */
-    if (current_cache_size >= XA_CACHE_SIZE){
-        xa_cache_entry_t oldest = cache_head;
-        xa_cache_entry_t current = cache_head;
+    if (instance->current_cache_size >= XA_CACHE_SIZE){
+        xa_cache_entry_t oldest = instance->cache_head;
+        xa_cache_entry_t current = instance->cache_head;
 
         /* find the least recently used entry */
         while (current != NULL){
@@ -164,15 +163,15 @@ int xa_update_cache (xa_instance_t *instance,
 
         /* remove that entry */
         if (NULL == oldest->next && NULL == oldest->prev){  /* only entry */
-            cache_head = NULL;
-            cache_tail = NULL;
+            instance->cache_head = NULL;
+            instance->cache_tail = NULL;
         }
         else if (NULL == oldest->next){  /* last entry */
-            cache_tail = oldest->prev;
+            instance->cache_tail = oldest->prev;
             oldest->prev->next = NULL;
         }
         else if (NULL == oldest->prev){  /* first entry */
-            cache_head = oldest->next;
+            instance->cache_head = oldest->next;
             oldest->next->prev = NULL;
         }
         else{  /* somewhere in the middle */
@@ -188,7 +187,7 @@ int xa_update_cache (xa_instance_t *instance,
         oldest->prev = NULL;
         free(oldest);
 
-        current_cache_size--;
+        instance->current_cache_size--;
     }
 
     /* allocate memory for the new cache entry */
@@ -216,24 +215,24 @@ int xa_update_cache (xa_instance_t *instance,
     new_entry->pid = pid;
 
     /* add it to the end of the list */
-    if (NULL != cache_tail){
-        cache_tail->next = new_entry;
+    if (NULL != instance->cache_tail){
+        instance->cache_tail->next = new_entry;
     }
-    new_entry->prev = cache_tail;
-    cache_tail = new_entry;
-    if (NULL == cache_head){
-        cache_head = new_entry;
+    new_entry->prev = instance->cache_tail;
+    instance->cache_tail = new_entry;
+    if (NULL == instance->cache_head){
+        instance->cache_head = new_entry;
     }
     new_entry->next = NULL;
-    current_cache_size++;
+    instance->current_cache_size++;
 
 exit:
     return 1;
 }
 
-int xa_destroy_cache ()
+int xa_destroy_cache (xa_instance_t *instance)
 {
-    xa_cache_entry_t current = cache_head;
+    xa_cache_entry_t current = instance->cache_head;
     xa_cache_entry_t tmp = NULL;
     while (current != NULL){
         tmp = current->next;
@@ -241,8 +240,8 @@ int xa_destroy_cache ()
         current = tmp;
     }
 
-    cache_head = NULL;
-    cache_tail = NULL;
-    current_cache_size = 0;
+    instance->cache_head = NULL;
+    instance->cache_tail = NULL;
+    instance->current_cache_size = 0;
     return 0;
 }

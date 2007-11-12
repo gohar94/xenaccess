@@ -43,6 +43,17 @@
 #define XA_OS_WINDOWS 1  /* not yet supported */
 #define XA_OS_NETBSD 2   /* not yet supported */
 
+struct xa_cache_entry{
+    time_t last_used;
+    char *symbol_name;
+    uint32_t virt_address;
+    uint32_t mach_address;
+    int pid;
+    struct xa_cache_entry *next;
+    struct xa_cache_entry *prev;
+};
+typedef struct xa_cache_entry* xa_cache_entry_t;
+
 typedef struct xa_instance{
     int xc_handle;          /* handle to xenctrl library (libxc) */
     uint32_t domain_id;     /* domid that we are accessing */
@@ -61,6 +72,9 @@ typedef struct xa_instance{
     xc_dominfo_t info;      /* libxc info: domid, ssidref, stats, etc */
     unsigned long *live_pfn_to_mfn_table;
     unsigned long nr_pfns;
+    xa_cache_entry_t cache_head;
+    xa_cache_entry_t cache_tail;
+    int current_cache_size;
 } xa_instance_t;
 
 /* This struct holds the task addresses that are found in a task's
