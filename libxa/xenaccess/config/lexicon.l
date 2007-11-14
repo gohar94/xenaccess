@@ -31,32 +31,54 @@
  */
 
 #include <string.h>
+#include "config_parser.h"
 #include "grammar.h"
+
+#ifdef XA_DEBUG
+#define YY_INPUT(buf,result,max_size)  {\
+    result = GetNextChar(buf, max_size); \
+    if (  result <= 0  ) \
+      result = YY_NULL; \
+    }
+#endif
+
 %}
 
 %%
-linux_tasks             return LINUX_TASKS;
-linux_mm                return LINUX_MM;
-linux_pid               return LINUX_PID;
-linux_name              return LINUX_NAME;
-linux_pgd               return LINUX_PGD;
-linux_addr              return LINUX_ADDR;
-win_tasks               return WIN_TASKS;
-win_pdbase              return WIN_PDBASE;
-win_pid                 return WIN_PID;
-win_peb                 return WIN_PEB;
-win_iba                 return WIN_IBA;
-win_ph                  return WIN_PH;
-sysmap                  return SYSMAPTOK;
-ostype                  return OSTYPETOK;
-0x[0-9a-fA-F]|[1-9][0-9]+ yylval.str = strdup(yytext); return NUM;
-[a-zA-Z][a-zA-Z0-9.-]+  yylval.str = strdup(yytext); return WORD;
-[a-zA-Z0-9\/.-]+        yylval.str = strdup(yytext); return FILENAME;
-\"                      return QUOTE;
-\{                      return OBRACE;
-\}                      return EBRACE;
-;                       return SEMICOLON;
-=                       return EQUALS;
+linux_tasks             { BeginToken(yytext); return LINUX_TASKS; }
+linux_mm                { BeginToken(yytext); return LINUX_MM; }
+linux_pid               { BeginToken(yytext); return LINUX_PID; }
+linux_name              { BeginToken(yytext); return LINUX_NAME; }
+linux_pgd               { BeginToken(yytext); return LINUX_PGD; }
+linux_addr              { BeginToken(yytext); return LINUX_ADDR; }
+win_tasks               { BeginToken(yytext); return WIN_TASKS; }
+win_pdbase              { BeginToken(yytext); return WIN_PDBASE; }
+win_pid                 { BeginToken(yytext); return WIN_PID; }
+win_peb                 { BeginToken(yytext); return WIN_PEB; }
+win_iba                 { BeginToken(yytext); return WIN_IBA; }
+win_ph                  { BeginToken(yytext); return WIN_PH; }
+sysmap                  { BeginToken(yytext); return SYSMAPTOK; }
+ostype                  { BeginToken(yytext); return OSTYPETOK; }
+0x[0-9a-fA-F]+|[0-9]+   {
+    BeginToken(yytext);
+    yylval.str = strdup(yytext);
+    return NUM;
+    }
+[a-zA-Z][a-zA-Z0-9.-]+      {
+    BeginToken(yytext);
+    yylval.str = strdup(yytext);
+    return WORD;
+    }
+[a-zA-Z0-9\/.-]+            {
+    BeginToken(yytext);
+    yylval.str = strdup(yytext);
+    return FILENAME;
+    }
+\"                      { BeginToken(yytext); return QUOTE; }
+\{                      { BeginToken(yytext); return OBRACE; }
+\}                      { BeginToken(yytext); return EBRACE; }
+;                       { BeginToken(yytext); return SEMICOLON; }
+=                       { BeginToken(yytext); return EQUALS; }
 \n                      /* ignore EOL */;
 [ \t]+                  /* ignore whitespace */;
 %%

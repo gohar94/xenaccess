@@ -29,6 +29,7 @@
  * $Id$
  * $Date$
  */
+#include "../xenaccess.h"
 
 #define CONFIG_STR_LENGTH 1024
 
@@ -56,5 +57,5 @@ typedef struct xa_config_entry {
     } offsets;
 } xa_config_entry_t;
 
-void xa_parse_config(char *td);
+int xa_parse_config(char *td);
 xa_config_entry_t* xa_get_config();
