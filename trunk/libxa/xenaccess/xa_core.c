@@ -49,7 +49,7 @@ int read_config_file (xa_instance_t *instance)
 
     yyin = fopen("/etc/xenaccess.conf", "r");
     if (NULL == yyin){
-        printf("WARNING: config file not found at /etc/xenaccess.conf\n");
+        printf("ERROR: config file not found at /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -73,7 +73,11 @@ int read_config_file (xa_instance_t *instance)
     xa_dbprint("--got domain name from id (%d ==> %s).\n",
                instance->domain_id, instance->domain_name);
 
-    xa_parse_config(instance->domain_name);
+    if (xa_parse_config(instance->domain_name)){
+        printf("ERROR: failed to read config file\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
     entry = xa_get_config();
 
     /* copy the values from entry into instance struct */
@@ -230,7 +234,8 @@ int helper_init (xa_instance_t *instance)
 
     /* read in configure file information */
     if (read_config_file(instance) == XA_FAILURE){
-        printf("WARNING: failed to read configureation file\n");
+        ret = XA_FAILURE;
+        goto error_exit;
     }
     
     /* determine the page sizes and layout for target OS */
