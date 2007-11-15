@@ -98,6 +98,32 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
     return maddr;
 }
 
+void *windows_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset)
+{
+    uint32_t virt_address;
+    uint32_t phys_address;
+    uint32_t address;
+    uint32_t rva;
+
+    /* check the LRU cache */
+    if (xa_check_cache_sym(instance, symbol, 0, &address)){
+        return xa_access_machine_address(instance, address, offset);
+    }
+
+    /* get the RVA of the symbol */
+    if (windows_symbol_to_address(instance, symbol, &rva) == XA_FAILURE){
+        return NULL;
+    }
+
+    /* convert RVA into virt address */
+    phys_address = instance->ntoskrnl + rva;
+    virt_address = phys_address + instance->page_offset;
+
+    xa_update_cache(instance, symbol, virt_address, 0, 0);
+    return xa_access_physical_address(instance, phys_address, offset);
+}
+
 /* finds the EPROCESS struct for a given pid */
 unsigned char *windows_get_EPROCESS (
         xa_instance_t *instance, int pid, uint32_t *offset)
@@ -163,11 +189,6 @@ error_exit:
     if (memory) munmap(memory, instance->page_size);
     return pgd;
 }
-
-/*
-void *windows_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset)
-*/
 
 /* fills the taskaddr struct for a given windows process */
 int xa_windows_get_peb (

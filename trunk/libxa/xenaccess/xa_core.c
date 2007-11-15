@@ -259,89 +259,12 @@ int helper_init (xa_instance_t *instance)
     }
 #endif
 
-    /* setup Linux specific stuff */
+    /* setup OS specific stuff */
     if (instance->os_type == XA_OS_LINUX){
-        if (linux_system_map_symbol_to_address(
-                 instance, "swapper_pg_dir", &instance->kpgd) == XA_FAILURE){
-            printf("ERROR: failed to lookup 'swapper_pg_dir' address\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        xa_dbprint("--got vaddr for swapper_pg_dir (0x%.8x).\n",
-                   instance->kpgd);
-
-        if (!instance->hvm){
-            memory = xa_access_physical_address(
-                instance, instance->kpgd-instance->page_offset, &local_offset);
-            if (NULL == memory){
-                printf("ERROR: failed to get physical addr for kpgd\n");
-                ret = XA_FAILURE;
-                goto error_exit;
-            }
-            instance->kpgd = *((uint32_t*)(memory + local_offset));
-            munmap(memory, instance->page_size);
-        }
-        xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
-
-        memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
-        if (NULL == memory){
-            printf("ERROR: failed to get task list head 'init_task'\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        instance->init_task =
-            *((uint32_t*)(memory + local_offset + xalinux_tasks_offset));
-        munmap(memory, instance->page_size);
+        ret = linux_init(instance);
     }
-
-    /* setup Windows specific stuff */
-    if (instance->os_type == XA_OS_WINDOWS){
-        uint32_t sysproc = 0;
-
-        /* get base address for kernel image in memory */
-        /*TODO find this dynamically */
-        instance->ntoskrnl = get_ntoskrnl_base(instance);
-        if (instance->ntoskrnl == 0){
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->ntoskrnl);
-
-        /* get address for page directory (from system process) */
-        /* RVA ptr to PsInitialSystemProcess */
-        if (windows_symbol_to_address(
-                instance, "PsInitialSystemProcess", &sysproc) == XA_FAILURE){
-            printf("ERROR: failed to lookup PsInitialSystemProcess\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        sysproc += instance->ntoskrnl; /* PA ptr to PsInitialSystemProcess */
-        memory = xa_access_physical_address(instance, sysproc, &local_offset);
-        if (NULL == memory){
-            printf("ERROR: failed to resolve pointer for system process\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        sysproc = *((uint32_t*)(memory + local_offset)); /* VA to PsInit.. */
-        munmap(memory, instance->page_size);
-        /*TODO create macro for this value to be PAGE_OFFSET */
-        sysproc -= 0x80000000; /* PA to PsInit.. */
-        xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
-
-        memory = xa_access_physical_address(instance, sysproc, &local_offset);
-        if (NULL == memory){
-            printf("ERROR: failed to resolve pointer for system process\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-        }
-        instance->kpgd = *((uint32_t*)(memory + local_offset + 0x18));
-        instance->kpgd += instance->page_offset; /* store vaddr */
-        xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
-
-        /* get address start of process list */
-        instance->init_task =
-            *((uint32_t*)(memory + local_offset + xawin_tasks_offset));
-        munmap(memory, instance->page_size);
+    else if (instance->os_type == XA_OS_WINDOWS){
+        ret = windows_init(instance);
     }
 
 error_exit:

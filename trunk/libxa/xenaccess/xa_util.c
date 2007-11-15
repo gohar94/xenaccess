@@ -113,6 +113,32 @@ uint64_t xa_read_long_long_virt (xa_instance_t *instance, uint32_t vaddr, int pi
     return value;
 }
 
+uint32_t xa_read_long_sym (xa_instance_t *instance, char *sym)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint32_t value = 0;
+    memory = xa_access_kernel_symbol(instance, sym, &offset);
+    if (NULL != memory){
+        value = *((uint32_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
+uint64_t xa_read_long_long_sym (xa_instance_t *instance, char *sym)
+{
+    unsigned char *memory = NULL;
+    uint32_t offset = 0;
+    uint64_t value = 0;
+    memory = xa_access_kernel_symbol(instance, sym, &offset);
+    if (NULL != memory){
+        value = *((uint64_t*)(memory + offset));
+        munmap(memory, instance->page_size);
+    }
+    return value;
+}
+
 int xa_get_bit (unsigned long reg, int bit)
 {
     unsigned long mask = 1 << bit;

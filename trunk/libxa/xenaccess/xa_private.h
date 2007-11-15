@@ -357,4 +357,20 @@ int windows_symbol_to_address (
  */
 uint32_t get_ntoskrnl_base (xa_instance_t *instance);
 
+/**
+ * Gets a memory page where \a symbol is located and sets \a offset
+ * of the symbol. The mapping is cached internally.
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] symbol Name of the requested symbol.
+ * @param[out] offset Offset of symbol in returned page.
+ *
+ * @return Address of a page where \a symbol resides.
+ */
+void *windows_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset);
+
+int windows_init (xa_instance_t *instance);
+int linux_init (xa_instance_t *instance);
+
 #endif /* XA_PRIVATE_H */

@@ -40,8 +40,7 @@
 #define XA_SUCCESS 0
 #define XA_FAILURE -1
 #define XA_OS_LINUX 0
-#define XA_OS_WINDOWS 1  /* not yet supported */
-#define XA_OS_NETBSD 2   /* not yet supported */
+#define XA_OS_WINDOWS 1
 
 struct xa_cache_entry{
     time_t last_used;
@@ -242,6 +241,24 @@ uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
  * @return value from memory
  */
 uint64_t xa_read_long_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
+
+/**
+ * Reads a long (32 bit) value from memory, given a kernel symbol.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] sym Kernel symbol to read from
+ * @return value from memory
+ */
+uint32_t xa_read_long_sym (xa_instance_t *instance, char *sym);
+
+/**
+ * Reads a long long (64 bit) value from memory, given a kernel symbol.
+ *
+ * @param[in] instance libxa instance
+ * @param[in] sym Kernel symbol to read from
+ * @return value from memory
+ */
+uint64_t xa_read_long_long_sym (xa_instance_t *instance, char *sym);
 
 /*-----------------------------
  * Linux-specific functionality
