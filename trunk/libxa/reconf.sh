@@ -1,8 +1,0 @@
-#!/bin/sh
-
-rm -f config.cache
-rm -f acconfig.h
-aclocal
-autoconf
-autoheader
-automake -a
