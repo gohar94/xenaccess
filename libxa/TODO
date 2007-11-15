@@ -2,6 +2,9 @@
 
 ## Updates needed for 0.4 release
 * finish setting up windows support
+  -- add access symbol function support
+  -- partition linux / windows stuff in instance struct via union
+  -- refactor symbol code to reduce duplicate code
 * update README and example config file
 * address TODO spots where appropriate
 * full support for xen 3.1
