@@ -75,7 +75,8 @@ int main (int argc, char **argv)
         memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
     }
     else if (XA_OS_WINDOWS == xai.os_type){
-        memory = xa_access_virtual_address(&xai, 0x82bcbb98, &offset);
+        list_head = xa_read_long_sym(&xai, "PsInitialSystemProcess");
+        memory = xa_access_virtual_address(&xai, list_head, &offset);
         if (NULL == memory){
             perror("failed to get EPROCESS for PsInitialSystemProcess");
             goto error_exit;

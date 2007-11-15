@@ -404,14 +404,16 @@ uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address)
     return xa_pagetable_lookup(instance, instance->kpgd, virt_address, 1);
 }
 
+/* map memory given a kernel symbol */
 void *xa_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
     if (XA_OS_LINUX == instance->os_type){
         return linux_access_kernel_symbol(instance, symbol, offset);
     }
-
-    /*TODO we do not yet support any other OSes */
+    else if (XA_OS_WINDOWS == instance->os_type){
+        return windows_access_kernel_symbol(instance, symbol, offset);
+    }
     else{
         return NULL;
     }
@@ -426,8 +428,6 @@ uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
     else if (XA_OS_WINDOWS == instance->os_type){
         return windows_pid_to_pgd(instance, pid);
     }
-
-    /*TODO we do not yet support any other OSes */
     else{
         return 0;
     }
