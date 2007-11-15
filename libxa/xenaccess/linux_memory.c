@@ -102,16 +102,9 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
        grab the pgd value */
     memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
     munmap(memory, instance->page_size);
-    memory = xa_access_virtual_address(instance, ptr, &offset);
-    if (NULL == memory){
-        printf("ERROR: failed to follow mm pointer");
-        goto error_exit;
-    }
-    /* memcpy(&pgd, memory + offset + xalinux_pgd_offset, 4); */
-    pgd = *((uint32_t*)(memory + offset + xalinux_pgd_offset));
+    pgd = xa_read_long_virt(instance, ptr + xalinux_pgd_offset, 0);
 
 error_exit:
-    if (memory) munmap(memory, instance->page_size);
     return pgd;
 }
 

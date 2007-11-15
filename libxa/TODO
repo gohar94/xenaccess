@@ -4,9 +4,9 @@
 * update README and example config file
 * address TODO spots where appropriate
 * full support for xen 3.1
-* use new memory access functions throughout when just accessing a long
 * fix comments throughout (esp in .h files)
 * update ChangeLog to reflect changes for 0.4
+* put offsets into instance struct and set initial values in core
 
 ## Future Plans
 * cleanup code throughout and fix TODO spots
