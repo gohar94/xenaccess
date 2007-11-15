@@ -157,7 +157,6 @@ error_exit:
 }
 
 /* check that this domain uses a paging method that we support */
-/* currently we only support linear non-PAE with 4k page sizes */
 int get_page_info (xa_instance_t *instance)
 {
     int ret = XA_SUCCESS;
@@ -301,11 +300,21 @@ int helper_init (xa_instance_t *instance)
 
         /* get base address for kernel image in memory */
         /*TODO find this dynamically */
-        instance->ntoskrnl = 0x004d7000;
+        instance->ntoskrnl = get_ntoskrnl_base(instance);
+        if (instance->ntoskrnl == 0){
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->ntoskrnl);
 
-        /* get address for page directory (likely from system process) */
-        /*TODO find this dynamically */
-        sysproc = 0x000897d4; /* RVA ptr to PsInitialSystemProcess */
+        /* get address for page directory (from system process) */
+        /* RVA ptr to PsInitialSystemProcess */
+        if (windows_symbol_to_address(
+                instance, "PsInitialSystemProcess", &sysproc) == XA_FAILURE){
+            printf("ERROR: failed to lookup PsInitialSystemProcess\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
         sysproc += instance->ntoskrnl; /* PA ptr to PsInitialSystemProcess */
         memory = xa_access_physical_address(instance, sysproc, &local_offset);
         if (NULL == memory){

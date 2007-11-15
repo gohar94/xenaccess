@@ -338,4 +338,23 @@ char *xa_get_kernel_name (int id);
  */
 int xa_ishvm (int id);
 
+/**
+ * Gets address of a symbol in domU virtual memory. It uses exports 
+ * file specified in xenaccess configuration file.
+ *
+ * @param[in] instance Handle to xenaccess instance (see xa_init).
+ * @param[in] symbol Name of the requested symbol.
+ * @param[out] address The addres of the symbol in guest memory.
+ */
+int windows_symbol_to_address (
+        xa_instance_t *instance, char *symbol, uint32_t *address);
+
+/**
+ * Get the ntoskrnl base address by doing a backwards search.
+ *
+ * @param[in] instance Handle to xenaccess instance (see xa_init).
+ * @param[out] address The address of ntoskrnl base.
+ */
+uint32_t get_ntoskrnl_base (xa_instance_t *instance);
+
 #endif /* XA_PRIVATE_H */
