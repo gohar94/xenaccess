@@ -64,6 +64,7 @@ int windows_init (xa_instance_t *instance)
     /* get address start of process list */
     instance->init_task = xa_read_long_phys(
         instance, sysproc + xawin_tasks_offset);
+    xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
 
 error_exit:
     return ret;
