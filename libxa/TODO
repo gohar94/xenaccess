@@ -23,4 +23,4 @@
 * add output of version number when run with full debug output
 * access based on domain name instead of id
 * autodetect os type
-* windows symbol access support (from memory or config file?)
+* automatically determine offset information

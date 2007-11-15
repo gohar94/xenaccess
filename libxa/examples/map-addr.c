@@ -22,9 +22,6 @@
  * File: map-addr.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 #include <stdlib.h>
 #include <string.h>
