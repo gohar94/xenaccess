@@ -20,15 +20,11 @@
  *
  * --------------------
  * This file contains utility functions reading information from the
- * System.map file which contains symbol information from the linux
- * kernel created by nm.
+ * symbol files.  These utilities are shared across supported OSes.
  *
- * File: linux_system_map.c
+ * File: xa_symbols.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date: 2006-12-06 01:23:30 -0500 (Wed, 06 Dec 2006) $
  */
 
 #include <stdio.h>
@@ -36,10 +32,7 @@
 #include <string.h>
 #include "xa_private.h"
 
-/* 200 chars is more than enough for one line of system.map */
-#define MAX_ROW_LENGTH 200
-
-int get_system_map_row (FILE *f, char *row, char *symbol, int position)
+int get_symbol_row (FILE *f, char *row, char *symbol, int position)
 {
     int ret = XA_FAILURE;
 
@@ -85,40 +78,5 @@ error_exit:
     if (ret == XA_FAILURE){
         memset(row, 0, MAX_ROW_LENGTH);
     }
-    return ret;
-}
-
-int linux_system_map_symbol_to_address (
-        xa_instance_t *instance, char *symbol, uint32_t *address)
-{
-    FILE *f = NULL;
-    char *row = NULL;
-    int ret = XA_SUCCESS;
-
-    if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
-        instance->sysmap = linux_predict_sysmap_name(instance->domain_id);
-    }
-
-    if ((row = malloc(MAX_ROW_LENGTH)) == NULL ){
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    if ((f = fopen(instance->sysmap, "r")) == NULL){
-        printf("ERROR: could not find System.map file after checking:\n");
-        printf("\t%s\n", instance->sysmap);
-        printf("To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    if (get_system_map_row(f, row, symbol, 2) == XA_FAILURE){
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-
-    *address = (uint32_t) strtoul(row, NULL, 16);
-
-error_exit:
-    if (row) free(row);
-    if (f) fclose(f);
     return ret;
 }

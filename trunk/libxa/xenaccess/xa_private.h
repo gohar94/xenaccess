@@ -44,6 +44,9 @@
 /* Architecture dependent constants */
 #define XA_PFN_PER_FRAME 1024		/* number of xen_pfn_t that fits on one frame */
 
+/* other globals */
+#define MAX_ROW_LENGTH 200
+
 /* offset to each of these fields from the beginning of the struct
    assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
    is defined in the guest's kernel (this is the default in xen)
@@ -372,5 +375,6 @@ void *windows_access_kernel_symbol (
 
 int windows_init (xa_instance_t *instance);
 int linux_init (xa_instance_t *instance);
+int get_symbol_row (FILE *f, char *row, char *symbol, int position);
 
 #endif /* XA_PRIVATE_H */
