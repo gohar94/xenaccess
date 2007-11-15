@@ -23,17 +23,12 @@
  * File: module-list.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
 #include <stdio.h>
-//#include <locale.h>
-//#include <wchar.h>
 #include <xenaccess/xenaccess.h>
 
 int main (int argc, char **argv)
@@ -53,40 +48,24 @@ int main (int argc, char **argv)
         goto error_exit;
     }
 
-    /* setup locale for unicode parsing on windows */
-    //if (XA_OS_WINDOWS == xai.os_type){
-    //    if (!setlocale(LC_CTYPE, "")){
-    //        printf("failed to set locale for unicode output\n");
-    //        goto error_exit;
-    //    }
-    //}
-
     /* get the head of the module list */
     if (XA_OS_LINUX == xai.os_type){
-        memory = xa_access_kernel_symbol(&xai, "modules", &offset);
-        if (NULL == memory){
-            perror("failed to get module list head");
-            goto error_exit;
-        }
+        next_module = xa_read_long_sym(&xai, "modules");
     }
     else if (XA_OS_WINDOWS == xai.os_type){
+        /*TODO don't use a hard-coded address here */
         memory = xa_access_virtual_address(&xai, 0x8055a620, &offset);
         if (NULL == memory){
             perror("failed to get PsLoadedModuleList");
             goto error_exit;
         }
+        memcpy(&next_module, memory + offset, 4);
+        munmap(memory, xai.page_size);
     }
-    memcpy(&next_module, memory + offset, 4);
     list_head = next_module;
-    munmap(memory, xai.page_size);
 
     /* walk the module list */
     while (1){
-
-        /* Note: the next two steps are equiv to something like
-           'next_module = next_module->next' except that we can't
-           use pointers directly since we are in someone else's
-           memory space! */
 
         /* follow the next pointer */
         memory = xa_access_virtual_address(&xai, next_module, &offset);
@@ -94,8 +73,6 @@ int main (int argc, char **argv)
             perror("failed to map memory for module list pointer");
             goto error_exit;
         }
-
-        /* update the next pointer */
         memcpy(&next_module, memory + offset, 4);
 
         /* if we are back at the list head, we are done */
@@ -118,6 +95,7 @@ int main (int argc, char **argv)
             //wprintf("%ls\n", wname);
             //below is a total hack to bypass unicode support
             int i = 0;
+            /*TODO don't use a hard-coded offset here */
             char *tmpname = (char *) (memory + offset + 0x4c);
             name = malloc(28);
             memset(name, 0, 28);

@@ -23,9 +23,6 @@
  * File: process-list.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 #include <stdlib.h>
 #include <string.h>
@@ -92,19 +89,12 @@ int main (int argc, char **argv)
     /* walk the task list */
     while (1){
 
-        /* Note: the next two steps are equiv to something like
-           'next_process = next_process->next' except that we can't
-           use pointers directly since we are in someone else's
-           memory space! */
-
         /* follow the next pointer */
         memory = xa_access_virtual_address(&xai, next_process, &offset);
         if (NULL == memory){
             perror("failed to map memory for process list pointer");
             goto error_exit;
         }
-
-        /* update the next pointer */
         memcpy(&next_process, memory + offset, 4);
 
         /* if we are back at the list head, we are done */
