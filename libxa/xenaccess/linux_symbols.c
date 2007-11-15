@@ -19,15 +19,16 @@
  * 02110-1301, USA.
  *
  * --------------------
- * This file contains utility functions reading information from an
- * exports file created by running the dumpbin utility.  The exports
- * file used should be from ntoskrnl, which can be obtained with
- * the following command:
- *     dumpbin /exports c:\windows\system32\ntoskrnl.exe
+ * This file contains utility functions reading information from the
+ * System.map file which contains symbol information from the linux
+ * kernel created by nm.
  *
- * File: windows_symbols.c
+ * File: linux_system_map.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
+ *
+ * $Id$
+ * $Date: 2006-12-06 01:23:30 -0500 (Wed, 06 Dec 2006) $
  */
 
 #include <stdio.h>
@@ -35,25 +36,15 @@
 #include <string.h>
 #include "xa_private.h"
 
-uint32_t get_rva (char *row)
-{
-    char *p = row+17;
-    uint32_t rva = (uint32_t) strtoul(p, NULL, 16);
-    return rva;
-}
-
-int windows_symbol_to_address (
+int linux_system_map_symbol_to_address (
         xa_instance_t *instance, char *symbol, uint32_t *address)
 {
     FILE *f = NULL;
     char *row = NULL;
     int ret = XA_SUCCESS;
-    int counter = 0;
 
     if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
-        printf("ERROR: windows sysmap file not specified in config file\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+        instance->sysmap = linux_predict_sysmap_name(instance->domain_id);
     }
 
     if ((row = malloc(MAX_ROW_LENGTH)) == NULL ){
@@ -61,27 +52,18 @@ int windows_symbol_to_address (
         goto error_exit;
     }
     if ((f = fopen(instance->sysmap, "r")) == NULL){
-        printf("ERROR: could not find exports file after checking:\n");
+        printf("ERROR: could not find System.map file after checking:\n");
         printf("\t%s\n", instance->sysmap);
         printf("To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
-
-    /* move past the header */
-    while (fgets(row, MAX_ROW_LENGTH, f) != NULL){
-        if (++counter > 19){
-            break;
-        }
-    }
-
-    /* get the row */
-    if (get_symbol_row(f, row, symbol, 4) == XA_FAILURE){
+    if (get_symbol_row(f, row, symbol, 2) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
     }
 
-    *address = get_rva(row);
+    *address = (uint32_t) strtoul(row, NULL, 16);
 
 error_exit:
     if (row) free(row);
