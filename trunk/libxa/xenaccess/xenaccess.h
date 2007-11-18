@@ -216,6 +216,20 @@ void *xa_access_user_virtual_address (
         uint32_t *offset, int pid);
 
 /**
+ * Performs the translation from a kernel virtual address to a
+ * physical address.
+ *
+ * @param[in] instance XenAccess instance
+ * @param[in] virt_address Desired kernel virtual address to translate
+ * @return Physical address, or zero on error
+ */
+uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address);
+
+/*---------------------------------------
+ * Memory access functions from xa_util.c
+ */
+
+/**
  * Reads a long (32 bit) value from memory, given a kernel symbol.
  *
  * @param[in] instance XenAccess instance
@@ -290,16 +304,6 @@ uint32_t xa_read_long_mach (xa_instance_t *instance, uint32_t maddr);
  */
 uint64_t xa_read_long_long_mach (xa_instance_t *instance, uint32_t maddr);
 
-/**
- * Performs the translation from a kernel virtual address to a
- * physical address.
- *
- * @param[in] instance XenAccess instance
- * @param[in] virt_address Desired kernel virtual address to translate
- * @return Physical address, or zero on error
- */
-uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address);
-
 /*-----------------------------
  * Linux-specific functionality
  */
@@ -329,10 +333,147 @@ int xa_windows_get_peb (
         xa_instance_t *instance, int pid, xa_windows_peb_t *peb);
 
 
-#endif /* LIB_XEN_ACCESS_H */
-
 /**
  * @mainpage
  *
- * Main page description goes here.
+ * The XenAccess project was inspired by ongoing research within the 
+ * Georgia Tech Information Security Center (GTISC).  The purpose of this
+ * library is to make it easier for other researchers to experiment with
+ * the many uses of memory introspection without needing to focus on the
+ * low-level details of introspection.  If you are using this library and
+ * come up with a useful extension to it, we are always happy to receive
+ * patches.
+ *
+ * Please direct all questions about XenAccess to the mailing list:
+ * https://lists.sourceforge.net/lists/listinfo/xenaccess-devel
+ *
+ * The project was created and is maintained by Bryan D. Payne, who is
+ * currently working towards his PhD in Computer Science at Georgia Tech.
+ * Bryan may be reached by email at bryan@thepaynes.cc.
+ *
+ *
+ * @section intro Introduction
+ * @subsection intro1 What is memory introspection?
+ * @subsection intro2 What is XenAccess?
+ *
+ *
+ * @section install Installation
+ * @subsection install1 Getting XenAccess
+ * Since you are reading this document, you likely already have a copy of
+ * XenAccess.  However, if you do need to download a copy, you can get the 
+ * latest released version from sourceforge using the following link:
+ * http://sf.net/project/platformdownload.php?group_id=159196
+ *
+ * You can also grab the development version directly from the subversion
+ * repository.  To do this, you will need a subversion client capable of
+ * handling SSL.  Then, perform the checkout with the following command:
+@verbatim
+ svn co https://xenaccess.svn.sf.net/svnroot/xenaccess/trunk/libxa @endverbatim
+ *
+ * @subsection install2 Building XenAccess
+ * Before compiling XenAccess, you should make sure that you have a standard
+ * development environment installed including gcc, make, autoconf, etc.
+ * You will also need the libxc library, which is included with a typical
+ * Xen installation.  XenAccess uses the standard GNU build system.  To
+ * compile the library, follow the steps shown below.
+@verbatim
+./autogen.sh
+./configure
+make @endverbatim
+ *
+ * Note that you can specify options to the configure script to specify, for
+ * example, the installation location.  For a complete list of configure
+ * options, run:
+@verbatim
+./configure --help @endverbatim
+ *
+ * @subsection install3 Installing XenAccess
+ * Installation is optional.  This is useful if you will be developing code
+ * to use the XenAccess library.  However, if you are just running the examples,
+ * then there is no need to do an installation.  If you choose to install
+ * XenAccess, you can do it using the steps shown below:
+@verbatim
+su 
+make install @endverbatim
+ *
+ * Note that this will install XenAccess under the install prefix spcified to
+ * the configure script.  If you did not specify an install prefix, then
+ * XenAccess is installed under /usr/local.
+ *
+ * @subsection install4 Configuring XenAccess
+ * In order to work properly, XenAccess requires that you install a
+ * configuration file.  This file has a set of entries for each domain that 
+ * XenAccess will access.  These entries specify things such as the OS type
+ * (e.g., Linux or Windows), the location of symbolic information, and offsets
+ * used to access data within the domain.  The file format is relatively
+ * straight forward.  The generic format is shown below:
+@verbatim
+<domain name> {
+    <key> = <value>;
+    <key> = <value>;
+} @endverbatim
+ *
+ * The domain name is what appears when you use the 'xm list' command.  There
+ * are 14 different keys available for use.  The ostype and sysmap
+ * keys are used by both Linux and Windows domains.  The available keys are
+ * @li @c ostype Linux or Windows guests are supported.
+ * @li @c sysmap The path to the System.map file or the exports file (details below).
+ * @li @c linux_tasks The number of bytes (offset) from the start of the struct until task_struct->tasks from linux/sched.h in the domain's kernel.
+ * @li @c linux_mm Offset to task_struct->mm.
+ * @li @c linux_pid Offset to task_struct->pid.
+ * @li @c linux_name Offset to task_struct->name.
+ * @li @c linux_pgd Offset to task_struct->pgd.
+ * @li @c linux_addr Offset to task_struct->start_code.
+ * @li @c win_tasks Offset to EPROCESS->ActiveProcessLinks.
+ * @li @c win_pdbase Offset to EPROCESS->Pcb->DirectoryTableBase.
+ * @li @c win_pid Offset to EPROCESS->UniqueProcessId.
+ * @li @c win_peb Offset to EPROCESS->Peb.
+ * @li @c win_iba Offset to EPROCESS->Peb->ImageBaseAddress.
+ * @li @c win_ph Offset to EPROCESS->Peb->ProcessHeap.
+ *
+ * All of the offsets can be specified in either hex or decimal.  For hex, the
+ * number should be preceeded with a '0x'.  An example configuration file is
+ * shown below:
+@verbatim
+Fedora-HVM {
+    sysmap      = "/boot/System.map-2.6.18-1.2798.fc6";
+    ostype      = "Linux";
+    linux_tasks = 268;
+    linux_mm    = 276;
+    linux_pid   = 312;
+    linux_name  = 548;
+    linux_pgd   = 40;
+    linux_addr  = 132;
+}
+
+WinXPSP2 {
+    ostype      = "Windows";
+    win_tasks   = 0x88;
+    win_pdbase  = 0x18;
+    win_pid     = 0x84;
+    win_peb     = 0x1b0;
+    win_iba     = 0x8;
+    win_ph      = 0x18;
+} @endverbatim
+ *
+ * You can specify as many domains as you wish in this configuration file.
+ * When you are done creating this file, it must be saved to
+ * /etc/xenaccess.conf.
+ *
+ * @section examples Example Code
+ * @subsection examples1 Included Examples
+ * @subsection examples2 In Detail: process-list.c
+ * @subsection examples3 Running the Examples
+ *
+ *
+ * @section devel Programming With XenAccess
+ * @subsection devel1 Best Practices
+ * @subsection devel2 Patterns
+ * @subsection devel3 Debugging
+ * @subsection devel4 Bridging the Semantic Gap
+ *
+ *
+ * @section problems Troubleshooting
  */
+
+#endif /* LIB_XEN_ACCESS_H */
