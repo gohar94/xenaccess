@@ -1,13 +1,10 @@
-XenAccess v0.3 README
+XenAccess v0.4 README
 by Bryan D. Payne
 =====================
 
-Disclaimer
-----------
-This code is still very young.  The API is subject to change often.  The code
-may crash and do other bad things.  So, have fun, play around, but don't
-expect clean polished code just yet :-)
-
+This file contains very basic instructions to get you up and running.  If you
+want more details about installation, or programming with XenAccess, then see
+the documentation included in the doc/ subdirectory of XenAccess.
 
 Dependencies
 ------------
@@ -16,13 +13,11 @@ The following libraries are used in building this code:
 libxc (from Xen, the Xen Control library)
 libxenstore (from Xen, access to the xenstore)
 
---> Note: XenAccess no longer uses libvirt or libxml2.
-
 
 Building
 --------
-Starting with version 0.3, XenAccess uses the standard GNU build system.  To
-compile this library, simply following the steps below:
+XenAccess uses the standard GNU build system.  To compile this library, simply
+follow the steps below:
 
 ./configure
 make
@@ -33,189 +28,6 @@ choose to install the library into the prefix specified to 'configure' by:
 make install
 
 The default installation prefix is /usr/local.
-
-
-Configuration File
-------------------
-XenAccess will attempt to locate the system map files for your running
-domains by looking in /boot.  If this fails, or if you are trying to
-access an HVM domain, then you must explictily specify the location of
-a domain's system map file using the XenAccess configuration file.
-
-The XenAccess configuration file must be located at /etc/xenaccess.conf.
-The file format is simple, containing just the domain name and the location
-of its system map file.  For example, if your domain name is Fedora-HVM and
-your system map file is /boot/System.map-2.6.18-1.2798.fc6, then you would
-place the following entry in the configuration file:
-
-Fedora-HVM {
-    sysmap      = "/boot/System.map-2.6.18-1.2798.fc6";
-    ostype      = "Linux";
-    linux_tasks = 268;
-    linux_mm    = 276;
-    linux_pid   = 312;
-    linux_name  = 548;
-    linux_pgd   = 40;
-    linux_addr  = 132;
-}
-
-or for Windows:
-
-WinXPSP2 {
-    ostype      = "Windows";
-    win_tasks   = 0x88;
-    win_pdbase  = 0x18;
-    win_pid     = 0x84;
-    win_peb     = 0x1b0;
-    win_iba     = 0x8;
-    win_ph      = 0x18;
-}
-
-You need not specify offsets.  Default values are found within
-linux_memory.c and windows_memory.c, respectively.  However, you will
-probably need to calculate these values if you do not use the kernel
-distributed with xen.
-
-In general, the configuration file contains records that look like:
-
-<domain name> {
-    <key> = <value>;
-}
-
-Currently there are 14 different keys available.  Only ostype is common
-between Windows and Linux guests.
-
-The list of keys is provided below:
-
-sysmap:         The path to the System.map file corresponding to the
-                domain's Linux kernel.
-ostype:         Linux or Windows guests are supported.
-
-linux_tasks:    The number of bytes (offset) from the start of the
-                struct until task_struct->tasks.  All of these
-                offsets are in linux/sched.h.
-linux_mm:       Offset to task_struct->mm.
-linux_pid:      Offset to task_struct->pid.
-linux_name:     Offset to task_struct->name.
-linux_pgd:      Offset to task_struct->pgd.
-linux_addr:     Offset to task_struct->start_code.
-
-win_tasks:      Offset to EPROCESS->ActiveProcessLinks.
-win_pdbase:     Offset to EPROCESS->Pcb->DirectoryTableBase.
-win_pid:        Offset to EPROCESS->UniqueProcessId.
-win_peb:        Offset to EPROCESS->Peb.
-win_iba:        Offset to EPROCESS->Peb->ImageBaseAddress.
-win_ph_offset:  Offset to EPROCESS->Peb->ProcessHeap.
-
-Using XenAccess
----------------
-A quick way to see XenAccess in action is to try out the example code.  You
-should be running Xen, and running the example code as root in domain0.  You
-should have at least one user domain running linux.  Note the domain ID using
-the 'xm list' command:
-
-[root@bluemoon libxa]# xm list
-Name                                      ID Mem(MiB) VCPUs State   Time(s)
-Domain-0                                   0     1229     2 r----- 137356.4
-Fedora-HVM                                 4      384     1 -b----   2292.6
-fc5                                        5      384     1 -b----     15.4
-[root@bluemoon libxa]# 
-
-Then you can run the examples as follows:
-
-[root@bluemoon libxa]# cd examples/
-[root@bluemoon examples]# ./module-list 5
-ipv6
-binfmt_misc
-lp
-parport_pc
-parport
-nvram
-usbcore
-[root@bluemoon examples]# ./module-list 4
-autofs4
-hidp
-rfcomm
-l2cap
-bluetooth
-sunrpc
-ipv6
-parport_pc
-lp
-parport
-floppy
-8139cp
-8139too
-mii
-pcspkr
-serio_raw
-dm_snapshot
-dm_zero
-dm_mirror
-dm_mod
-ext3
-jbd
-[root@bluemoon examples]# 
-
-Note that the example code works for both para-virtualized (i.e., PV) and
-fully-virtualized (i.e., HVM) domains.  However, the example code uses hard
-coded offsets to locate information in the running kernels, so you may find
-that it fails on some kernels, where the offsets are incorrect:
-
-[root@bluemoon examples]# ./process-list 5
-[    1] init
-[    2] migration/0
-[    3] ksoftirqd/0
-[    4] watchdog/0
-[    5] events/0
-[    6] khelper
-[    7] kthread
-[    8] xenwatch
-[    9] xenbus
-[   15] kblockd/0
-[   57] pdflush
-[   58] pdflush
-[   60] aio/0
-[   59] kswapd0
-[  578] kseriod
-[  685] kpsmoused
-[  710] khubd
-[  978] dhclient
-[ 1006] syslogd
-[ 1009] klogd
-[ 1021] sshd
-[ 1027] mingetty
-[root@bluemoon examples]# ./process-list 4
-[1408237823] ?
-[14941936] ?S?
-[    0] 
-[    0] 
-ERROR: address not in page table
-failed to map memory for process list pointer: Success
-[root@bluemoon examples]# 
-
-Here we see that 'process-list' works on domain id 5 (the PV domain running
-the 2.6.16.29-xen kernel that comes with Xen-3.0.3), but not on domain 4
-(an HVM domain running Fedora Core 6 with the 2.6.18-1.2849.fc6 kernel).
-This type of behavior is simply a current limitation of XenAccess.
-
-
-Problems?
----------
-Several people have reported problems with the example code.  Most often
-the module-list example will work, but one or both of the process-* examples
-fail.  Unfortunately, this is a side effect of the use of offsets in 
-XenAccess.  The software is basically guessing where certain data is
-located in the domU memory.  If the domU kernel is compiled differently
-than the standard xen kernel, then the kernel data structures will be in
-different locations.  The end result is a failure of these examples.
-
-All hope is not lost!  This code is still in the early stages of development
-and I made the decision to push it out sooner than later.  I am planning on
-addressing these issues in time by adding code that will do a better job of
-dynamically determining the correct location in memory for each data
-structure.  Watching the mailing list for announcements of updated versions
-that address this and other issues.
 
 
 Want to Help?
@@ -236,4 +48,4 @@ Questions?
 ----------
 The mailing list is the best place to get your questions answered:
 
-    http://lists.sourceforge.net/lists/listinfo/xenaccess-devel
+    https://lists.sf.net/lists/listinfo/xenaccess-devel
