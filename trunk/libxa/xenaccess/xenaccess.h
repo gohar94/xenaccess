@@ -345,7 +345,7 @@ int xa_windows_get_peb (
  * patches.
  *
  * Please direct all questions about XenAccess to the mailing list:
- * https://lists.sourceforge.net/lists/listinfo/xenaccess-devel
+ * https://lists.sf.net/lists/listinfo/xenaccess-devel
  *
  * The project was created and is maintained by Bryan D. Payne, who is
  * currently working towards his PhD in Computer Science at Georgia Tech.
@@ -353,15 +353,48 @@ int xa_windows_get_peb (
  *
  *
  * @section intro Introduction
- * @subsection intro1 What is memory introspection?
- * @subsection intro2 What is XenAccess?
+ * @subsection intro1 What is XenAccess?
+ * XenAccess is a library that simplifies the process of memory introspection
+ * for virtual machines running on the Xen hypervisor.  With XenAccess, your
+ * software can run in one virtual machine and access the memory space of
+ * other virtual machines.  While the Xen Control Library (libxc), which is
+ * included with Xen, provides the ability to access another virtual 
+ * machine's memory at a low level, XenAccess allows you to access memory
+ * using kernel symbols, virtual addresses, and physical addresses.
+ *
+ * @subsection intro2 What is memory introspection?
+ * Memory introspection is the process of viewing the memory of one virtual
+ * machine from a different virtual machine.  On the surface, this sounds
+ * rather simple.  In fact, Xen provides a function to facilitate this type
+ * of memory access.  What makes memory introspection difficult is the
+ * semantic gap between the two virtual machines.  For example, to lookup
+ * virtual addresses XenAccess must walk the page tables inside the other
+ * virtual machine.  However, to walk these page tables, XenAccess must 
+ * first know where the page directory is located (i.e., the CR3 value).
+ * And this value depends on the process address space you are viewing.
+ * The more you think about the problem, the reasons for its difficulty
+ * become clear.  One must know a lots of details about the target operating
+ * system in order to build these higher levels of abstraction.
+ *
+ * @image html intro-detail.png XenAccess must take several steps to access a memory page based on a kernel symbol in Linux.
+ * The figure above shows the steps that XenAccess takes to access a page of
+ * memory using a kernel symbol.  This figure is focused on Linux, however the
+ * procedure for Windows is similar.  Instead of using the System.map file,
+ * kernel symbols are converted to virtual addresses using the export values
+ * from ntoskrnl.exe.
+ *
+ * Memory introspection is useful because it allows you to monitor and control
+ * an operating system from a protected location.  Previous research has 
+ * shown that introspection can be used for a wide variety of security
+ * applications, but more ideas are coming out all the time.  Using XenAccess,
+ * you can quickly experiment with your new ideas and help advance this
+ * new an exciting research direction.
  *
  *
  * @section install Installation
  * @subsection install1 Getting XenAccess
- * Since you are reading this document, you likely already have a copy of
- * XenAccess.  However, if you do need to download a copy, you can get the 
- * latest released version from sourceforge using the following link:
+ * You can get the latest released version of XenAccess from SourceForge
+ * using the following link:
  * http://sf.net/project/platformdownload.php?group_id=159196
  *
  * You can also grab the development version directly from the subversion
@@ -370,12 +403,17 @@ int xa_windows_get_peb (
 @verbatim
  svn co https://xenaccess.svn.sf.net/svnroot/xenaccess/trunk/libxa @endverbatim
  *
+ * If you are just getting started with XenAccess, you probably want to 
+ * use the latest released version.  However, if you need a new feature that
+ * hasn't been released, or you are planning on submitting a patch, then you
+ * may want to try the development version.
+ *
  * @subsection install2 Building XenAccess
  * Before compiling XenAccess, you should make sure that you have a standard
  * development environment installed including gcc, make, autoconf, etc.
- * You will also need the libxc library, which is included with a typical
- * Xen installation.  XenAccess uses the standard GNU build system.  To
- * compile the library, follow the steps shown below.
+ * You will also need the libxc library and the libxenstore library, which are
+ * included with a typical Xen installation.  XenAccess uses the standard GNU
+ * build system.  To compile the library, follow the steps shown below.
 @verbatim
 ./autogen.sh
 ./configure
@@ -416,6 +454,8 @@ make install @endverbatim
  * The domain name is what appears when you use the 'xm list' command.  There
  * are 14 different keys available for use.  The ostype and sysmap
  * keys are used by both Linux and Windows domains.  The available keys are
+ * listed below:
+ *
  * @li @c ostype Linux or Windows guests are supported.
  * @li @c sysmap The path to the System.map file or the exports file (details below).
  * @li @c linux_tasks The number of bytes (offset) from the start of the struct until task_struct->tasks from linux/sched.h in the domain's kernel.
@@ -462,8 +502,217 @@ WinXPSP2 {
  *
  * @section examples Example Code
  * @subsection examples1 Included Examples
+ * XenAccess comes with a variety of small examples to demonstrate how to use
+ * the library.  These are also useful for checking that you have successfully
+ * completed the build and configuration steps described in the section above.
+ * The first argument for each example is the domain ID that you wish to view.
+ * This should be the same ID seen using the 'xm list' command.  The domain
+ * you specify must also be included in the configuration file.  The provided
+ * examples are listed below:
+ *
+ * @li @c map-addr Dumps a memory page to stdout based on the provided virtual address.  The virtual address must be a kernel virtual address.  The page is displayed in a readable format complete with hex, ascii, and offsets.  The number printed before the memory page is the offset of the specified address within the page.
+ * @li @c map-symbol Same as @c map-addr except you specify a kernel symbol instead of a kernel virtual address.
+ * @li @c module-list Lists the kernel modules installed in the operating system.  This is the same list that you would get using 'lsmod' on a Linux system.  On Windows, it lists the drivers loaded into the kernel.
+ * @li @c process-list Lists the running processes in the operating system.  This is the same list that you would get using 'ps -ef' on a Linux system.  On Windows, it is the same list that you would get using the task manager.
+ * @li @c process-data Displays the first memory page of executable content for a given process.  The process number, which is provided as a second argument, is the number obtained from using the @c process-list example above.
+ *
  * @subsection examples2 In Detail: process-list.c
+ * In order to better understand how the examples work, let's take a look at
+ * one of the more interesting examples.  The @c process-list example displays
+ * the processes running in an operating system by walking down the linked
+ * list data structure containing process information.  For each process, the
+ * name and ID are extracted and printed to stdout.  To see how this is done,
+ * we will step through the code one piece at a time.
+ *
+@verbatim
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <stdio.h>
+#include <xenaccess/xenaccess.h>
+#include <xenaccess/xa_private.h> @endverbatim
+ *
+ * The include list is not too surprising.  Note that xa_private.h is included
+ * here, but this is only to access the function that prints a memory page to
+ * stdout.  Most people will not need to include xa_private.h
+ *
+@verbatim
+#define TASKS_OFFSET 24 * 4
+#define PID_OFFSET 39 * 4 
+#define NAME_OFFSET 108 * 4
+#define ActiveProcessLinks_OFFSET 0x88
+#define UniqueProcessId_OFFSET 0x84
+#define ImageFileName_OFFSET 0x174 @endverbatim
+ *
+ * These offset values are important as they will allow us to find the
+ * necessary data within the data structures we traverse.  The first three
+ * offsets are used for Linux systems and obtained by looking at the definition
+ * of task_struct.  The second three offsets are used for Windows systems and
+ * obtained using windbg to view the EPROCESS struct.
+ *
+@verbatim
+    uint32_t dom = atoi(argv[1]);
+
+    if (xa_init(dom, &xai) == XA_FAILURE){
+        perror("failed to init XenAccess library");
+        goto error_exit;
+    } @endverbatim
+ *
+ * Next we read in the domain ID to look at.  (Yes, there is no error
+ * checking here so the program will seg fault if you fail to specify a
+ * domain ID as an argument.)  Then we make our first call to XenAccess.
+ * This call initializes the instance data structure.  Note that we only 
+ * perform this initialization step once as it is a costly function call.
+ *
+ * From this point forward, all of the error checking code will be omited
+ * from the sake of clarity.  In addition, we will only focus on the Linux
+ * version of the code.  The Windows version operates in a similar fashion.
+ * To see the complete version of the code, look in the examples directory
+ * of your copy of XenAccess.
+ *
+@verbatim
+    memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
+    memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
+    list_head = next_process;
+    munmap(memory, xai.page_size); @endverbatim
+ *
+ * The kernel symbol 'init_task' points to the beginning of the process list
+ * in the Linux kernel.  So we map this memory location and then copy the 
+ * pointer to the next process into both the list_head and next_process
+ * variables.  The task list is a circular linked list, so we will use 
+ * list_head to know when we have visited every process.  The next step here 
+ * is to unmap the memory, since we are done with this page.  This is 
+ * important to remember since you can only map a limited number of pages at
+ * a time.  Just as you would free memory after a malloc, you should unmap
+ * these pages after you are done using them.
+ *
+@verbatim
+    while (1){
+        memory = xa_access_virtual_address(&xai, next_process, &offset);
+        memcpy(&next_process, memory + offset, 4);
+
+        if (list_head == next_process){
+            break;
+        }
+
+        name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
+        memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
+        printf("[%5d] %s\n", pid, name);
+        munmap(memory, xai.page_size);
+    } @endverbatim
+ *
+ * This loop is the bulk of the program.  We map the memory page associated
+ * with the next process.  For this process we check to see if it is the
+ * init_task process.  If so then we are done.  If not, then we print out
+ * the process information.  Note that we are obtaining this information
+ * directly from the task_struct in memory of the running Linux system that
+ * we are looking at.  When we are done with this memory page, we unmap it
+ * and repeat the loop.
+ *
+@verbatim
+    if (memory) munmap(memory, xai.page_size);
+    xa_destroy(&xai); @endverbatim
+ *
+ * The final step is cleanup.  We perform a sanity check to make sure that 
+ * there mapped memory pages.  And then we call xa_destroy to free any memory
+ * associated with the XenAccess instance.
+ *
  * @subsection examples3 Running the Examples
+ * A quick way to see XenAccess in action is to try out the example code.  You
+ * should be running Xen, and running the example code as root in domain 0.
+ * You should have at least one user domain running and the configuration file
+ * setup for this domain.  Note the domain ID using the 'xm list' command:
+ *
+@verbatim
+[root@bluemoon libxa]# xm list
+Name                                      ID Mem(MiB) VCPUs State   Time(s)
+Domain-0                                   0     1229     2 r----- 137356.4
+Fedora-HVM                                 4      384     1 -b----   2292.6
+fc5                                        5      384     1 -b----     15.4
+[root@bluemoon libxa]# @endverbatim
+ *
+ * Then you can run the examples as follows:
+ *
+@verbatim
+[root@bluemoon libxa]# cd examples/
+[root@bluemoon examples]# ./module-list 5
+ipv6
+binfmt_misc
+lp
+parport_pc
+parport
+nvram
+usbcore
+[root@bluemoon examples]# ./module-list 4
+autofs4
+hidp
+rfcomm
+l2cap
+bluetooth
+sunrpc
+ipv6
+parport_pc
+lp
+parport
+floppy
+8139cp
+8139too
+mii
+pcspkr
+serio_raw
+dm_snapshot
+dm_zero
+dm_mirror
+dm_mod
+ext3
+jbd
+[root@bluemoon examples]# @endverbatim
+ *
+ * Note that the example code works for both para-virtualized (i.e., PV) and
+ * fully-virtualized (i.e., HVM) domains.  However, the example code uses the
+ * offsets you provide in the configuration file, and some hard coded offsets
+ * in the example code, to locate information in the running kernels.  For
+ * this reason you may find that it fails on some kernels.
+ *
+@verbatim
+[root@bluemoon examples]# ./process-list 5
+[    1] init
+[    2] migration/0
+[    3] ksoftirqd/0
+[    4] watchdog/0
+[    5] events/0
+[    6] khelper
+[    7] kthread
+[    8] xenwatch
+[    9] xenbus
+[   15] kblockd/0
+[   57] pdflush
+[   58] pdflush
+[   60] aio/0
+[   59] kswapd0
+[  578] kseriod
+[  685] kpsmoused
+[  710] khubd
+[  978] dhclient
+[ 1006] syslogd
+[ 1009] klogd
+[ 1021] sshd
+[ 1027] mingetty
+[root@bluemoon examples]# ./process-list 4
+[1408237823] ?
+[14941936] ?S?
+[    0]
+[    0]
+ERROR: address not in page table
+failed to map memory for process list pointer: Success
+[root@bluemoon examples]# @endverbatim
+ *
+ * Here we see that @c process-list works on one of the domains, but not the
+ * other.  This is because the examples were written with a specific kernel 
+ * version in mind.  Your code will need to be built to work with the specific
+ * system that you plan on viewing.  Future versions of XenAccess will provide
+ * tools to help simplify the process of finding the right offset values.
  *
  *
  * @section devel Programming With XenAccess
