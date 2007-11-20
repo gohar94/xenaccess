@@ -1,12 +1,12 @@
 # ToDo Items
 
 ## Updates needed for 0.4 release
-* update README and example config file
-* address TODO spots where appropriate
 * full support for xen 3.1
 * fix comments throughout (esp in .h files)
-* update ChangeLog to reflect changes for 0.4
 * put offsets into instance struct and set initial values in core
+* update debug output version number to match release
+* clean up parser code
+* remove offset values that we are not using
 
 ## Future Plans
 * cleanup code throughout and fix TODO spots
@@ -20,7 +20,6 @@
 * create some kind of clean api abtraction for memory that spans multiple pages
 * show additional example applications
 * add function that returns active domid(s)
-* add output of version number when run with full debug output
-* access based on domain name instead of id
+* add init function that works based on domain name instead of id
 * autodetect os type
 * automatically determine offset information

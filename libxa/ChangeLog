@@ -1,3 +1,14 @@
+New to version 0.4
+* support for Windows domains (tested with WinXP SP2)
+* updated to work with Xen versions 3.0.4 and 3.1.0
+* Xen version 3.0.3 is no longer supported
+* new API calls for v2p translation and reading memory values
+* support for pae memory addressing
+* new example code (map-addr, map-symbol)
+* expanded use of config file
+* improved debug output
+* improved cache performance
+* various bug fixes
 
 New to version 0.3
 * support for HVM domains
