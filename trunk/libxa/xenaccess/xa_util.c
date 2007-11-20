@@ -35,108 +35,132 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
-uint32_t xa_read_long_mach (xa_instance_t *instance, uint32_t maddr)
+int xa_read_long_mach (
+        xa_instance_t *instance, uint32_t maddr, uint32_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint32_t value = 0;
     memory = xa_access_machine_address(instance, maddr, &offset);
     if (NULL != memory){
-        value = *((uint32_t*)(memory + offset));
+        *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint64_t xa_read_long_long_mach (xa_instance_t *instance, uint32_t maddr)
+int xa_read_long_long_mach (
+        xa_instance_t *instance, uint32_t maddr, uint64_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint64_t value = 0;
     memory = xa_access_machine_address(instance, maddr, &offset);
     if (NULL != memory){
-        value = *((uint64_t*)(memory + offset));
+        *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint32_t xa_read_long_phys (xa_instance_t *instance, uint32_t paddr)
+int xa_read_long_phys (
+        xa_instance_t *instance, uint32_t paddr, uint32_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint32_t value = 0;
     memory = xa_access_physical_address(instance, paddr, &offset);
     if (NULL != memory){
-        value = *((uint32_t*)(memory + offset));
+        *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint64_t xa_read_long_long_phys (xa_instance_t *instance, uint32_t paddr)
+int xa_read_long_long_phys (
+        xa_instance_t *instance, uint32_t paddr, uint64_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint64_t value = 0;
     memory = xa_access_physical_address(instance, paddr, &offset);
     if (NULL != memory){
-        value = *((uint64_t*)(memory + offset));
+        *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid)
+int xa_read_long_virt (
+        xa_instance_t *instance, uint32_t vaddr, int pid, uint32_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint32_t value = 0;
     memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
     if (NULL != memory){
-        value = *((uint32_t*)(memory + offset));
+        *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint64_t xa_read_long_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid)
+int xa_read_long_long_virt (
+        xa_instance_t *instance, uint32_t vaddr, int pid, uint64_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint64_t value = 0;
     memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
     if (NULL != memory){
-        value = *((uint64_t*)(memory + offset));
+        *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint32_t xa_read_long_sym (xa_instance_t *instance, char *sym)
+int xa_read_long_sym (
+        xa_instance_t *instance, char *sym, uint32_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint32_t value = 0;
     memory = xa_access_kernel_symbol(instance, sym, &offset);
     if (NULL != memory){
-        value = *((uint32_t*)(memory + offset));
+        *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
-uint64_t xa_read_long_long_sym (xa_instance_t *instance, char *sym)
+int xa_read_long_long_sym (
+        xa_instance_t *instance, char *sym, uint64_t *value)
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    uint64_t value = 0;
     memory = xa_access_kernel_symbol(instance, sym, &offset);
     if (NULL != memory){
-        value = *((uint64_t*)(memory + offset));
+        *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
+        return XA_SUCCESS;
     }
-    return value;
+    else{
+        return XA_FAILURE;
+    }
 }
 
 int xa_get_bit (unsigned long reg, int bit)

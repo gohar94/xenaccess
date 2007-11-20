@@ -59,6 +59,22 @@
  * xa_instance struct.
  */
 #define XA_OS_WINDOWS 1
+/**
+ * Constant used to indicate that we are running on a version of Xen
+ * that XenAccess does not support.  XenAccess might work, or it might
+ * not.  This is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_UNKNOWN 0
+/**
+ * Constant used to indicate that we are running on Xen 3.0.4-1.  This
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_0_4 1
+/**
+ * Constant used to indicate that we are running on Xen 3.0.1  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_1_0 2
 
 /*TODO find a way to move this to xa_private.h */
 struct xa_cache_entry{
@@ -91,6 +107,7 @@ typedef struct xa_instance{
     uint32_t kpgd;          /**< kernel page global directory */
     uint32_t init_task;     /**< address of task struct for init */
     uint32_t ntoskrnl;      /**< base physical address for ntoskrnl image */
+    int xen_version;        /**< version of Xen libxa is running on */
     int os_type;            /**< type of os: XA_OS_LINUX, etc */
     int hvm;                /**< nonzero if HVM domain */
     int pae;                /**< nonzero if PAE is enabled */
@@ -104,7 +121,7 @@ typedef struct xa_instance{
 } xa_instance_t;
 
 /**
- * @brief Linux task addresses.
+ * @brief Linux task information.
  *
  * This struct holds the task addresses that are found in a task's
  * memory descriptor.  You can fill the values in the struct using
@@ -154,7 +171,7 @@ typedef struct xa_windows_peb{
  *
  * @param[in] domain_id Domain id to access, specified as a number
  * @param[out] instance Struct that holds instance information
- * @return XA_SUCCESS on success, XA_FAILURE on failure
+ * @return XA_SUCCESS or XA_FAILURE
  */
 int xa_init (uint32_t domain_id, xa_instance_t *instance);
 
@@ -162,7 +179,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance);
  * Destroys an instance by freeing memory and closing any open handles.
  *
  * @param[in] instance Instance to destroy
- * @return XA_SUCCESS on success, XA_FAILURE on failure
+ * @return XA_SUCCESS or XA_FAILURE
  */
 int xa_destroy (xa_instance_t *instance);
 
@@ -234,18 +251,20 @@ uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address);
  *
  * @param[in] instance XenAccess instance
  * @param[in] sym Kernel symbol to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint32_t xa_read_long_sym (xa_instance_t *instance, char *sym);
+int xa_read_long_sym (xa_instance_t *instance, char *sym, uint32_t *value);
 
 /**
  * Reads a long long (64 bit) value from memory, given a kernel symbol.
  *
  * @param[in] instance XenAccess instance
  * @param[in] sym Kernel symbol to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint64_t xa_read_long_long_sym (xa_instance_t *instance, char *sym);
+int xa_read_long_long_sym (xa_instance_t *instance, char *sym, uint64_t *value);
 
 /**
  * Reads a long (32 bit) value from memory, given a virtual address.
@@ -253,9 +272,11 @@ uint64_t xa_read_long_long_sym (xa_instance_t *instance, char *sym);
  * @param[in] instance XenAccess instance
  * @param[in] vaddr Virtual address to read from
  * @param[in] pid Pid of the virtual address space (0 for kernel)
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
+int xa_read_long_virt (
+        xa_instance_t *instance, uint32_t vaddr, int pid, uint32_t *value);
 
 /**
  * Reads a long long (64 bit) value from memory, given a virtual address.
@@ -263,57 +284,68 @@ uint32_t xa_read_long_virt (xa_instance_t *instance, uint32_t vaddr, int pid);
  * @param[in] instance XenAccess instance
  * @param[in] vaddr Virtual address to read from
  * @param[in] pid Pid of the virtual address space (0 for kernel)
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint64_t xa_read_long_long_virt (
-        xa_instance_t *instance, uint32_t vaddr, int pid);
+int xa_read_long_long_virt (
+        xa_instance_t *instance, uint32_t vaddr, int pid, uint64_t *value);
 
 /**
  * Reads a long (32 bit) value from memory, given a physical address.
  *
  * @param[in] instance XenAccess instance
  * @param[in] paddr Physical address to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint32_t xa_read_long_phys (xa_instance_t *instance, uint32_t paddr);
+int xa_read_long_phys (
+        xa_instance_t *instance, uint32_t paddr, uint32_t *value);
 
 /**
  * Reads a long long (64 bit) value from memory, given a physical address.
  *
  * @param[in] instance XenAccess instance
  * @param[in] paddr Physical address to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint64_t xa_read_long_long_phys (xa_instance_t *instance, uint32_t paddr);
+int xa_read_long_long_phys (
+        xa_instance_t *instance, uint32_t paddr, uint64_t *value);
 
 /**
  * Reads a long (32 bit) value from memory, given a machine address.
  *
  * @param[in] instance XenAccess instance
  * @param[in] maddr Machine address to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint32_t xa_read_long_mach (xa_instance_t *instance, uint32_t maddr);
+int xa_read_long_mach (
+        xa_instance_t *instance, uint32_t maddr, uint32_t *value);
 
 /**
  * Reads a long long (64 bit) value from memory, given a machine address.
  *
  * @param[in] instance XenAccess instance
  * @param[in] maddr Machine address to read from
- * @return Value from memory, or zero on error
+ * @param[out] value The value read from memory
+ * @return XA_SUCCESS or XA_FAILURE
  */
-uint64_t xa_read_long_long_mach (xa_instance_t *instance, uint32_t maddr);
+int xa_read_long_long_mach (
+        xa_instance_t *instance, uint32_t maddr, uint64_t *value);
 
 /*-----------------------------
  * Linux-specific functionality
  */
 
 /**
+ * Extracts information about the specified process' location in memory from
+ * the task struct specified by @a pid.
  *
  * @param[in] instance XenAccess instance
- * @param[in] pid
- * @param[out] taskaddr
- * @return
+ * @param[in] pid The PID for the task to read from
+ * @param[out] taskaddr Information from the specified task struct
+ * @return XA_SUCCESS or XA_FAILURE
  */
 int xa_linux_get_taskaddr (
         xa_instance_t *instance, int pid, xa_linux_taskaddr_t *taskaddr);
@@ -323,11 +355,13 @@ int xa_linux_get_taskaddr (
  */
 
 /**
+ * Extracts information from the PEB struct, which is located at the top of
+ * the EPROCESS struct with the specified @a pid.
  *
  * @param[in] instance XenAccess instance
- * @param[in] pid
- * @param[out] peb
- * @return
+ * @param[in] pid The unique ID for the PEB to read from
+ * @param[out] peb Information from the specified PEB
+ * @return XA_SUCCESS or XA_FAILURE
  */
 int xa_windows_get_peb (
         xa_instance_t *instance, int pid, xa_windows_peb_t *peb);

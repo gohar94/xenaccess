@@ -102,7 +102,7 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
        grab the pgd value */
     memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
     munmap(memory, instance->page_size);
-    pgd = xa_read_long_virt(instance, ptr + xalinux_pgd_offset, 0);
+    xa_read_long_virt(instance, ptr + xalinux_pgd_offset, 0, &pgd);
 
 error_exit:
     return pgd;

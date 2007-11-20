@@ -45,8 +45,8 @@ int linux_init (xa_instance_t *instance)
 
     if (!instance->hvm){
         instance->kpgd -= instance->page_offset;
-        instance->kpgd = xa_read_long_phys(instance, instance->kpgd);
-        if (!instance->kpgd){
+        if (xa_read_long_phys(
+                instance, instance->kpgd, &(instance->kpgd)) == XA_FAILURE){
             printf("ERROR: failed to get physical addr for kpgd\n");
             ret = XA_FAILURE;
             goto error_exit;

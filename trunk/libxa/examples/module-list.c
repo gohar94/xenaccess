@@ -50,7 +50,7 @@ int main (int argc, char **argv)
 
     /* get the head of the module list */
     if (XA_OS_LINUX == xai.os_type){
-        next_module = xa_read_long_sym(&xai, "modules");
+        xa_read_long_sym(&xai, "modules", &next_module);
     }
     else if (XA_OS_WINDOWS == xai.os_type){
         /*TODO don't use a hard-coded address here */

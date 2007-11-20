@@ -47,20 +47,17 @@ int xawin_ph_offset = 0x18;
 int test_ntoskrnl_base (
         xa_instance_t *instance, uint32_t base, uint32_t sysproc)
 {
-    uint32_t header;
+    uint32_t header = 0;
 
     sysproc += base;
-    sysproc = xa_read_long_phys(instance, sysproc);
+    xa_read_long_phys(instance, sysproc, &sysproc);
     if (sysproc <= instance->page_offset){
         return XA_FAILURE;
     }
     sysproc -= instance->page_offset;
 
     /* sysproc should now be the PA of a an EPROCESS location */
-    header = xa_read_long_phys(instance, sysproc);
-    if (0 == header){
-        return XA_FAILURE;
-    }
+    xa_read_long_phys(instance, sysproc, &header);
     
     /* Test for EPROCESS using technique from 'Searching for Processes
        and Threads in Microsoft Windows memory dumps' in DFRWS 2006 */
@@ -73,7 +70,7 @@ int test_ntoskrnl_base (
 /* find the ntoskrnl base address by backwards scanning */
 uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 {
-    uint32_t maddr = 0x0 + instance->page_size;
+    uint32_t paddr = 0x0 + instance->page_size;
     uint32_t sysproc_rva;
 
     /* find RVA for PsInitialSystemProcess to use for testing */
@@ -84,18 +81,21 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 
     /* start the downward search looking for MZ header */
     while (1){
-        if ((xa_read_long_mach(instance, maddr) & 0xffff) == 0x5a4d){
-            if (test_ntoskrnl_base(instance, maddr, sysproc_rva) == XA_SUCCESS){
+        uint32_t header;
+        xa_read_long_phys(instance, paddr, &header);
+        if ((header & 0xffff) == 0x5a4d){
+            if (test_ntoskrnl_base(instance, paddr, sysproc_rva) == XA_SUCCESS){
                 break;
             }
         }
-        maddr += instance->page_size;
-        if (maddr <= 0 || 0x01000000 <= maddr){
+
+        paddr += instance->page_size;
+        if (paddr <= 0 || 0x01000000 <= paddr){
             return 0;
         }
     }
 
-    return maddr;
+    return paddr;
 }
 
 void *windows_access_kernel_symbol (
