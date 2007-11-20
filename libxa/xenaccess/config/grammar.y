@@ -25,9 +25,6 @@
  * File: grammar.y
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 
 #include <stdlib.h>
@@ -70,18 +67,6 @@ void printError (char *errorstring, ...) {
   int end=start + nTokenLength - 1;
   int i;
 
-  /*================================================================*/
-  /* simple version ------------------------------------------------*/
-/*
-    fprintf(stdout, "...... !");
-    for (i=0; i<nBuffer; i++)
-      fprintf(stdout, ".");
-    fprintf(stdout, "^\n");
-*/
-
-  /*================================================================*/
-  /* a bit more complicate version ---------------------------------*/
-/* */
   if (  eof  ) {
     fprintf(stdout, "...... !");
     for (i=0; i<lBuffer; i++)
@@ -98,10 +83,7 @@ void printError (char *errorstring, ...) {
       fprintf(stdout, ".");
     fprintf(stdout, "   token%d:%d\n", start, end);
   }
-/* */
 
-  /*================================================================*/
-  /* print it using variable arguments -----------------------------*/
   va_start(args, errorstring);
   vsprintf(errmsg, errorstring, args);
   va_end(args);

@@ -25,9 +25,6 @@
  * File: lexicon.l
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 
 #include <string.h>
@@ -81,4 +78,5 @@ ostype                  { BeginToken(yytext); return OSTYPETOK; }
 =                       { BeginToken(yytext); return EQUALS; }
 \n                      /* ignore EOL */;
 [ \t]+                  /* ignore whitespace */;
+#[^\n]*\n               /* ignore comment lines */;
 %%
