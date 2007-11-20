@@ -19,6 +19,7 @@ Building
 XenAccess uses the standard GNU build system.  To compile this library, simply
 follow the steps below:
 
+./autogen.sh
 ./configure
 make
 
