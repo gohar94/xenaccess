@@ -43,8 +43,8 @@ int windows_init (xa_instance_t *instance)
     xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->ntoskrnl);
 
     /* get address for page directory (from system process) */
-    sysproc = xa_read_long_sym(instance, "PsInitialSystemProcess");
-    if (!sysproc){
+    if (xa_read_long_sym(
+            instance, "PsInitialSystemProcess", &sysproc) == XA_FAILURE){
         printf("ERROR: failed to resolve pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
@@ -52,8 +52,10 @@ int windows_init (xa_instance_t *instance)
     sysproc -= instance->page_offset; /* PA to PsInit.. */
     xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
 
-    instance->kpgd = xa_read_long_phys(instance, sysproc + xawin_pdbase_offset);
-    if (!instance->kpgd){
+    if (xa_read_long_phys(
+            instance,
+            sysproc + xawin_pdbase_offset,
+            &(instance->kpgd)) == XA_FAILURE){
         printf("ERROR: failed to resolve pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
@@ -62,8 +64,8 @@ int windows_init (xa_instance_t *instance)
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 
     /* get address start of process list */
-    instance->init_task = xa_read_long_phys(
-        instance, sysproc + xawin_tasks_offset);
+    xa_read_long_phys(
+        instance, sysproc + xawin_tasks_offset, &(instance->init_task));
     xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
 
 error_exit:

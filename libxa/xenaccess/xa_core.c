@@ -91,9 +91,9 @@ int read_config_file (xa_instance_t *instance)
         instance->os_type = XA_OS_WINDOWS;
     }
     else{
-        /*TODO This is nasty, find a better solution here */
-        printf("WARNING: Unknown or undefined OS type, assuming Linux.\n");
-        instance->os_type = XA_OS_LINUX;
+        printf("ERROR: Unknown or undefined OS type.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
     }
 
     /* Copy config info based on OS type */
@@ -211,6 +211,37 @@ void init_page_offset (xa_instance_t *instance)
     instance->page_size = 1 << instance->page_shift;
 }
 
+void init_xen_version (xa_instance_t *instance)
+{
+    int cmd1 = XENVER_extraversion;
+    int cmd2 = XENVER_capabilities;
+    void *extra = malloc(sizeof(xen_extraversion_t));
+    void *cap = malloc(sizeof(xen_capabilities_info_t));
+
+    xc_version(instance->xc_handle, cmd1, extra);
+    xc_version(instance->xc_handle, cmd2, cap);
+
+    instance->xen_version = XA_XENVER_UNKNOWN;
+    if (strncmp((char *)extra, ".4-1", 4) == 0){
+        if (strncmp((char *)cap, "xen-3.0-x86_32", 14) == 0){
+            instance->xen_version = XA_XENVER_3_0_4;
+            xa_dbprint("**set instance->xen_version = 3.0.4\n");
+        }
+    }
+    if (strncmp((char *)extra, ".0", 2) == 0){
+        if (strncmp((char *)cap, "xen-3.0-x86_32p", 15) == 0){
+            instance->xen_version = XA_XENVER_3_1_0;
+            xa_dbprint("**set instance->xen_version = 3.1.0\n");
+        }
+    }
+    free(extra);
+    free(cap);
+
+    if (instance->xen_version == XA_XENVER_UNKNOWN){
+        printf("WARNING: This Xen version not supported by XenAccess.\n");
+    }
+}
+
 /* given a xa_instance_t struct with the xc_handle and the
  * domain_id filled in, this function will fill in the rest
  * of the values using queries to libxc. */
@@ -230,6 +261,9 @@ int helper_init (xa_instance_t *instance)
         goto error_exit;
     }
     xa_dbprint("--got domain info.\n");
+
+    /* find the version of xen that we are running */
+    init_xen_version(instance);
 
     /* read in configure file information */
     if (read_config_file(instance) == XA_FAILURE){
@@ -293,18 +327,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
         printf("ERROR: Failed to open libxc interface\n");
         return XA_FAILURE;
     }
-
-/* example of getting version information from xen */
-/*
-{
-int cmd = XENVER_extraversion;
-void *arg = malloc(sizeof(xen_extraversion_t));
-int rc = xc_version(xc_handle, cmd, arg);
-printf("--> rc = %d\n", rc);
-printf("--> arg = %s\n", (char*)arg);
-free(arg);
-}
-*/
+    xa_dbprint("XenAccess Version SVN-devel.\n");
 
     /* populate struct with critical values */
     instance->xc_handle = xc_handle;
@@ -314,7 +337,7 @@ free(arg);
     instance->cache_head = NULL;
     instance->cache_tail = NULL;
     instance->current_cache_size = 0;
-    
+
     /* fill in rest of the information */
     return helper_init(instance);
 }

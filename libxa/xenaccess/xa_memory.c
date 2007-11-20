@@ -36,6 +36,11 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
+/* hack to get this to compile on xen 3.0.4 */
+#ifndef XENMEM_maximum_gpfn
+#define XENMEM_maximum_gpfn 0
+#endif
+
 /* convert a pfn to a mfn based on the live mapping tables */
 unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 {
@@ -47,19 +52,30 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
     unsigned long *live_pfn_to_mfn_table = NULL;
     unsigned long nr_pfns = 0;
     unsigned long ret = -1;
+//    unsigned long mfn;
+//    int i;
 
     if (instance->hvm){
         return pfn;
     }
 
     if (NULL == instance->live_pfn_to_mfn_table){
-        nr_pfns = instance->info.max_memkb >> (XC_PAGE_SHIFT - 10);
-
         live_shinfo = xa_mmap_mfn(
             instance, PROT_READ, instance->info.shared_info_frame);
         if (live_shinfo == NULL){
             printf("ERROR: failed to init live_shinfo\n");
             goto error_exit;
+        }
+
+        if (instance->xen_version == XA_XENVER_3_1_0){
+            nr_pfns = xc_memory_op(
+                        instance->xc_handle,
+                        XENMEM_maximum_gpfn,
+                        &(instance->domain_id)) + 1;
+        }
+        else{
+            //nr_pfns = instance->info.max_memkb >> (XC_PAGE_SHIFT - 10);
+            nr_pfns = live_shinfo->arch.max_pfn;
         }
 
         live_pfn_to_mfn_frame_list_list = xa_mmap_mfn(
@@ -72,7 +88,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         live_pfn_to_mfn_frame_list = xc_map_foreign_batch(
             instance->xc_handle, instance->domain_id, PROT_READ,
             live_pfn_to_mfn_frame_list_list,
-            (nr_pfns+(XA_PFN_PER_FRAME*XA_PFN_PER_FRAME)-1)/(XA_PFN_PER_FRAME*XA_PFN_PER_FRAME) );
+            (nr_pfns+(fpp*fpp)-1)/(fpp*fpp) );
         if (live_pfn_to_mfn_frame_list == NULL){
             printf("ERROR: failed to init live_pfn_to_mfn_frame_list\n");
             goto error_exit;
@@ -80,12 +96,24 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 
         live_pfn_to_mfn_table = xc_map_foreign_batch(
             instance->xc_handle, instance->domain_id, PROT_READ,
-            live_pfn_to_mfn_frame_list, (nr_pfns+XA_PFN_PER_FRAME-1)/XA_PFN_PER_FRAME );
+            live_pfn_to_mfn_frame_list, (nr_pfns+fpp-1)/fpp );
         if (live_pfn_to_mfn_table  == NULL){
             printf("ERROR: failed to init live_pfn_to_mfn_table\n");
             goto error_exit;
         }
 
+        /*TODO validate the mapping */
+//        for (i = 0; i < nr_pfns; ++i){
+//            mfn = live_pfn_to_mfn_table[i];
+//            if( (mfn != INVALID_P2M_ENTRY) && (mfn_to_pfn(mfn) != i) )
+//            {
+//                DPRINTF("i=0x%x mfn=%lx live_m2p=%lx\n", i,
+//                        mfn, mfn_to_pfn(mfn));
+//                err++;
+//            }
+//        }
+
+        /* save mappings for later use */
         instance->live_pfn_to_mfn_table = live_pfn_to_mfn_table;
         instance->nr_pfns = nr_pfns;
     }
@@ -147,15 +175,19 @@ uint32_t pdpi_index (uint32_t pdpi){
 uint64_t get_pdpi (
         xa_instance_t *instance, uint32_t vaddr, uint32_t cr3, int k)
 {
+    uint64_t value;
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
     xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
-    return xa_read_long_long_phys(instance, pdpi_entry);
+//    xa_read_long_long_phys(instance, pdpi_entry, &value);
+//    return value;
     if (k){
-        return xa_read_long_long_phys(instance, pdpi_entry-instance->page_offset);
+        xa_read_long_long_phys(
+            instance, pdpi_entry-instance->page_offset, &value);
     }
     else{
-        return xa_read_long_long_virt(instance, pdpi_entry, 0);
+        xa_read_long_long_virt(instance, pdpi_entry, 0, &value);
     }
+    return value;
 }
 
 /* page directory */
@@ -179,27 +211,32 @@ uint64_t pdba_base_pae (uint64_t pdpe){
 uint32_t get_pgd_nopae (
         xa_instance_t *instance, uint32_t vaddr, uint32_t pdpe, int k)
 {
+    uint32_t value;
     uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
     if (k){
-        return xa_read_long_phys(instance, pgd_entry-instance->page_offset);
+        xa_read_long_phys(instance, pgd_entry-instance->page_offset, &value);
     }
     else{
-        return xa_read_long_virt(instance, pgd_entry, 0);
+        xa_read_long_virt(instance, pgd_entry, 0, &value);
     }
+    return value;
 }
 
 uint64_t get_pgd_pae (
         xa_instance_t *instance, uint32_t vaddr, uint64_t pdpe, int k)
 {
+    uint64_t value;
     uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
     if (k){
-        return xa_read_long_long_phys(instance, pgd_entry-instance->page_offset);
+        xa_read_long_long_phys(
+            instance, pgd_entry-instance->page_offset, &value);
     }
     else{
-        return xa_read_long_long_virt(instance, pgd_entry, 0);
+        xa_read_long_long_virt(instance, pgd_entry, 0, &value);
     }
+    return value;
 }
 
 /* page table */
@@ -229,13 +266,17 @@ uint64_t ptba_base_pae (uint64_t pde){
 }
 
 uint32_t get_pte_nopae (xa_instance_t *instance, uint32_t vaddr, uint32_t pgd){
+    uint32_t value;
     uint32_t pte_entry = ptba_base_nopae(pgd) + pte_index(instance, vaddr);
-    return xa_read_long_mach(instance, pte_entry);
+    xa_read_long_mach(instance, pte_entry, &value);
+    return value;
 }
 
 uint64_t get_pte_pae (xa_instance_t *instance, uint32_t vaddr, uint64_t pgd){
+    uint64_t value;
     uint32_t pte_entry = ptba_base_pae(pgd) + pte_index(instance, vaddr);
-    return xa_read_long_long_mach(instance, pte_entry);
+    xa_read_long_long_mach(instance, pte_entry, &value);
+    return value;
 }
 
 /* page */
@@ -247,7 +288,6 @@ uint64_t get_paddr_pae (uint32_t vaddr, uint64_t pte){
     return pte_pfn_pae(pte) | (vaddr & 0xFFF);
 }
 
-/*TODO does this need specific pae / nopae versions? */
 uint32_t get_large_paddr (
         xa_instance_t *instance, uint32_t vaddr, uint32_t pgd_entry)
 {

@@ -42,7 +42,7 @@
 #include "xenaccess.h"
 
 /* Architecture dependent constants */
-#define XA_PFN_PER_FRAME 1024		/* number of xen_pfn_t that fits on one frame */
+#define fpp 1024		/* number of xen_pfn_t that fits on one frame */
 
 /* other globals */
 #define MAX_ROW_LENGTH 200
@@ -54,7 +54,7 @@
 extern int xalinux_tasks_offset;    /* task_struct->tasks */
 extern int xalinux_mm_offset;       /* task_struct->mm */
 extern int xalinux_pid_offset;      /* task_struct->pid */
-extern int xalinux_name_offset;     /* task_struct->name */
+extern int xalinux_name_offset;     /* task_struct->comm */
 extern int xalinux_pgd_offset;      /* mm_struct->pgd */
 extern int xalinux_addr_offset;     /* mm_struct->start_code */
 
@@ -292,9 +292,8 @@ int linux_system_map_symbol_to_address (
         xa_instance_t *instance, char *symbol, uint32_t *address);
 
 /**
- * Gets a memory page where \a symbol is located and sets \a offset
- * of the symbol. The mapping is cached internally. (TODO: should the caller
- * munmap as in xa_access_virtual_address or the cache management does so)
+ * Gets a memory page where @a symbol is located and sets @a offset
+ * of the symbol. The mapping is cached internally. 
  *
  * @param[in] instance Handle to xenaccess instance.
  * @param[in] symbol Name of the requested symbol.
