@@ -54,7 +54,12 @@ int main (int argc, char **argv)
     }
     else if (XA_OS_WINDOWS == xai.os_type){
         /*TODO don't use a hard-coded address here */
-        memory = xa_access_virtual_address(&xai, 0x8055a620, &offset);
+        if (xai.pae){
+            memory = xa_access_virtual_address(&xai, 0x805533a0, &offset);
+        }
+        else{
+            memory = xa_access_virtual_address(&xai, 0x8055a620, &offset);
+        }
         if (NULL == memory){
             perror("failed to get PsLoadedModuleList");
             goto error_exit;
