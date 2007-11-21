@@ -230,8 +230,7 @@ uint64_t get_pgd_pae (
     uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
     if (k){
-        xa_read_long_long_phys(
-            instance, pgd_entry-instance->page_offset, &value);
+        xa_read_long_long_phys(instance, pgd_entry, &value);
     }
     else{
         xa_read_long_long_virt(instance, pgd_entry, 0, &value);
@@ -399,21 +398,21 @@ uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
     xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", vaddr);
     xa_dbprint("--PTLookup: cr3 = 0x%.8x\n", cr3);
     pdpe = get_pdpi(instance, vaddr, cr3, k);
-    xa_dbprint("--PTLookup: pdpe = 0x%.8x\n", pdpe);
+    xa_dbprint("--PTLookup: pdpe = 0x%.16x\n", pdpe);
     if (!entry_present(pdpe)){
         return paddr;
     }
     pgd = get_pgd_pae(instance, vaddr, pdpe, k);
-    xa_dbprint("--PTLookup: pgd = 0x%.8x\n", pgd);
+    xa_dbprint("--PTLookup: pgd = 0x%.16x\n", pgd);
 
     if (entry_present(pgd)){
         if (page_size_flag(pgd)){
             paddr = get_large_paddr(instance, vaddr, pgd);
-            xa_dbprint("--PTLookup: 4MB page\n", pgd);
+            xa_dbprint("--PTLookup: 2MB page\n", pgd);
         }
         else{
             pte = get_pte_pae(instance, vaddr, pgd);
-            xa_dbprint("--PTLookup: pte = 0x%.8x\n", pte);
+            xa_dbprint("--PTLookup: pte = 0x%.16x\n", pte);
             if (entry_present(pte)){
                 paddr = get_paddr_pae(vaddr, pte);
             }
