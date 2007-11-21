@@ -29,7 +29,8 @@
   -- available using windgb in a local kernel session
   -- shows 0x804d7000 so there must be a linear map for at least some of
      kernel memory as in linux... 0x804d7000 - 0x80000000 = 0x004d7000
-* PsLoaded ModuleList = 0x8055a620
+* PsLoaded ModuleList = 0x8055a620 on nopae
+* PsLoaded ModuleList = 0x805533a0 on pae
 * Running kernel version is 2600.xpsp_sp2_gdr.070227-2254
 
 
