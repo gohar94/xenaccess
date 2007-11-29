@@ -334,6 +334,16 @@ int xa_read_long_mach (
 int xa_read_long_long_mach (
         xa_instance_t *instance, uint32_t maddr, uint64_t *value);
 
+/**
+ * Looks up the virtual address of an exported kernel symbol.
+ *
+ * @param[in] instance XenAccess instance
+ * @param[in] sym Kernel symbol (must be exported)
+ * @param[out] vaddr The virtual address of the symbol
+ * @return XA_SUCCESS or XA_FAILURE
+ */
+int xa_symbol_to_address (xa_instance_t *instance, char *sym, uint32_t *vaddr);
+
 /*-----------------------------
  * Linux-specific functionality
  */

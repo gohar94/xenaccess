@@ -163,6 +163,19 @@ int xa_read_long_long_sym (
     }
 }
 
+int xa_symbol_to_address (xa_instance_t *instance, char *sym, uint32_t *vaddr)
+{
+    if (XA_OS_LINUX == instance->os_type){
+       return linux_system_map_symbol_to_address(instance, sym, vaddr);
+    }
+    else if (XA_OS_WINDOWS == instance->os_type){
+        return windows_symbol_to_address(instance, sym, vaddr);
+    }
+    else{
+        return XA_FAILURE;
+    }
+}
+
 int xa_get_bit (unsigned long reg, int bit)
 {
     unsigned long mask = 1 << bit;
