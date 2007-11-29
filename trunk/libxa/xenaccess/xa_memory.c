@@ -178,8 +178,6 @@ uint64_t get_pdpi (
     uint64_t value;
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
     xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
-//    xa_read_long_long_phys(instance, pdpi_entry, &value);
-//    return value;
     if (k){
         xa_read_long_long_phys(
             instance, pdpi_entry-instance->page_offset, &value);
@@ -229,12 +227,7 @@ uint64_t get_pgd_pae (
     uint64_t value;
     uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
-    if (k){
-        xa_read_long_long_phys(instance, pgd_entry, &value);
-    }
-    else{
-        xa_read_long_long_virt(instance, pgd_entry, 0, &value);
-    }
+    xa_read_long_long_phys(instance, pgd_entry, &value);
     return value;
 }
 
@@ -248,14 +241,6 @@ uint32_t pte_index (xa_instance_t *instance, uint32_t address){
     }
 }
         
-uint32_t pte_pfn_nopae (uint32_t pte){
-    return pte & 0xFFFFF000;
-}
-
-uint64_t pte_pfn_pae (uint64_t pte){
-    return pte & 0xFFFFFF000ULL;
-}
-
 uint32_t ptba_base_nopae (uint32_t pde){
     return pde & 0xFFFFF000;
 }
@@ -267,6 +252,7 @@ uint64_t ptba_base_pae (uint64_t pde){
 uint32_t get_pte_nopae (xa_instance_t *instance, uint32_t vaddr, uint32_t pgd){
     uint32_t value;
     uint32_t pte_entry = ptba_base_nopae(pgd) + pte_index(instance, vaddr);
+    xa_dbprint("--PTLookup: pte_entry = 0x%.8x\n", pte_entry);
     xa_read_long_mach(instance, pte_entry, &value);
     return value;
 }
@@ -274,11 +260,20 @@ uint32_t get_pte_nopae (xa_instance_t *instance, uint32_t vaddr, uint32_t pgd){
 uint64_t get_pte_pae (xa_instance_t *instance, uint32_t vaddr, uint64_t pgd){
     uint64_t value;
     uint32_t pte_entry = ptba_base_pae(pgd) + pte_index(instance, vaddr);
+    xa_dbprint("--PTLookup: pte_entry = 0x%.8x\n", pte_entry);
     xa_read_long_long_mach(instance, pte_entry, &value);
     return value;
 }
 
 /* page */
+uint32_t pte_pfn_nopae (uint32_t pte){
+    return pte & 0xFFFFF000;
+}
+
+uint64_t pte_pfn_pae (uint64_t pte){
+    return pte & 0xFFFFFF000ULL;
+}
+
 uint32_t get_paddr_nopae (uint32_t vaddr, uint32_t pte){
     return pte_pfn_nopae(pte) | (vaddr & 0xFFF);
 }
