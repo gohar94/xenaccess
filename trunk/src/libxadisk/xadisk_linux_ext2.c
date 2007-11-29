@@ -17,7 +17,7 @@
 #include <linux/types.h>
 
 #include "xadisk_global.h"
-#include "libxadisk.h"
+#include "xadisk.h"
 
 #define LINUX_EXT2_ROOT_INODE 2
 #define LINUX_EXT2_SUPERBLOCK_OFFSET 1024

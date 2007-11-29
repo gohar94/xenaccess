@@ -40,4 +40,6 @@ void parse_block_dir(unsigned char *block, short dir_size, dir_table *res);
 
 void compare_dirs(dir_table *dir_old, dir_table *dir_new, dir_optable *res);
 
+void sort_dir(dir_table *dir);
+
 #endif

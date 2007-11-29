@@ -6,7 +6,8 @@ soon be integrated with the memory introspection code. Please keep in
 mind that this preliminary code, meaning it has some limitations and 
 needs considerable work/cleanup.
 
-File contents:
+
+FILE CONTENTS:
 
 xadisk.h - Future library API, to be included by monitoring applications
 xadisk_core.c - Implements the core monitoring functions
@@ -17,16 +18,22 @@ xadisk_linux_ext2.c - Functions for parsing EXT2 FS structures
 xadisk_parse.h - Definition of high-level parsing functions
 xadisk_parse.c - Implementation of high-level parsing functions
 
+
 COMPILATION:
 
-Simply execute ./make.sh
+1) The files inside the xen/ directory must also be copied to their
+appropriate location inside the Xen source tree: tools/blktap/drivers/
+and the tools package must be recompiled (make tools; make install-tools).
 
-The files inside the xen/ directory must also be copied to their appropriate 
-location inside the Xen source tree: tools/blktap/drivers/ and the tools package 
-must be recompiled (make tools; make install-tools).
+2) Modify monitor.c to include the proper location to your disk image file.
 
-Wrapper drivers "log-sync" or "log-aio" must be used in the domain configuration 
-file in place of the standard drivers.
+3) Execute ./make.sh
+
+4) Wrapper drivers "log-sync" or "log-aio" must be used in the domain
+configuration file in place of the standard drivers.  For example:
+
+disk = ['tap:log-aio:/opt/xen_images/fedora-pv/fedora.img,sda1,w']
+
 
 RUNNING THE MONITORING EXAMPLE:
 

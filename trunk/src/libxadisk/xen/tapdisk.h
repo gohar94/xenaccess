@@ -61,7 +61,6 @@
 
 /* Things disks need to know about, these should probably be in a higher-level
  * header. */
-#define MAX_REQUESTS            64
 #define MAX_SEGMENTS_PER_REQ    11
 #define SECTOR_SHIFT             9
 #define DEFAULT_SECTOR_SIZE    512
@@ -75,9 +74,9 @@ struct td_state {
 	void *ring_info;
 	void *fd_entry;
 	char backing_file[1024]; /*Used by differencing disks, e.g. qcow*/
-	long int   sector_size;
-	uint64_t   size;
-	long int   info;
+	unsigned long      sector_size;
+	unsigned long long size;
+	unsigned int       info;
 };
 
 /* Prototype of the callback to activate as requests complete.              */
@@ -146,22 +145,22 @@ static disk_info_t aio_disk = {
 };
 
 static disk_info_t log_sync_disk = {
-	DISK_TYPE_LOG_SYNC,
-	"raw image (log-sync)",
-	"log-sync",
-	0,
+    DISK_TYPE_LOG_SYNC,
+    "raw image (log-sync)",
+    "log-sync",
+    0,
 #ifdef TAPDISK
-	&tapdisk_log_sync,
+    &tapdisk_log_sync,
 #endif
 };
 
 static disk_info_t log_aio_disk = {
-	DISK_TYPE_LOG_AIO,
-	"raw image (log-aio)",
-	"log-aio",
-	0,
+    DISK_TYPE_LOG_AIO,
+    "raw image (log-aio)",
+    "log-aio",
+    0,
 #ifdef TAPDISK
-	&tapdisk_log_aio,
+    &tapdisk_log_aio,
 #endif
 };
 
@@ -210,16 +209,15 @@ static disk_info_t *dtypes[] = {
 	&aio_disk,
 	&sync_disk,
 	&vmdk_disk,
- 	&ram_disk,
+	&ram_disk,
 	&qcow_disk,
-	&log_sync_disk,
-	&log_aio_disk,
+    &log_sync_disk,
+    &log_aio_disk
 };
 
 typedef struct driver_list_entry {
-	void *blkif;
-	void *prev;
-	void *next;
+	struct blkif *blkif;
+	struct driver_list_entry **pprev, *next;
 } driver_list_entry_t;
 
 typedef struct fd_list_entry {
@@ -227,8 +225,7 @@ typedef struct fd_list_entry {
 	int  tap_fd;
 	int  io_fd[MAX_IOFD];
 	struct td_state *s;
-	void *prev;
-	void *next;
+	struct fd_list_entry **pprev, *next;
 } fd_list_entry_t;
 
 int qcow_create(const char *filename, uint64_t total_size,

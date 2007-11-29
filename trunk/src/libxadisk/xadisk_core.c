@@ -1,4 +1,5 @@
 /* Ties everything together */
+#define _GNU_SOURCE
 
 /* Large file support */
 #define _LARGEFILE64_SOURCE
@@ -24,7 +25,7 @@
 #include "xadisk_global.h"
 #include "xadisk_parse.h"
 #include "xadisk_hash.h"
-#include "libxadisk.h"
+#include "xadisk.h"
 
 #define APP_FIFO_NAME "appfifo"
 
@@ -95,7 +96,6 @@ xadisk_obj_t *xadisk_set_watch(xadisk_t *x, char *path)
 	xadisk_obj_t *obj;
 	block_node *node;
 	unsigned char read_buf[4096];
-	off_t off;
 	int i;
 	
 	obj = (xadisk_obj_t *)malloc(sizeof(xadisk_obj_t));
@@ -137,6 +137,8 @@ int xadisk_unset_watch(xadisk_t *x, xadisk_obj_t *obj)
 	}
 	free(obj->path);
 	free(obj);
+
+    return 0;
 }
 
 /* Core processing is done here */
