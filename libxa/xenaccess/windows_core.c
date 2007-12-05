@@ -54,7 +54,7 @@ int windows_init (xa_instance_t *instance)
 
     if (xa_read_long_phys(
             instance,
-            sysproc + xawin_pdbase_offset,
+            sysproc + instance->os.windows_instance.pdbase_offset,
             &(instance->kpgd)) == XA_FAILURE){
         printf("ERROR: failed to resolve pointer for system process\n");
         ret = XA_FAILURE;
@@ -65,7 +65,9 @@ int windows_init (xa_instance_t *instance)
 
     /* get address start of process list */
     xa_read_long_phys(
-        instance, sysproc + xawin_tasks_offset, &(instance->init_task));
+        instance,
+        sysproc + instance->os.windows_instance.tasks_offset,
+        &(instance->init_task));
     xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
 
 error_exit:

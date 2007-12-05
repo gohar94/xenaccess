@@ -35,14 +35,6 @@
 #include "xa_private.h"
 
 
-/* Globals */
-int xalinux_tasks_offset    = 0x60;
-int xalinux_mm_offset       = 0x78;
-int xalinux_pid_offset      = 0x9c;
-int xalinux_name_offset     = 0x1b0;
-int xalinux_pgd_offset      = 0x24;
-int xalinux_addr_offset     = 0x80;
-
 /* finds the task struct for a given pid */
 unsigned char *linux_get_taskstruct (
         xa_instance_t *instance, int pid, uint32_t *offset)
@@ -50,6 +42,8 @@ unsigned char *linux_get_taskstruct (
     unsigned char *memory = NULL;
     uint32_t list_head = 0, next_process = 0;
     int task_pid = 0;
+    int pid_offset = instance->os.linux_instance.pid_offset;
+    int tasks_offset = instance->os.linux_instance.tasks_offset;
 
     /* first we need a pointer to this pid's task_struct */
     next_process = instance->init_task;
@@ -69,7 +63,7 @@ unsigned char *linux_get_taskstruct (
         }
 
         memcpy(&task_pid,
-               memory + *offset + xalinux_pid_offset - xalinux_tasks_offset,
+               memory + *offset + pid_offset - tasks_offset,
                4
         );
         
@@ -90,6 +84,9 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
 {
     unsigned char *memory = NULL;
     uint32_t pgd = 0, ptr = 0, offset = 0;
+    int mm_offset = instance->os.linux_instance.mm_offset;
+    int tasks_offset = instance->os.linux_instance.tasks_offset;
+    int pgd_offset = instance->os.linux_instance.pgd_offset;
 
     /* first we need a pointer to this pid's task_struct */
     memory = linux_get_taskstruct(instance, pid, &offset);
@@ -100,9 +97,9 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
 
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
-    memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
+    memcpy(&ptr, memory + offset + mm_offset - tasks_offset, 4);
     munmap(memory, instance->page_size);
-    xa_read_long_virt(instance, ptr + xalinux_pgd_offset, 0, &pgd);
+    xa_read_long_virt(instance, ptr + pgd_offset, 0, &pgd);
 
 error_exit:
     return pgd;
@@ -135,6 +132,9 @@ int xa_linux_get_taskaddr (
 {
     unsigned char *memory;
     uint32_t ptr = 0, offset = 0;
+    int mm_offset = instance->os.linux_instance.mm_offset;
+    int tasks_offset = instance->os.linux_instance.tasks_offset;
+    int addr_offset = instance->os.linux_instance.addr_offset;
 
     /* find the right task struct */
     memory = linux_get_taskstruct(instance, pid, &offset);
@@ -144,7 +144,7 @@ int xa_linux_get_taskaddr (
     }
 
     /* copy the information out of the memory descriptor */
-    memcpy(&ptr, memory + offset + xalinux_mm_offset - xalinux_tasks_offset, 4);
+    memcpy(&ptr, memory + offset + mm_offset - tasks_offset, 4);
     munmap(memory, instance->page_size);
     memory = xa_access_virtual_address(instance, ptr, &offset);
     if (NULL == memory){
@@ -153,7 +153,7 @@ int xa_linux_get_taskaddr (
     }
     memcpy(
         taskaddr,
-        memory + offset + xalinux_addr_offset,
+        memory + offset + addr_offset,
         sizeof(xa_linux_taskaddr_t)
     );
     munmap(memory, instance->page_size);

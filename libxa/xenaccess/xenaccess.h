@@ -118,6 +118,23 @@ typedef struct xa_instance{
     xa_cache_entry_t cache_head;
     xa_cache_entry_t cache_tail;
     int current_cache_size;
+    union{
+        struct linux_instance{
+            int tasks_offset;    /**< task_struct->tasks */
+            int mm_offset;       /**< task_struct->mm */
+            int pid_offset;      /**< task_struct->pid */
+            int pgd_offset;      /**< mm_struct->pgd */
+            int addr_offset;     /**< mm_struct->start_code */
+        } linux_instance;
+        struct windows_instance{
+            int tasks_offset;    /**< EPROCESS->ActiveProcessLinks */
+            int pdbase_offset;   /**< EPROCESS->Pcb->DirectoryTableBase */
+            int pid_offset;      /**< EPROCESS->UniqueProcessId */
+            int peb_offset;      /**< EPROCESS->Peb */
+            int iba_offset;      /**< EPROCESS->Peb->ImageBaseAddress */
+            int ph_offset;       /**< EPROCESS->Peb->ProcessHeap */
+        } windows_instance;
+    } os;
 } xa_instance_t;
 
 /**

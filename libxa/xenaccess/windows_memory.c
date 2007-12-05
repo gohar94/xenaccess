@@ -35,14 +35,6 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
-/* Globals */
-int xawin_tasks_offset = 0x88;
-int xawin_pdbase_offset = 0x18;
-int xawin_pid_offset = 0x84;
-int xawin_peb_offset = 0x1b0;
-int xawin_iba_offset = 0x8;
-int xawin_ph_offset = 0x18;
-
 /* test a candidate location */
 int test_ntoskrnl_base (
         xa_instance_t *instance, uint32_t base, uint32_t sysproc)
@@ -131,6 +123,8 @@ unsigned char *windows_get_EPROCESS (
     unsigned char *memory = NULL;
     uint32_t list_head = 0, next_process = 0;
     int task_pid = 0;
+    int pid_offset = instance->os.windows_instance.pid_offset;
+    int tasks_offset = instance->os.windows_instance.tasks_offset;
 
     /* first we need a pointer to this pid's EPROCESS struct */
     next_process = instance->init_task;
@@ -150,7 +144,7 @@ unsigned char *windows_get_EPROCESS (
         }
 
         memcpy(&task_pid,
-               memory + *offset + xawin_pid_offset - xawin_tasks_offset,
+               memory + *offset + pid_offset - tasks_offset,
                4
         );
 
@@ -171,6 +165,8 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
 {
     unsigned char *memory = NULL;
     uint32_t pgd = 0, ptr = 0, offset = 0;
+    int pdbase_offset = instance->os.windows_instance.pdbase_offset;
+    int tasks_offset = instance->os.windows_instance.tasks_offset;
 
     /* first we need a pointer to this pid's EPROCESS struct */
     memory = windows_get_EPROCESS(instance, pid, &offset);
@@ -181,7 +177,7 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
 
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
-    pgd = *((uint32_t*)(memory+offset+xawin_pdbase_offset-xawin_tasks_offset));
+    pgd = *((uint32_t*)(memory + offset + pdbase_offset - tasks_offset));
     pgd += instance->page_offset;
     munmap(memory, instance->page_size);
 
@@ -196,6 +192,10 @@ int xa_windows_get_peb (
 {
     unsigned char *memory;
     uint32_t ptr = 0, offset = 0;
+    int peb_offset = instance->os.windows_instance.peb_offset;
+    int tasks_offset = instance->os.windows_instance.tasks_offset;
+    int iba_offset = instance->os.windows_instance.iba_offset;
+    int ph_offset = instance->os.windows_instance.ph_offset;
 
     /* find the right EPROCESS struct */
     memory = windows_get_EPROCESS(instance, pid, &offset);
@@ -203,7 +203,7 @@ int xa_windows_get_peb (
         printf("ERROR: could not find EPROCESS struct for pid = %d\n", pid);
         goto error_exit;
     }
-    ptr = *((uint32_t*)(memory+offset+xawin_peb_offset-xawin_tasks_offset));
+    ptr = *((uint32_t*)(memory+offset + peb_offset - tasks_offset));
     munmap(memory, instance->page_size);
 
     /* map the PEB struct */
@@ -215,10 +215,10 @@ int xa_windows_get_peb (
 
     /* copy appropriate values into peb struct */
     memcpy(&peb->ImageBaseAddress,
-           memory + offset + xawin_iba_offset - xawin_tasks_offset,
+           memory + offset + iba_offset - tasks_offset,
            sizeof(uint32_t));
     memcpy(&peb->ProcessHeap,
-           memory + offset + xawin_ph_offset - xawin_tasks_offset,
+           memory + offset + ph_offset - tasks_offset,
            sizeof(uint32_t));
     munmap(memory, instance->page_size);
     return XA_SUCCESS;
