@@ -61,7 +61,8 @@ int linux_init (xa_instance_t *instance)
         goto error_exit;
     }
     instance->init_task =
-        *((uint32_t*)(memory + local_offset + xalinux_tasks_offset));
+        *((uint32_t*)(memory + local_offset +
+        instance->os.linux_instance.tasks_offset));
     xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
     munmap(memory, instance->page_size);
 
