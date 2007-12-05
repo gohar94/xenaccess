@@ -228,7 +228,7 @@ void init_xen_version (xa_instance_t *instance)
             xa_dbprint("**set instance->xen_version = 3.0.4\n");
         }
     }
-    if (strncmp((char *)extra, ".0", 2) == 0){
+    else if (strncmp((char *)extra, ".0", 2) == 0){
         if (strncmp((char *)cap, "xen-3.0-x86_32p", 15) == 0){
             instance->xen_version = XA_XENVER_3_1_0;
             xa_dbprint("**set instance->xen_version = 3.1.0\n");
@@ -238,6 +238,8 @@ void init_xen_version (xa_instance_t *instance)
     free(cap);
 
     if (instance->xen_version == XA_XENVER_UNKNOWN){
+        xa_dbprint("extra: %s\n", extra);
+        xa_dbprint("cap: %s\n", cap);
         printf("WARNING: This Xen version not supported by XenAccess.\n");
     }
 }
