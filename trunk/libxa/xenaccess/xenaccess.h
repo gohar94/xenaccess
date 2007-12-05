@@ -552,13 +552,14 @@ WinXPSP2 {
  * The first argument for each example is the domain ID that you wish to view.
  * This should be the same ID seen using the 'xm list' command.  The domain
  * you specify must also be included in the configuration file.  The provided
- * examples are listed below:
+ * examples are listed below.  The arguments passed on the command line to each
+ * program are specified in squared brackets.
  *
- * @li @c map-addr Dumps a memory page to stdout based on the provided virtual address.  The virtual address must be a kernel virtual address.  The page is displayed in a readable format complete with hex, ascii, and offsets.  The number printed before the memory page is the offset of the specified address within the page.
- * @li @c map-symbol Same as @c map-addr except you specify a kernel symbol instead of a kernel virtual address.
- * @li @c module-list Lists the kernel modules installed in the operating system.  This is the same list that you would get using 'lsmod' on a Linux system.  On Windows, it lists the drivers loaded into the kernel.
- * @li @c process-list Lists the running processes in the operating system.  This is the same list that you would get using 'ps -ef' on a Linux system.  On Windows, it is the same list that you would get using the task manager.
- * @li @c process-data Displays the first memory page of executable content for a given process.  The process number, which is provided as a second argument, is the number obtained from using the @c process-list example above.
+ * @li @c map-addr [domain id, virtual address] Dumps a memory page to stdout based on the provided virtual address.  The virtual address must be a kernel virtual address.  The page is displayed in a readable format complete with hex, ascii, and offsets.  The number printed before the memory page is the offset of the specified address within the page.
+ * @li @c map-symbol [domain id, kernel symbol] Same as @c map-addr except you specify a kernel symbol instead of a kernel virtual address.
+ * @li @c module-list [domain id] Lists the kernel modules installed in the operating system.  This is the same list that you would get using 'lsmod' on a Linux system.  On Windows, it lists the drivers loaded into the kernel.
+ * @li @c process-list [domain id] Lists the running processes in the operating system.  This is the same list that you would get using 'ps -ef' on a Linux system.  On Windows, it is the same list that you would get using the task manager.
+ * @li @c process-data [domain id, process id] Displays the first memory page of executable content for a given process.  The process number, which is provided as a second argument, is the number obtained from using the @c process-list example above.
  *
  * @subsection examples2 In Detail: process-list.c
  * In order to better understand how the examples work, let's take a look at
@@ -760,13 +761,105 @@ failed to map memory for process list pointer: Success
  *
  *
  * @section devel Programming With XenAccess
- * @subsection devel1 Best Practices
- * @subsection devel2 Patterns
- * @subsection devel3 Debugging
- * @subsection devel4 Bridging the Semantic Gap
+ * Most people that are familiar with C and familiar with OS data structure
+ * layout will find that programming with XenAccess is pretty straight forward.
+ * You can probably just look at the example code and be off and running
+ * quickly.  However, there are a few things to keep in mind when working
+ * with introspection that will make your life easier and improve the 
+ * performance of your applications.  This section provides some tips to help
+ * you get started.
  *
+ * Note:  This section provides some preliminary ideas and help.  If you
+ * find other tips that could be added to this section, please send a note
+ * to the mailing list.
+ *
+ * @subsection devel1 Best Practices for Performance
+ * Performance is a key concern when building any application that uses 
+ * introspection.  Since some of the library operations are costly, if you
+ * aren't careful, your application can run very slowly.  In most cases, this
+ * can be avoided with a little planning.  The two stratigies to keep in mind
+ * are (1) do as much work as possible during initialization, and (2) avoid
+ * algorithms that map the same page of memory repeatedly.
+ *
+ * The first step is to do your costly work during initialization.  This
+ * includes your call to @c xa_init.  You should call this function once during
+ * the initialization of your application and then pass the instance around
+ * to all functions that need to use the XenAccess API.  XenAccess is 
+ * designed to do as much work as possible during initialization, so a call
+ * to @c xa_init is costly.  If you call it several times then your application
+ * performance will certainly suffer.
+ *
+ * The second step is to be mindful of what you are doing.  For example, an
+ * algorithm that searches memory looking for a particular pattern should not
+ * be using XenAccess to access each virtual address in the search range
+ * independently.  Instead, use XenAccess to map a page of memory once.  Then
+ * look at each address on that page before unmapping it and proceeding to the
+ * next page.  These considerations can improve your application's performance
+ * by several orders of magnitude.
+ *
+ * Finally, you can enable the debug output (see Debugging section below) to 
+ * identify when XenAccess is getting cache hits and cache misses.  The default
+ * cache size is 25 entries, however some applications may benefit from a 
+ * larger cache.  You can adjust the cache size by changing the 
+ * @c XA_CACHE_SIZE variable in @c xa_private.h and then recompiling 
+ * XenAccess.  However, keep in mind that a larger cache size does not always
+ * equal better performance.  Experiment to see what works best for your
+ * particular application.
+ *
+ * @subsection devel3 Debugging
+ * XenAccess includes the ability to show debugging output.  This output is
+ * very verbose, but may be useful when tracking down bugs in your application
+ * or in XenAccess itself.  To enable the debug output, uncomment the 
+ * @c XA_DEBUG variable near the top of the @c xenaccess.h file.  After
+ * uncommenting this variable, you will need to recompile XenAccess (and,
+ * optionally, reinstall XenAccess).  With the debug output enabled, you will
+ * see lots of information on stdout about XenAccess's operation.
+ *
+ * If you are requesting help from the mailing list, please send the debug
+ * output along with your question as it will be easier to diagnose your
+ * problem this way.
+ *
+ * @subsection devel4 Bridging the Semantic Gap
+ * XenAccess provides simplified access to a user domain's memory by allowing
+ * you to access virtual and physical addresses.  However, knowing which
+ * address to access can be a challenging problem by itself.  If you were
+ * working on the machine locally, you would have a richer set of API calls
+ * to gather the information you need.  Bridging this semantic gap requires
+ * learning details about how an operating system and its programs are loaded
+ * into memory.
+ *
+ * When available, source code provides an invaluable resource for
+ * understanding how data is organized in memory.  When source code is not
+ * available, or when need a higher-level understanding of the system's 
+ * operation, then I recommend finding a useful reference book.  The two 
+ * operating system references that seem to be most useful when working with
+ * XenAccess are listed below:
+ *
+ * @li Understanding the Linux Kernel by Bovet and Cesati
+ * @li Windows Internals by Russinovich and Solomon
+ *
+ * In addition to these books, the forensics community has done a lot of
+ * work in volitale memory analysis.  This body of knowledge is very relavent
+ * to work with XenAccess because it involves a similar view of the system's
+ * memory.  The links below are some recommended sources of information within
+ * this forensics community:
+ *
+ * @li <a href="http://computer.forensikblog.de/en/">int for(ensic){blog;}</a>
+ * @li <a href="http://www.4tphi.net/fatkit/">Forensic Analysis Toolkit (FATKit)</a>
+ * @li <a href="http://dfrws.org/archives.shtml">DFRWS Conference Archives</a>
  *
  * @section problems Troubleshooting
+ * When troubleshoot your application, it is best to be able to see what is 
+ * going on.  If you think that the problem is within XenAccess, you can 
+ * try enabling the debug output to identify the problem.  If you think that
+ * you have found a bug in XenAccess, please send an email with this debug
+ * output and a description of the bug to the mailing list.
+ *
+ * If you want to see the memory maping by your application, consider using
+ * the @c print_hex function, which will require you to include
+ * @c xa_private.h in your application.  This function allows you to easily
+ * print the hex and ascii values from a region of memory to stdout, which
+ * can often simplify debugging.
  */
 
 #endif /* LIB_XEN_ACCESS_H */

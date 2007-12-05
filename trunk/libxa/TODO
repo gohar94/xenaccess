@@ -2,7 +2,6 @@
 
 ## Updates needed for 0.4 release
 * full support for xen 3.1
-* fix comments throughout (esp in .h files)
 * put offsets into instance struct and set initial values in core
 * update debug output version number to match release
 * clean up parser code
