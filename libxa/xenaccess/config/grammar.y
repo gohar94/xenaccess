@@ -59,173 +59,163 @@ static int nTokenNextStart = 0;
 static int lMaxBuffer = 1000;
 static char *buffer = NULL;
 
-void printError (char *errorstring, ...) {
-  static char errmsg[10000];
-  va_list args;
+void printError (const char *errorstring, ...)
+{
+    static char errmsg[10000];
+    va_list args;
 
-  int start=nTokenStart;
-  int end=start + nTokenLength - 1;
-  int i;
-
-  if (  eof  ) {
-    fprintf(stdout, "...... !");
-    for (i=0; i<lBuffer; i++)
-      fprintf(stdout, ".");
-    fprintf(stdout, "^-EOF\n");
-  }
-  else {
-    fprintf(stdout, "...... !");
-    for (i=1; i<start; i++)
-      fprintf(stdout, ".");
-    for (i=start; i<=end; i++)
-      fprintf(stdout, "^");
-    for (i=end+1; i<lBuffer; i++)
-      fprintf(stdout, ".");
-    fprintf(stdout, "   token%d:%d\n", start, end);
-  }
-
-  va_start(args, errorstring);
-  vsprintf(errmsg, errorstring, args);
-  va_end(args);
-
-  fprintf(stdout, "Error: %s\n", errmsg);
-}
-
-static
-char dumpChar(char c) {
-  if (  isprint(c)  )
-    return c;
-  return '@';
-}
-
-static
-char *dumpString(char *s) {
-  static char buf[101];
-  int i;
-  int n = strlen(s);
-
-  if (  n > 100  )
-    n = 100;
-
-  for (i=0; i<n; i++)
-    buf[i] = dumpChar(s[i]);
-  buf[i] = 0;
-  return buf;
-}
-
-void DumpRow(void) {
-  if (  nRow == 0  ) {
+    int start=nTokenStart;
+    int end=start + nTokenLength - 1;
     int i;
-    fprintf(stdout, "       |");
-    for (i=1; i<71; i++)
-      if (  i % 10 == 0  )
-        fprintf(stdout, ":"); 
-      else if (  i % 5 == 0  )
-        fprintf(stdout, "+"); 
-      else
-        fprintf(stdout, ".");
-    fprintf(stdout, "\n"); 
-  }
-  else 
-    fprintf(stdout, "%6d |%.*s", nRow, lBuffer, buffer);
-}
 
-static
-int getNextLine(void) {
-  int i;
-  char *p;
-  
-  /*================================================================*/
-  /*----------------------------------------------------------------*/
-  nBuffer = 0;
-  nTokenStart = -1;
-  nTokenNextStart = 1;
-  eof = false;
-
-  /*================================================================*/
-  /* read a line ---------------------------------------------------*/
-  if (NULL == buffer){
-    buffer = malloc(lMaxBuffer);
-  }
-  p = fgets(buffer, lMaxBuffer, yyin);
-  if (  p == NULL  ) {
-    if (  ferror(yyin)  )
-      return -1;
-    eof = true;
-    return 1;
-  }
-
-  nRow += 1;
-  lBuffer = strlen(buffer);
-  DumpRow();
-
-  /*================================================================*/
-  /* that's it -----------------------------------------------------*/
-  return 0;
-}
-
-int GetNextChar(char *b, int maxBuffer) {
-  int frc;
-  
-  /*================================================================*/
-  /*----------------------------------------------------------------*/
-  if (  eof  )
-    return 0;
-  
-  /*================================================================*/
-  /* read next line if at the end of the current -------------------*/
-  while (  nBuffer >= lBuffer  ) {
-    frc = getNextLine();
-    if (  frc != 0  )
-      return 0;
+    if (eof){
+        fprintf(stdout, "...... !");
+        for (i = 0; i < lBuffer; ++i){
+            fprintf(stdout, ".");
+        }
+        fprintf(stdout, "^-EOF\n");
+    }
+    else{
+        fprintf(stdout, "...... !");
+        for (i = 1; i < start; ++i){
+            fprintf(stdout, ".");
+        }
+        for (i = start; i <= end; ++i){
+            fprintf(stdout, "^");
+        }
+        for (i = end + 1; i < lBuffer; ++i){
+            fprintf(stdout, ".");
+        }
+        fprintf(stdout, "   token%d:%d\n", start, end);
     }
 
-  /*================================================================*/
-  /* ok, return character ------------------------------------------*/
-  b[0] = buffer[nBuffer];
-  nBuffer += 1;
+    va_start(args, errorstring);
+    vsprintf(errmsg, errorstring, args);
+    va_end(args);
 
-  if (  debug  )
-    printf("GetNextChar() => '%c'0x%02x at %d\n",
-                        dumpChar(b[0]), b[0], nBuffer);
-  return b[0]==0?0:1;
+    fprintf(stdout, "Error: %s\n", errmsg);
 }
 
-void BeginToken(char *t) {
-  /*================================================================*/
-  /* remember last read token --------------------------------------*/
-  nTokenStart = nTokenNextStart;
-  nTokenLength = strlen(t);
-  nTokenNextStart = nBuffer; // + 1;
+static char dumpChar(char c)
+{
+    if (isprint(c)){
+        return c;
+    }
+    return '@';
+}
 
-  /*================================================================*/
-  /* location for bison --------------------------------------------*/
-//  yylloc.first_line = nRow;
-//  yylloc.first_column = nTokenStart;
-//  yylloc.last_line = nRow;
-//  yylloc.last_column = nTokenStart + nTokenLength - 1;
+static char* dumpString (char *s)
+{
+    static char buf[101];
+    int i;
+    int n = strlen(s);
 
-//  if (  debug  ) {
-//    printf("Token '%s' at %d:%d next at %d\n", dumpString(t),
-//                        yylloc.first_column,
-//                        yylloc.last_column, nTokenNextStart);
-//  }
+    if (n > 100){
+        n = 100;
+    }
+
+    for (i = 0; i < n; ++i){
+        buf[i] = dumpChar(s[i]);
+    }
+    buf[i] = 0;
+    return buf;
+}
+
+void DumpRow (void)
+{
+    if (nRow == 0){
+        int i;
+        fprintf(stdout, "       |");
+        for (i=1; i<71; i++){
+            if (i % 10 == 0){
+                fprintf(stdout, ":");
+            } 
+            else if (i % 5 == 0){
+                fprintf(stdout, "+"); 
+            }
+            else{
+                fprintf(stdout, ".");
+            }
+            fprintf(stdout, "\n"); 
+        }
+    }
+    else{ 
+        fprintf(stdout, "%6d |%.*s", nRow, lBuffer, buffer);
+    }
+}
+
+static int getNextLine (void)
+{
+    int i;
+    char *p;
+    nBuffer = 0;
+    nTokenStart = -1;
+    nTokenNextStart = 1;
+    eof = false;
+
+    /* read a line */
+    if (NULL == buffer){
+        buffer = malloc(lMaxBuffer);
+    }
+    p = fgets(buffer, lMaxBuffer, yyin);
+    if (p == NULL) {
+        if (ferror(yyin)){
+            return -1;
+        }
+        eof = true;
+        return 1;
+    }
+
+    nRow += 1;
+    lBuffer = strlen(buffer);
+    DumpRow();
+
+    return 0;
+}
+
+int GetNextChar (char *b, int maxBuffer)
+{
+    int frc;
+  
+    if (eof){
+        return 0;
+    }
+  
+    /* read next line if at the end of the current */
+    while (nBuffer >= lBuffer){
+        frc = getNextLine();
+        if (frc != 0){
+            return 0;
+        }
+    }
+
+    /* ok, return character */
+    b[0] = buffer[nBuffer];
+    nBuffer += 1;
+
+    if (debug){
+        printf("GetNextChar() => '%c'0x%02x at %d\n",
+                        dumpChar(b[0]), b[0], nBuffer);
+    }
+    return b[0]==0?0:1;
+}
+
+void BeginToken (char *t)
+{
+    /* remember last read token */
+    nTokenStart = nTokenNextStart;
+    nTokenLength = strlen(t);
+    nTokenNextStart = nBuffer; // + 1;
 }
 
 #else /* !XA_DEBUG */
 
-int GetNextChar(char *b, int maxBuffer) { return 0; }
-void BeginToken(char *t) {}
+int GetNextChar (char *b, int maxBuffer) { return 0; }
+void BeginToken (char *t) {}
 
 #endif /* XA_DEBUG */
 
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-void yyerror(const char *str)
+void yyerror (const char *str)
 {
 #ifndef XA_DEBUG
     fprintf(stderr,"error: %s\n",str);
@@ -257,7 +247,7 @@ xa_config_entry_t* xa_get_config()
     return &entry;
 }
   
-int xa_parse_config(char *td)
+int xa_parse_config (char *td)
 {
     int ret;
     target_domain = strdup(td);
@@ -327,8 +317,6 @@ assignment:
         |
         linux_pid_assignment
         |
-        linux_name_assignment
-        |
         linux_pgd_assignment
         |
         linux_addr_assignment
@@ -367,14 +355,6 @@ linux_pid_assignment:
         {
             int tmp = strtol($3, NULL, 0);
             tmp_entry.offsets.linux_offsets.pid = tmp;
-        }
-        ;
-
-linux_name_assignment:
-        LINUX_NAME EQUALS NUM
-        {
-            int tmp = strtol($3, NULL, 0);
-            tmp_entry.offsets.linux_offsets.name = tmp;
         }
         ;
 

@@ -351,7 +351,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
         printf("ERROR: Failed to open libxc interface\n");
         return XA_FAILURE;
     }
-    xa_dbprint("XenAccess Version SVN-devel.\n");
+    xa_dbprint("XenAccess Version 0.4\n");
 
     /* populate struct with critical values */
     instance->xc_handle = xc_handle;

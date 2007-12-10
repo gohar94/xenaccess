@@ -1,12 +1,5 @@
 # ToDo Items
 
-## Updates needed for 0.4 release
-* full support for xen 3.1
-* put offsets into instance struct and set initial values in core
-* update debug output version number to match release
-* clean up parser code
-* remove offset values that we are not using from parser
-
 ## Future Plans
 * cleanup code throughout and fix TODO spots
 * create higher level abstractions

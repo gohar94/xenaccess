@@ -453,6 +453,13 @@ int xa_windows_get_peb (
  *
  *
  * @section install Installation
+ * @subsection install0 Requirements
+ * XenAccess is designed for 32-bit x86 systems running Xen 3.0.4.  Work is
+ * underway to get support for Xen 3.1.0, but right now support for this 
+ * platform is very limited.  If you have success with another version or
+ * if you would like to help port XenAccess to another version, then please
+ * send a message to the mailing list.
+ *
  * @subsection install1 Getting XenAccess
  * You can get the latest released version of XenAccess from SourceForge
  * using the following link:
@@ -522,7 +529,6 @@ make install @endverbatim
  * @li @c linux_tasks The number of bytes (offset) from the start of the struct until task_struct->tasks from linux/sched.h in the domain's kernel.
  * @li @c linux_mm Offset to task_struct->mm.
  * @li @c linux_pid Offset to task_struct->pid.
- * @li @c linux_name Offset to task_struct->name.
  * @li @c linux_pgd Offset to task_struct->pgd.
  * @li @c linux_addr Offset to task_struct->start_code.
  * @li @c win_tasks Offset to EPROCESS->ActiveProcessLinks.
@@ -542,7 +548,6 @@ Fedora-HVM {
     linux_tasks = 268;
     linux_mm    = 276;
     linux_pid   = 312;
-    linux_name  = 548;
     linux_pgd   = 40;
     linux_addr  = 132;
 }

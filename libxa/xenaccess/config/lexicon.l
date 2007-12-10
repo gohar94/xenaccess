@@ -45,7 +45,6 @@
 linux_tasks             { BeginToken(yytext); return LINUX_TASKS; }
 linux_mm                { BeginToken(yytext); return LINUX_MM; }
 linux_pid               { BeginToken(yytext); return LINUX_PID; }
-linux_name              { BeginToken(yytext); return LINUX_NAME; }
 linux_pgd               { BeginToken(yytext); return LINUX_PGD; }
 linux_addr              { BeginToken(yytext); return LINUX_ADDR; }
 win_tasks               { BeginToken(yytext); return WIN_TASKS; }
