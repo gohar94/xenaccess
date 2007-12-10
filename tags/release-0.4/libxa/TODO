@@ -1,0 +1,17 @@
+# ToDo Items
+
+## Future Plans
+* cleanup code throughout and fix TODO spots
+* create higher level abstractions
+  -- iterators (process lists, module lists, other lists)
+  -- windows handle table walking
+  -- windows VADs
+  -- linux proc data (?)
+  -- windows registry data (?)
+* consider adding data gathering from xenbus, xenoprofile, etc
+* create some kind of clean api abtraction for memory that spans multiple pages
+* show additional example applications
+* add function that returns active domid(s)
+* add init function that works based on domain name instead of id
+* autodetect os type
+* automatically determine offset information
