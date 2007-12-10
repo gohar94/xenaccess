@@ -42,7 +42,6 @@ typedef struct xa_config_entry {
             int tasks;
             int mm;
             int pid;
-            int name;
             int pgd;
             int addr; 
         } linux_offsets;
