@@ -45,6 +45,8 @@ AM_SANITY_CHECK
 AC_CHECK_LIB(xenstore, xs_read, [LIBS="-lxenstore $LIBS"], [exit -1])
 AC_CHECK_LIB(xenctrl, xc_interface_open, [LIBS="-lxenctrl $LIBS"], [exit -1])
 
+AC_CHECK_FUNCS_ONCE(xc_map_foreign_pages, AC_DEFINE([HAVE_MAP_FOREIGN], [], [Indicates existance of xc_map_foreign_pages]))
+
 dnl -----------------------------------------------
 dnl Generates Makefile's, configuration files and scripts
 dnl -----------------------------------------------

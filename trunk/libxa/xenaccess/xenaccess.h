@@ -232,6 +232,21 @@ void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 
 /**
+ * Memory maps multiple pages from domU to a local address range.
+ * The memory to be mapped is specified with a kernel virtual
+ * address.  This memory must be unmapped manually with munmap.
+ *
+ * @param[in] instance XenAccess instance
+ * @param[in] virt_address Desired virtual address to access
+ * @param[in] size Size in bytes of the accessed range
+ * @param[out] offset Offset to the address within mapped memory
+ * @return Beginning of the mapped memory pages or NULL on error
+ */ 
+void *xa_access_virtual_range (
+	xa_instance_t* instance, uint32_t virt_address,
+	uint32_t size, uint32_t* offset);
+
+/**
  * Memory maps one page from domU to a local address range.  The
  * memory to be mapped is specified with a virtual address from a 
  * process' address space.  This memory must be unmapped manually
@@ -248,6 +263,26 @@ void *xa_access_virtual_address (
 void *xa_access_user_virtual_address (
         xa_instance_t *instance, uint32_t virt_address,
         uint32_t *offset, int pid);
+
+/**
+ * Memory maps multiple pages from domU to a local address range.
+ * the memory to be mapped is specified by a virtual address from
+ * process' address space.  Data structures that span multiple
+ * pages can be mapped without dealing with fragmentation.
+ *
+ * @param[in] instance XenAccess instance
+ * @param[in] virt_address Desired virtual address to access
+ * @param[in] size Size in bytes of the accessed range
+ * @param[out] offset Offset to the address within mapped memory
+ * @param[in] pid PID of process' address space to use.  If you
+ * 		specify 0 here, XenAccess will access the kernel virtual
+ *  	address space and this function's be the same as
+ *  	xa_access_virtual_range.
+ * @return Beginning of the mapped memory pages or NULL on error
+ */
+void *xa_access_user_virtual_range (
+	xa_instance_t* instance, uint32_t virt_address,
+	uint32_t size, uint32_t* offset, int pid);
 
 /**
  * Performs the translation from a kernel virtual address to a
