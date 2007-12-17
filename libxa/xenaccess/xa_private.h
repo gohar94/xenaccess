@@ -357,4 +357,12 @@ int windows_init (xa_instance_t *instance);
 int linux_init (xa_instance_t *instance);
 int get_symbol_row (FILE *f, char *row, char *symbol, int position);
 
+/** Duplicate function from xc_util that should remain
+ *  here until Xen 3.1.2 becomes widely distributed.
+ */
+#ifndef HAVE_MAP_FOREIGN
+void *xc_map_foreign_pages(int xc_handle, uint32_t dom, int prot,
+                           const xen_pfn_t *arr, int num);
+#endif
+
 #endif /* XA_PRIVATE_H */

@@ -514,10 +514,54 @@ void *xa_access_user_virtual_address (
     }
 }
 
+void *xa_access_user_virtual_range (
+        xa_instance_t *instance,
+        uint32_t virt_address,
+		uint32_t size,
+        uint32_t *offset,
+        int pid)
+{
+	int i;
+
+	uint32_t num_pages = size/instance->page_size + 1;
+
+	uint32_t pgd = pid ? xa_pid_to_pgd(instance, pid) : instance->kpgd;
+	xen_pfn_t* pfns = (xen_pfn_t*)malloc(sizeof(xen_pfn_t)*num_pages);
+	
+	uint32_t start = virt_address & ~(instance->page_size-1);
+	for(i=0; i < num_pages; i++) {
+		// Virtual address for each page we will map
+		uint32_t addr = start + i*instance->page_size;
+	
+		if(!addr) {
+			printf("ERROR: address not in page table (%p)\n", addr);
+			return NULL;
+		}
+
+		// Physical page frame number of each page
+		pfns[i] = xa_pagetable_lookup(
+					instance, pgd, addr, pid ? 0 : 1) >> instance->page_shift;
+	}
+
+	*offset = virt_address - start;
+
+	return xc_map_foreign_pages(
+				instance->xc_handle, instance->domain_id, PROT_READ, pfns, num_pages);
+}
+
 void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
     return xa_access_user_virtual_address(instance, virt_address, offset, 0);
+}
+
+void *xa_access_virtual_range (
+	xa_instance_t *instance,
+	uint32_t virt_address,
+	uint32_t size,
+	uint32_t* offset)
+{
+	return xa_access_user_virtual_range(instance, virt_address, size, offset, 0);
 }
 
 void *xa_access_physical_address (

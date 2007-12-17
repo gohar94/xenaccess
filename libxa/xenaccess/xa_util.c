@@ -31,6 +31,8 @@
  */
 
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 #include <stdarg.h>
 #include "xenaccess.h"
 #include "xa_private.h"
@@ -186,6 +188,51 @@ int xa_get_bit (unsigned long reg, int bit)
         return 0;
     }
 }
+
+/* This function is taken from Markus Armbruster's
+ * xc_map_foreign_pages that is now part of xc_util.c.
+ * 
+ * It is a very nice function that unfortunately
+ * only appears in very recent libxc's (late 2007).
+ * 
+ * Calls to this function should be replaced with
+ * the libxc equivalent when Xen 3.1.2 becomes widely
+ * distributed.
+ */
+#ifndef HAVE_MAP_FOREIGN
+void *xc_map_foreign_pages(int xc_handle, uint32_t dom, int prot,
+                           const xen_pfn_t *arr, int num)
+{
+    xen_pfn_t *pfn;
+    void *res;
+    int i;
+
+    pfn = malloc(num * sizeof(*pfn));
+    if (!pfn)
+        return NULL;
+    memcpy(pfn, arr, num * sizeof(*pfn));
+
+    res = xc_map_foreign_batch(xc_handle, dom, prot, pfn, num);
+    if (res) {
+        for (i = 0; i < num; i++) {
+            if ((pfn[i] & 0xF0000000UL) == 0xF0000000UL) {
+                /*
+                 * xc_map_foreign_batch() doesn't give us an error
+                 * code, so we have to make one up.  May not be the
+                 * appropriate one.
+                 */
+                errno = EINVAL;
+                munmap(res, num * PAGE_SIZE);
+                res = NULL;
+                break;
+            }
+        }
+    }
+
+    free(pfn);
+    return res;
+}
+#endif
 
 #ifndef XA_DEBUG
 /* Nothing */
