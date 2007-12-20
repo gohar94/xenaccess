@@ -91,7 +91,7 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 }
 
 void *windows_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset)
+        xa_instance_t *instance, char *symbol, uint32_t *offset, int prot)
 {
     uint32_t virt_address;
     uint32_t phys_address;
@@ -113,7 +113,7 @@ void *windows_access_kernel_symbol (
     virt_address = phys_address + instance->page_offset;
 
     xa_update_cache(instance, symbol, virt_address, 0, 0);
-    return xa_access_physical_address(instance, phys_address, offset);
+    return xa_access_pa(instance, phys_address, offset, prot);
 }
 
 /* finds the EPROCESS struct for a given pid */

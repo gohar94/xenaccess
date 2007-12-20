@@ -106,7 +106,7 @@ error_exit:
 }
 
 void *linux_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset)
+        xa_instance_t *instance, char *symbol, uint32_t *offset, int prot)
 {
     uint32_t virt_address;
     uint32_t address;
@@ -123,7 +123,7 @@ void *linux_access_kernel_symbol (
     }
 
     xa_update_cache(instance, symbol, virt_address, 0, 0);
-    return xa_access_virtual_address(instance, virt_address, offset);
+    return xa_access_kernel_va(instance, virt_address, offset, prot);
 }
 
 /* fills the taskaddr struct for a given linux process */
