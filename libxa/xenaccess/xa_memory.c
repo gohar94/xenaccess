@@ -439,18 +439,25 @@ uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address)
 }
 
 /* map memory given a kernel symbol */
-void *xa_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset)
+void *xa_access_kernel_sym (
+        xa_instance_t *instance, char *symbol, uint32_t *offset, int prot)
 {
     if (XA_OS_LINUX == instance->os_type){
-        return linux_access_kernel_symbol(instance, symbol, offset);
+        return linux_access_kernel_symbol(instance, symbol, offset, prot);
     }
     else if (XA_OS_WINDOWS == instance->os_type){
-        return windows_access_kernel_symbol(instance, symbol, offset);
+        return windows_access_kernel_symbol(instance, symbol, offset, prot);
     }
     else{
         return NULL;
     }
+}
+
+/*TODO this is deprecated */
+void *xa_access_kernel_symbol (
+        xa_instance_t *instance, char *symbol, uint32_t *offset)
+{
+    return xa_access_kernel_sym(instance, symbol, offset, PROT_READ);
 }
 
 /* finds the address of the page global directory for a given pid */
@@ -467,11 +474,12 @@ uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
     }
 }
 
-void *xa_access_user_virtual_address (
+void *xa_access_user_va (
         xa_instance_t *instance,
         uint32_t virt_address,
         uint32_t *offset,
-        int pid)
+        int pid,
+        int prot)
 {
     uint32_t address = 0;
 
@@ -491,8 +499,6 @@ void *xa_access_user_virtual_address (
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
-        xa_update_cache(instance, NULL, virt_address, pid, address);
-        return xa_access_machine_address(instance, address, offset);
     }
 
     /* use user page tables */
@@ -508,29 +514,41 @@ void *xa_access_user_virtual_address (
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
-        xa_update_cache(instance, NULL, virt_address, pid, address);
-        return xa_access_machine_address_rw(
-            instance, address, offset, PROT_READ | PROT_WRITE);
     }
+
+    /* update cache and map the memory */
+    xa_update_cache(instance, NULL, virt_address, pid, address);
+    return xa_access_ma(instance, address, offset, prot);
 }
 
-void *xa_access_user_virtual_range (
+/*TODO this is deprecated */
+void *xa_access_user_virtual_address (
+        xa_instance_t *instance,
+        uint32_t virt_address,
+        uint32_t *offset,
+        int pid)
+{
+    return xa_access_user_va(instance, virt_address, offset, pid, PROT_READ);
+}
+
+void *xa_access_user_va_range (
         xa_instance_t *instance,
         uint32_t virt_address,
 		uint32_t size,
         uint32_t *offset,
-        int pid)
+        int pid,
+        int prot)
 {
 	int i;
 
-	uint32_t num_pages = size/instance->page_size + 1;
+	uint32_t num_pages = size / instance->page_size + 1;
 
 	uint32_t pgd = pid ? xa_pid_to_pgd(instance, pid) : instance->kpgd;
 	xen_pfn_t* pfns = (xen_pfn_t*)malloc(sizeof(xen_pfn_t)*num_pages);
 	
 	uint32_t start = virt_address & ~(instance->page_size-1);
-	for(i=0; i < num_pages; i++) {
-		// Virtual address for each page we will map
+	for (i = 0; i < num_pages; i++){
+		/* Virtual address for each page we will map */
 		uint32_t addr = start + i*instance->page_size;
 	
 		if(!addr) {
@@ -538,7 +556,7 @@ void *xa_access_user_virtual_range (
 			return NULL;
 		}
 
-		// Physical page frame number of each page
+		/* Physical page frame number of each page */
 		pfns[i] = xa_pagetable_lookup(
 					instance, pgd, addr, pid ? 0 : 1) >> instance->page_shift;
 	}
@@ -546,26 +564,64 @@ void *xa_access_user_virtual_range (
 	*offset = virt_address - start;
 
 	return xc_map_foreign_pages(
-				instance->xc_handle, instance->domain_id, PROT_READ, pfns, num_pages);
+        instance->xc_handle, instance->domain_id, prot, pfns, num_pages);
 }
 
+/*TODO this is deprecated */
+void *xa_access_user_virtual_range (
+        xa_instance_t *instance,
+        uint32_t virt_address,
+		uint32_t size,
+        uint32_t *offset,
+        int pid)
+{
+    return xa_access_user_va_range(instance, virt_address, size, offset,
+            pid, PROT_READ);
+}
+
+void *xa_access_kernel_va (
+        xa_instance_t *instance,
+        uint32_t virt_address,
+        uint32_t *offset,
+        int prot)
+{
+    return xa_access_user_va(instance, virt_address, offset, 0, prot);
+}
+
+/*TODO this is deprecated */
 void *xa_access_virtual_address (
         xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
 {
-    return xa_access_user_virtual_address(instance, virt_address, offset, 0);
+    return xa_access_user_va(instance, virt_address, offset, 0, PROT_READ);
 }
 
+void *xa_access_kernel_va_range (
+	xa_instance_t *instance,
+	uint32_t virt_address,
+	uint32_t size,
+	uint32_t* offset,
+    int prot)
+{
+	return xa_access_user_va_range(
+        instance, virt_address, size, offset, 0, prot);
+}
+
+/*TODO this is deprecated */
 void *xa_access_virtual_range (
 	xa_instance_t *instance,
 	uint32_t virt_address,
 	uint32_t size,
 	uint32_t* offset)
 {
-	return xa_access_user_virtual_range(instance, virt_address, size, offset, 0);
+	return xa_access_user_va_range(
+        instance, virt_address, size, offset, 0, PROT_READ);
 }
 
-void *xa_access_physical_address (
-        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
+void *xa_access_pa (
+        xa_instance_t *instance,
+        uint32_t phys_address,
+        uint32_t *offset,
+        int prot)
 {
     unsigned long pfn;
     int i;
@@ -577,19 +633,21 @@ void *xa_access_physical_address (
     *offset = (instance->page_size-1) & phys_address;
     
     /* access the memory */
-    return xa_mmap_pfn(instance, PROT_READ, pfn);
+    return xa_mmap_pfn(instance, prot, pfn);
 }
 
-void *xa_access_machine_address (
-        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
+/*TODO this is deprecated */
+void *xa_access_physical_address (
+        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
 {
-    return xa_access_machine_address_rw(
-                instance, mach_address, offset, PROT_READ);
+    return xa_access_pa(instance, phys_address, offset, PROT_READ);
 }
 
-void *xa_access_machine_address_rw (
-        xa_instance_t *instance, uint32_t mach_address,
-        uint32_t *offset, int prot)
+void *xa_access_ma (
+        xa_instance_t *instance,
+        uint32_t mach_address,
+        uint32_t *offset,
+        int prot)
 {
     unsigned long mfn;
     int i;
@@ -604,3 +662,9 @@ void *xa_access_machine_address_rw (
     return xa_mmap_mfn(instance, prot, mfn);
 }
 
+/*TODO this is deprecated */
+void *xa_access_machine_address (
+        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
+{
+    return xa_access_ma(instance, mach_address, offset, PROT_READ);
+}
