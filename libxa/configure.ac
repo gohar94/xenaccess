@@ -13,7 +13,7 @@ LIBRARY_NAME=xenaccess
 
 #release versioning
 MAJOR_VERSION=0
-MINOR_VERSION=3
+MINOR_VERSION=4
 MICRO_VERSION=0
 
 dnl --------------------------------
