@@ -650,8 +650,8 @@ make install @endverbatim
  * @li @c linux_tasks The number of bytes (offset) from the start of the struct until task_struct->tasks from linux/sched.h in the domain's kernel.
  * @li @c linux_mm Offset to task_struct->mm.
  * @li @c linux_pid Offset to task_struct->pid.
- * @li @c linux_pgd Offset to task_struct->pgd.
- * @li @c linux_addr Offset to task_struct->start_code.
+ * @li @c linux_pgd Offset to mm_struct->pgd.
+ * @li @c linux_addr Offset to mm_struct->start_code.
  * @li @c win_tasks Offset to EPROCESS->ActiveProcessLinks.
  * @li @c win_pdbase Offset to EPROCESS->Pcb->DirectoryTableBase.
  * @li @c win_pid Offset to EPROCESS->UniqueProcessId.
