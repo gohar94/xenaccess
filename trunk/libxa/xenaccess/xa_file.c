@@ -19,14 +19,37 @@
  * 02110-1301, USA.
  *
  * --------------------
- * This file contains utility functions for printing out data and
- * debugging information.
+ * This file contains utility functions for access data from a file
+ * that contains the memory state from a running machine.
  *
- * File: xa_pretty_print.c
+ * File: xa_file.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 
+#include <stdio.h>
+
+void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn)
+{
+    void *memory = NULL;
+    FILE *f = instance->mode.file.fhandle;
+    long address = pfn << instance->page_shift;
+
+/*
+    if (fseek(f, address, SEEK_SET) != 0){
+        return NULL;
+    }
+    if ((memory = malloc(instance->page_size)) == NULL){
+        return NULL;
+    }
+    if (fread(memory, instance->page_size, 1, f) < instance->page_size){
+        free(memory);
+        return NULL;
+    }
+    return memory;
+*/
+    if ((memory = mmap(0, instance->page_size, prot, MAP_FILE, fildes, address) == -1){
+        return NULL;
+    }
+    return memory;
+}

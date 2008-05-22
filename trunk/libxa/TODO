@@ -1,4 +1,12 @@
 # ToDo Items
+* add util function that maps page from VM or file, based on current mode
+  - change all calls to xc_map_foreign_range to use this new function
+  - function is writen in xa_util, add it to xa_private
+  - figure out best option for implementing function in xa_file
+* make updates throughout that control information collection from file / xen
+* update build system to provide warning message when xen functions not found
+  - ability to build to support xen and/or file backed introspection
+
 
 ## Future Plans
 * cleanup code throughout and fix TODO spots
