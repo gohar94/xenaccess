@@ -195,8 +195,8 @@ void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num)
 
     if (XA_MODE_XEN == instance->mode){
         memory = xc_map_foreign_range(
-            instance->mode.xen.xc_handle,
-            instance->mode.xen.domain_id,
+            instance->m.xen.xc_handle,
+            instance->m.xen.domain_id,
             1,
             prot,
             frame_num);

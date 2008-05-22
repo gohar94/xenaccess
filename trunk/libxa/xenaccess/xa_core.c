@@ -62,19 +62,19 @@ int read_config_file (xa_instance_t *instance)
         goto error_exit;
     }
     memset(tmp, 0, 100);
-    sprintf(tmp, "/local/domain/%d/name", instance->mode.xen.domain_id);
+    sprintf(tmp, "/local/domain/%d/name", instance->m.xen.domain_id);
     xsh = xs_domain_open();
-    instance->mode.xen.domain_name = xs_read(xsh, xth, tmp, NULL);
-    if (NULL == instance->mode.xen.domain_name){
+    instance->m.xen.domain_name = xs_read(xsh, xth, tmp, NULL);
+    if (NULL == instance->m.xen.domain_name){
         printf("ERROR: domain id %d is not running\n",
-                instance->mode.xen.domain_id);
+                instance->m.xen.domain_id);
         ret = XA_FAILURE;
         goto error_exit;
     }
     xa_dbprint("--got domain name from id (%d ==> %s).\n",
-               instance->mode.xen.domain_id, instance->mode.xen.domain_name);
+               instance->m.xen.domain_id, instance->m.xen.domain_name);
 
-    if (xa_parse_config(instance->mode.xen.domain_name)){
+    if (xa_parse_config(instance->m.xen.domain_name)){
         printf("ERROR: failed to read config file\n");
         ret = XA_FAILURE;
         goto error_exit;
@@ -186,8 +186,8 @@ int get_page_info (xa_instance_t *instance)
     int i = 0, j = 0;
     vcpu_guest_context_t ctxt;
     if ((ret = xc_vcpu_getcontext(
-                instance->mode.xen.xc_handle,
-                instance->mode.xen.domain_id,
+                instance->m.xen.xc_handle,
+                instance->m.xen.domain_id,
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
         printf("ERROR: failed to get context information.\n");
@@ -241,26 +241,26 @@ void init_xen_version (xa_instance_t *instance)
     void *extra = malloc(sizeof(xen_extraversion_t));
     void *cap = malloc(sizeof(xen_capabilities_info_t));
 
-    xc_version(instance->mode.xen.xc_handle, cmd1, extra);
-    xc_version(instance->mode.xen.xc_handle, cmd2, cap);
+    xc_version(instance->m.xen.xc_handle, cmd1, extra);
+    xc_version(instance->m.xen.xc_handle, cmd2, cap);
 
-    instance->mode.xen.xen_version = XA_XENVER_UNKNOWN;
+    instance->m.xen.xen_version = XA_XENVER_UNKNOWN;
     if (strncmp((char *)extra, ".4-1", 4) == 0){
         if (strncmp((char *)cap, "xen-3.0-x86_32", 14) == 0){
-            instance->mode.xen.xen_version = XA_XENVER_3_0_4;
-            xa_dbprint("**set instance->mode.xen.xen_version = 3.0.4\n");
+            instance->m.xen.xen_version = XA_XENVER_3_0_4;
+            xa_dbprint("**set instance->m.xen.xen_version = 3.0.4\n");
         }
     }
     else if (strncmp((char *)extra, ".0", 2) == 0){
         if (strncmp((char *)cap, "xen-3.0-x86_32p", 15) == 0){
-            instance->mode.xen.xen_version = XA_XENVER_3_1_0;
-            xa_dbprint("**set instance->mode.xen.xen_version = 3.1.0\n");
+            instance->m.xen.xen_version = XA_XENVER_3_1_0;
+            xa_dbprint("**set instance->m.xen.xen_version = 3.1.0\n");
         }
     }
     free(extra);
     free(cap);
 
-    if (instance->mode.xen.xen_version == XA_XENVER_UNKNOWN){
+    if (instance->m.xen.xen_version == XA_XENVER_UNKNOWN){
         xa_dbprint("extra: %s\n", extra);
         xa_dbprint("cap: %s\n", cap);
         printf("WARNING: This Xen version not supported by XenAccess.\n");
@@ -276,10 +276,10 @@ int helper_init (xa_instance_t *instance)
     uint32_t local_offset = 0;
     unsigned char *memory = NULL;
 
-    /* init instance->mode.xen.xc_handle */
+    /* init instance->m.xen.xc_handle */
     if (xc_domain_getinfo(
-            instance->mode.xen.xc_handle, instance->mode.xen.domain_id,
-            1, &(instance->mode.xen.info)
+            instance->m.xen.xc_handle, instance->m.xen.domain_id,
+            1, &(instance->m.xen.info)
         ) != 1){
         printf("ERROR: Failed to get domain info\n");
         ret = XA_FAILURE;
@@ -307,14 +307,14 @@ int helper_init (xa_instance_t *instance)
     /* setup the correct page offset size for the target OS */
     init_page_offset(instance);
 
-    /* init instance->mode.xen.hvm */
-    instance->mode.xen.hvm = xa_ishvm(instance->mode.xen.domain_id);
+    /* init instance->m.xen.hvm */
+    instance->m.xen.hvm = xa_ishvm(instance->m.xen.domain_id);
 #ifdef XA_DEBUG
-    if (instance->mode.xen.hvm){
-        xa_dbprint("**set instance->mode.xen.hvm to true (HVM).\n");
+    if (instance->m.xen.hvm){
+        xa_dbprint("**set instance->m.xen.hvm to true (HVM).\n");
     }
     else{
-        xa_dbprint("**set instance->mode.xen.hvm to false (PV).\n");
+        xa_dbprint("**set instance->m.xen.hvm to false (PV).\n");
     }
 #endif
 
@@ -334,9 +334,9 @@ error_exit:
  * than the xc_handle and the domain_id */
 int helper_destroy (xa_instance_t *instance)
 {
-    if (instance->mode.xen.live_pfn_to_mfn_table){
-        munmap(instance->mode.xen.live_pfn_to_mfn_table,
-               instance->mode.xen.nr_pfns * 4);
+    if (instance->m.xen.live_pfn_to_mfn_table){
+        munmap(instance->m.xen.live_pfn_to_mfn_table,
+               instance->m.xen.nr_pfns * 4);
     }
 
     xa_destroy_cache(instance);
@@ -364,12 +364,12 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
         printf("ERROR: Failed to open libxc interface\n");
         return XA_FAILURE;
     }
-    instance->mode.xen.xc_handle = xc_handle;
+    instance->m.xen.xc_handle = xc_handle;
 
     xa_init_common(instance);
-    instance->mode.xen.domain_id = domain_id;
-    instance->mode.xen.live_pfn_to_mfn_table = NULL;
-    instance->mode.xen.nr_pfns = 0;
+    instance->m.xen.domain_id = domain_id;
+    instance->m.xen.live_pfn_to_mfn_table = NULL;
+    instance->m.xen.nr_pfns = 0;
     return helper_init(instance);
 }
 
@@ -384,7 +384,7 @@ int xa_init_file (char *filename, xa_instance_t *instance)
         printf("ERROR: Failed to open file for reading\n");
         return XA_FAILURE;
     }
-    instance->mode.file.fhandle = fhandle;
+    instance->m.file.fhandle = fhandle;
 
     xa_init_common(instance);
     return helper_init(instance);
@@ -394,9 +394,9 @@ int xa_destroy (xa_instance_t *instance)
 {
     int ret1, ret2;
 
-    instance->mode.xen.domain_id = 0;
+    instance->m.xen.domain_id = 0;
     ret1 = helper_destroy(instance);
-    ret2 = xc_interface_close(instance->mode.xen.xc_handle);
+    ret2 = xc_interface_close(instance->m.xen.xc_handle);
 
     if (XA_FAILURE == ret1 || XA_FAILURE == ret2){
         return XA_FAILURE;
