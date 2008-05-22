@@ -37,9 +37,26 @@
 #define LIB_XEN_ACCESS_H
 
 #include <xenctrl.h>
+#include <stdio.h>
 
 /* uncomment this to enable debug output */
 //#define XA_DEBUG
+
+/**
+ * Mode indicating that we are monitoring a live Xen VM
+ */
+#define XA_MODE_XEN 0
+
+/**
+ * Mode indicating that we are viewing a memory image from a disk file
+ */
+#define XA_MODE_FILE 1
+
+/**
+ * Reading from a dd file type (file offset == physical address).  This value
+ * is only used when mode equals XA_MODE_FILE.
+ */
+#define XA_FILETYPE_DD 0
 
 /**
  * Return value indicating success.
@@ -97,9 +114,7 @@ typedef struct xa_cache_entry* xa_cache_entry_t;
  * its resources can be freed using the xa_destroy function.
  */
 typedef struct xa_instance{
-    int xc_handle;          /**< handle to xenctrl library (libxc) */
-    uint32_t domain_id;     /**< domid that we are accessing */
-    char *domain_name;      /**< domain name that we are accessing */
+    uint32_t mode;          /**< file or xen VM data source */
     char *sysmap;           /**< system map file for domain's running kernel */
     uint32_t page_offset;   /**< page offset for this instance */
     uint32_t page_shift;    /**< page shift for last mapped page */
@@ -107,14 +122,9 @@ typedef struct xa_instance{
     uint32_t kpgd;          /**< kernel page global directory */
     uint32_t init_task;     /**< address of task struct for init */
     uint32_t ntoskrnl;      /**< base physical address for ntoskrnl image */
-    int xen_version;        /**< version of Xen libxa is running on */
     int os_type;            /**< type of os: XA_OS_LINUX, etc */
-    int hvm;                /**< nonzero if HVM domain */
     int pae;                /**< nonzero if PAE is enabled */
     int pse;                /**< nonzero if PSE is enabled */
-    xc_dominfo_t info;      /**< libxc info: domid, ssidref, stats, etc */
-    unsigned long *live_pfn_to_mfn_table;
-    unsigned long nr_pfns;
     xa_cache_entry_t cache_head;
     xa_cache_entry_t cache_tail;
     int current_cache_size;
@@ -135,6 +145,21 @@ typedef struct xa_instance{
             int ph_offset;       /**< EPROCESS->Peb->ProcessHeap */
         } windows_instance;
     } os;
+    union{
+        struct xen{
+            int xc_handle;       /**< handle to xenctrl library (libxc) */
+            uint32_t domain_id;  /**< domid that we are accessing */
+            char *domain_name;   /**< domain name that we are accessing */
+            int xen_version;     /**< version of Xen libxa is running on */
+            int hvm;             /**< nonzero if HVM domain */
+            xc_dominfo_t info;   /**< libxc info: domid, ssidref, stats, etc */
+            unsigned long *live_pfn_to_mfn_table;
+            unsigned long nr_pfns;
+        } xen;
+        struct file{
+            FILE *fhandle;       /**< handle to the memory image file */
+        } file;
+    } mode;
 } xa_instance_t;
 
 /**
@@ -191,6 +216,20 @@ typedef struct xa_windows_peb{
  * @return XA_SUCCESS or XA_FAILURE
  */
 int xa_init (uint32_t domain_id, xa_instance_t *instance);
+
+/**
+ * Initializes access to a memory image stored in the given file.  All
+ * calls to xa_init_file must eventually call xa_destroy.
+ *
+ * This is a costly funtion in terms of the time needed to execute.
+ * You should call this function only once per file, and then use the
+ * resulting instance when calling any of the other library functions.
+ *
+ * @param[in] filename Name of memory image file
+ * @param[out] instance Struct that holds instance information
+ * @return XA_SUCCESS or XA_FAILURE
+ */
+int xa_init_file (char *filename, xa_instance_t *instance);
 
 /**
  * Destroys an instance by freeing memory and closing any open handles.

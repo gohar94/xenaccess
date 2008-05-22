@@ -189,6 +189,28 @@ int xa_get_bit (unsigned long reg, int bit)
     }
 }
 
+void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num)
+{
+    void *memory = NULL;
+
+    if (XA_MODE_XEN == instance->mode){
+        memory = xc_map_foreign_range(
+            instance->mode.xen.xc_handle,
+            instance->mode.xen.domain_id,
+            1,
+            prot,
+            frame_num);
+    }
+    else if (XA_MODE_FILE == instance->mode){
+        memory = xa_map_file_range(instance, prot, frame_num);
+    }
+    else{
+        xa_dbprint("BUG: invalid mode\n");
+    }
+
+    return memory;
+}
+
 /* This function is taken from Markus Armbruster's
  * xc_map_foreign_pages that is now part of xc_util.c.
  * 

@@ -43,7 +43,7 @@ int linux_init (xa_instance_t *instance)
     }
     xa_dbprint("--got vaddr for swapper_pg_dir (0x%.8x).\n", instance->kpgd);
 
-    if (!instance->hvm){
+    if (!instance->mode.xen.hvm){
         instance->kpgd -= instance->page_offset;
         if (xa_read_long_phys(
                 instance, instance->kpgd, &(instance->kpgd)) == XA_FAILURE){

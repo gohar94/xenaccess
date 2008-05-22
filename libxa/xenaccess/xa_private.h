@@ -374,6 +374,7 @@ void *windows_access_kernel_symbol (
 int windows_init (xa_instance_t *instance);
 int linux_init (xa_instance_t *instance);
 int get_symbol_row (FILE *f, char *row, char *symbol, int position);
+void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn);
 
 /** Duplicate function from xc_util that should remain
  *  here until Xen 3.1.2 becomes widely distributed.
