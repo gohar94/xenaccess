@@ -27,28 +27,18 @@
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  */
 
-#include <stdio.h>
+#include <sys/mman.h>
+#include "xenaccess.h"
 
 void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn)
 {
     void *memory = NULL;
-    FILE *f = instance->mode.file.fhandle;
+    FILE *f = instance->m.file.fhandle;
     long address = pfn << instance->page_shift;
+    int fildes = fileno(f);
 
-/*
-    if (fseek(f, address, SEEK_SET) != 0){
-        return NULL;
-    }
-    if ((memory = malloc(instance->page_size)) == NULL){
-        return NULL;
-    }
-    if (fread(memory, instance->page_size, 1, f) < instance->page_size){
-        free(memory);
-        return NULL;
-    }
-    return memory;
-*/
-    if ((memory = mmap(0, instance->page_size, prot, MAP_FILE, fildes, address) == -1){
+    memory = mmap(0, instance->page_size, prot, MAP_FILE, fildes, address);
+    if (memory == -1){
         return NULL;
     }
     return memory;

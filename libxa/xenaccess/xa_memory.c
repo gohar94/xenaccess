@@ -55,26 +55,26 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 //    unsigned long mfn;
 //    int i;
 
-    if (instance->mode.xen.hvm){
+    if (instance->m.xen.hvm){
         return pfn;
     }
 
-    if (NULL == instance->mode.xen.live_pfn_to_mfn_table){
+    if (NULL == instance->m.xen.live_pfn_to_mfn_table){
         live_shinfo = xa_mmap_mfn(
-            instance, PROT_READ, instance->mode.xen.info.shared_info_frame);
+            instance, PROT_READ, instance->m.xen.info.shared_info_frame);
         if (live_shinfo == NULL){
             printf("ERROR: failed to init live_shinfo\n");
             goto error_exit;
         }
 
-        if (instance->mode.xen.xen_version == XA_XENVER_3_1_0){
+        if (instance->m.xen.xen_version == XA_XENVER_3_1_0){
             nr_pfns = xc_memory_op(
-                        instance->mode.xen.xc_handle,
+                        instance->m.xen.xc_handle,
                         XENMEM_maximum_gpfn,
-                        &(instance->mode.xen.domain_id)) + 1;
+                        &(instance->m.xen.domain_id)) + 1;
         }
         else{
-            //nr_pfns = instance->mode.xen.info.max_memkb >> (XC_PAGE_SHIFT - 10);
+            //nr_pfns = instance->m.xen.info.max_memkb >> (XC_PAGE_SHIFT - 10);
             nr_pfns = live_shinfo->arch.max_pfn;
         }
 
@@ -86,8 +86,8 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         }
 
         live_pfn_to_mfn_frame_list = xc_map_foreign_batch(
-            instance->mode.xen.xc_handle,
-            instance->mode.xen.domain_id,
+            instance->m.xen.xc_handle,
+            instance->m.xen.domain_id,
             PROT_READ,
             live_pfn_to_mfn_frame_list_list,
             (nr_pfns+(fpp*fpp)-1)/(fpp*fpp) );
@@ -97,8 +97,8 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         }
 
         live_pfn_to_mfn_table = xc_map_foreign_batch(
-            instance->mode.xen.xc_handle,
-            instance->mode.xen.domain_id,
+            instance->m.xen.xc_handle,
+            instance->m.xen.domain_id,
             PROT_READ,
             live_pfn_to_mfn_frame_list, (nr_pfns+fpp-1)/fpp );
         if (live_pfn_to_mfn_table  == NULL){
@@ -118,11 +118,11 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 //        }
 
         /* save mappings for later use */
-        instance->mode.xen.live_pfn_to_mfn_table = live_pfn_to_mfn_table;
-        instance->mode.xen.nr_pfns = nr_pfns;
+        instance->m.xen.live_pfn_to_mfn_table = live_pfn_to_mfn_table;
+        instance->m.xen.nr_pfns = nr_pfns;
     }
 
-    ret = instance->mode.xen.live_pfn_to_mfn_table[pfn];
+    ret = instance->m.xen.live_pfn_to_mfn_table[pfn];
 
 error_exit:
     if (live_shinfo) munmap(live_shinfo, XC_PAGE_SIZE);
@@ -138,8 +138,8 @@ void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
     xa_dbprint("--MapMFN: Mapping mfn = 0x%.8x.\n", (unsigned int)mfn);
     return xc_map_foreign_range(
-        instance->mode.xen.xc_handle,
-        instance->mode.xen.domain_id, 1, prot, mfn);
+        instance->m.xen.xc_handle,
+        instance->m.xen.domain_id, 1, prot, mfn);
 }
 
 void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
@@ -153,10 +153,10 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
         return NULL;
     }
     else{
-        xa_dbprint("--MapPFN: Mapping mfn = %lu.\n", mfn);
+        xa_dbprint("--MapPFN: Mapping mfn = %lu / pfn = %lu.\n", mfn, pfn);
         return xc_map_foreign_range(
-            instance->mode.xen.xc_handle,
-            instance->mode.xen.domain_id, 1, prot, mfn);
+            instance->m.xen.xc_handle,
+            instance->m.xen.domain_id, 1, prot, mfn);
     }
 }
 
@@ -570,8 +570,8 @@ void *xa_access_user_va_range (
 	*offset = virt_address - start;
 
 	return xc_map_foreign_pages(
-        instance->mode.xen.xc_handle,
-        instance->mode.xen.domain_id, prot, pfns, num_pages);
+        instance->m.xen.xc_handle,
+        instance->m.xen.domain_id, prot, pfns, num_pages);
 }
 
 /*TODO this is deprecated */

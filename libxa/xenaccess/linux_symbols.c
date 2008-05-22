@@ -45,7 +45,7 @@ int linux_system_map_symbol_to_address (
 
     if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
         instance->sysmap =
-            linux_predict_sysmap_name(instance->mode.xen.domain_id);
+            linux_predict_sysmap_name(instance->m.xen.domain_id);
     }
 
     if ((row = malloc(MAX_ROW_LENGTH)) == NULL ){

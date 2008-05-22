@@ -159,7 +159,7 @@ typedef struct xa_instance{
         struct file{
             FILE *fhandle;       /**< handle to the memory image file */
         } file;
-    } mode;
+    } m;
 } xa_instance_t;
 
 /**
