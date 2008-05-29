@@ -55,7 +55,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 //    unsigned long mfn;
 //    int i;
 
-    if (instance->m.xen.hvm){
+    if (instance->hvm){
         return pfn;
     }
 
@@ -74,7 +74,6 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
                         &(instance->m.xen.domain_id)) + 1;
         }
         else{
-            //nr_pfns = instance->m.xen.info.max_memkb >> (XC_PAGE_SHIFT - 10);
             nr_pfns = live_shinfo->arch.max_pfn;
         }
 
@@ -137,16 +136,19 @@ error_exit:
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
     xa_dbprint("--MapMFN: Mapping mfn = 0x%.8x.\n", (unsigned int)mfn);
-    return xc_map_foreign_range(
-        instance->m.xen.xc_handle,
-        instance->m.xen.domain_id, 1, prot, mfn);
+    return xa_map_page(instance, prot, mfn);
 }
 
 void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
 {
-    unsigned long mfn;
+    unsigned long mfn = -1;
 
-    mfn = helper_pfn_to_mfn(instance, pfn);
+    if (XA_MODE_XEN == instance->mode){
+        mfn = helper_pfn_to_mfn(instance, pfn);
+    }
+    else if (XA_MODE_FILE == instance->mode){
+        mfn = pfn;
+    }
 
     if (-1 == mfn){
         printf("ERROR: pfn to mfn mapping failed.\n");
@@ -154,9 +156,7 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
     }
     else{
         xa_dbprint("--MapPFN: Mapping mfn = %lu / pfn = %lu.\n", mfn, pfn);
-        return xc_map_foreign_range(
-            instance->m.xen.xc_handle,
-            instance->m.xen.domain_id, 1, prot, mfn);
+        return xa_map_page(instance, prot, mfn);
     }
 }
 

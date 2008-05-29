@@ -30,13 +30,62 @@
  * $Date: 2006-12-06 01:23:30 -0500 (Wed, 06 Dec 2006) $
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <xs.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <limits.h>
 #include "config/config_parser.h"
 #include "xenaccess.h"
 #include "xa_private.h"
 #include <xen/arch-x86/xen.h>
+
+int get_memory_size (xa_instance_t *instance)
+{
+    int ret = XA_SUCCESS;
+
+    if (XA_MODE_XEN == instance->mode){
+        struct xs_handle *xsh = NULL;
+        xs_transaction_t xth = XBT_NULL;
+        char *tmp = malloc(100);
+        if (NULL == tmp){
+            printf("ERROR: failed to allocate memory for tmp variable\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        memset(tmp, 0, 100);
+        sprintf(tmp, "/local/domain/%d/memory/target",
+            instance->m.xen.domain_id);
+        xsh = xs_domain_open();
+        instance->m.xen.size =
+            strtol(xs_read(xsh, xth, tmp, NULL), NULL, 10) * 1000;
+        if (0 == instance->m.xen.size){
+            printf("ERROR: failed to get memory size for Xen domain.\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        xa_dbprint("**set instance->m.xen.size = %d\n", instance->m.xen.size);
+        if (xsh) xs_daemon_close(xsh);
+    }
+    else if (XA_MODE_FILE == instance->mode){
+        struct stat s;
+
+        if (fstat(fileno(instance->m.file.fhandle), &s) == -1){
+            printf("ERROR: Failed to stat file\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        instance->m.file.size = (uint32_t) s.st_size;
+        xa_dbprint("**set instance->m.file.size = %d\n", instance->m.file.size);
+    }
+
+error_exit:
+    return ret;
+}
 
 int read_config_file (xa_instance_t *instance)
 {
@@ -54,27 +103,29 @@ int read_config_file (xa_instance_t *instance)
         goto error_exit;
     }
 
-    /* convert domain id to domain name */
-    tmp = malloc(100);
-    if (NULL == tmp){
-        printf("ERROR: failed to allocate memory for tmp variable\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+    /* convert domain id to domain name for Xen mode */
+    if (XA_MODE_XEN == instance->mode){
+        tmp = malloc(100);
+        if (NULL == tmp){
+            printf("ERROR: failed to allocate memory for tmp variable\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        memset(tmp, 0, 100);
+        sprintf(tmp, "/local/domain/%d/name", instance->m.xen.domain_id);
+        xsh = xs_domain_open();
+        instance->image_type = xs_read(xsh, xth, tmp, NULL);
+        if (NULL == instance->image_type){
+            printf("ERROR: domain id %d is not running\n",
+                    instance->m.xen.domain_id);
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        xa_dbprint("--got domain name from id (%d ==> %s).\n",
+                    instance->m.xen.domain_id, instance->image_type);
     }
-    memset(tmp, 0, 100);
-    sprintf(tmp, "/local/domain/%d/name", instance->m.xen.domain_id);
-    xsh = xs_domain_open();
-    instance->m.xen.domain_name = xs_read(xsh, xth, tmp, NULL);
-    if (NULL == instance->m.xen.domain_name){
-        printf("ERROR: domain id %d is not running\n",
-                instance->m.xen.domain_id);
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    xa_dbprint("--got domain name from id (%d ==> %s).\n",
-               instance->m.xen.domain_id, instance->m.xen.domain_name);
 
-    if (xa_parse_config(instance->m.xen.domain_name)){
+    if (xa_parse_config(instance->image_type)){
         printf("ERROR: failed to read config file\n");
         ret = XA_FAILURE;
         goto error_exit;
@@ -180,7 +231,7 @@ error_exit:
 }
 
 /* check that this domain uses a paging method that we support */
-int get_page_info (xa_instance_t *instance)
+int get_page_info_xen (xa_instance_t *instance)
 {
     int ret = XA_SUCCESS;
     int i = 0, j = 0;
@@ -276,19 +327,22 @@ int helper_init (xa_instance_t *instance)
     uint32_t local_offset = 0;
     unsigned char *memory = NULL;
 
-    /* init instance->m.xen.xc_handle */
-    if (xc_domain_getinfo(
-            instance->m.xen.xc_handle, instance->m.xen.domain_id,
-            1, &(instance->m.xen.info)
-        ) != 1){
-        printf("ERROR: Failed to get domain info\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    xa_dbprint("--got domain info.\n");
+    if (XA_MODE_XEN == instance->mode){
 
-    /* find the version of xen that we are running */
-    init_xen_version(instance);
+        /* init instance->m.xen.xc_handle */
+        if (xc_domain_getinfo(
+                instance->m.xen.xc_handle, instance->m.xen.domain_id,
+                1, &(instance->m.xen.info)
+            ) != 1){
+            printf("ERROR: Failed to get domain info\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        xa_dbprint("--got domain info.\n");
+
+        /* find the version of xen that we are running */
+        init_xen_version(instance);
+    }
 
     /* read in configure file information */
     if (read_config_file(instance) == XA_FAILURE){
@@ -297,26 +351,40 @@ int helper_init (xa_instance_t *instance)
     }
     
     /* determine the page sizes and layout for target OS */
-    if (get_page_info(instance) == XA_FAILURE){
-        printf("ERROR: memory layout not supported\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+    if (XA_MODE_XEN == instance->mode){
+        if (get_page_info_xen(instance) == XA_FAILURE){
+            printf("ERROR: memory layout not supported\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+    }
+    else{
+        /*TODO add memory layout discovery here for file */
     }
     xa_dbprint("--got memory layout.\n");
 
     /* setup the correct page offset size for the target OS */
     init_page_offset(instance);
 
-    /* init instance->m.xen.hvm */
-    instance->m.xen.hvm = xa_ishvm(instance->m.xen.domain_id);
+    if (XA_MODE_XEN == instance->mode){
+        /* init instance->hvm */
+        instance->hvm = xa_ishvm(instance->m.xen.domain_id);
 #ifdef XA_DEBUG
-    if (instance->m.xen.hvm){
-        xa_dbprint("**set instance->m.xen.hvm to true (HVM).\n");
-    }
-    else{
-        xa_dbprint("**set instance->m.xen.hvm to false (PV).\n");
-    }
+        if (instance->hvm){
+            xa_dbprint("**set instance->hvm to true (HVM).\n");
+        }
+        else{
+            xa_dbprint("**set instance->hvm to false (PV).\n");
+        }
 #endif
+    }
+
+    /* get the memory size */
+    if (get_memory_size(instance) == XA_FAILURE){
+        printf("ERROR: Failed to get memory size.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
 
     /* setup OS specific stuff */
     if (instance->os_type == XA_OS_LINUX){
@@ -358,6 +426,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
 {
     int xc_handle;
     instance->mode = XA_MODE_XEN;
+    xa_dbprint("XenAccess Mode Xen\n");
 
     /* open handle to the libxc interface */
     if ((xc_handle = xc_interface_open()) == -1){
@@ -374,10 +443,11 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
 }
 
 /* initialize to view a file image (currently only dd images supported) */
-int xa_init_file (char *filename, xa_instance_t *instance)
+int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
 {
     FILE *fhandle = NULL;
     instance->mode = XA_MODE_FILE;
+    xa_dbprint("XenAccess Mode File\n");
 
     /* open handle to memory file */
     if ((fhandle = fopen(filename, "rb")) == NULL){
@@ -387,6 +457,9 @@ int xa_init_file (char *filename, xa_instance_t *instance)
     instance->m.file.fhandle = fhandle;
 
     xa_init_common(instance);
+    instance->image_type = strndup(image_type, 256);
+    instance->hvm = 1; /* assume nonvirt image or hvm image for now */
+    instance->pae = 1; /* assume pae for now */
     return helper_init(instance);
 }
 

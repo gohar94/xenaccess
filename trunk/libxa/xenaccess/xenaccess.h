@@ -116,6 +116,7 @@ typedef struct xa_cache_entry* xa_cache_entry_t;
 typedef struct xa_instance{
     uint32_t mode;          /**< file or xen VM data source */
     char *sysmap;           /**< system map file for domain's running kernel */
+    char *image_type;       /**< image type that we are accessing */
     uint32_t page_offset;   /**< page offset for this instance */
     uint32_t page_shift;    /**< page shift for last mapped page */
     uint32_t page_size;     /**< page size for last mapped page */
@@ -123,6 +124,7 @@ typedef struct xa_instance{
     uint32_t init_task;     /**< address of task struct for init */
     uint32_t ntoskrnl;      /**< base physical address for ntoskrnl image */
     int os_type;            /**< type of os: XA_OS_LINUX, etc */
+    int hvm;                /**< nonzero if HVM memory image */
     int pae;                /**< nonzero if PAE is enabled */
     int pse;                /**< nonzero if PSE is enabled */
     xa_cache_entry_t cache_head;
@@ -149,15 +151,15 @@ typedef struct xa_instance{
         struct xen{
             int xc_handle;       /**< handle to xenctrl library (libxc) */
             uint32_t domain_id;  /**< domid that we are accessing */
-            char *domain_name;   /**< domain name that we are accessing */
             int xen_version;     /**< version of Xen libxa is running on */
-            int hvm;             /**< nonzero if HVM domain */
             xc_dominfo_t info;   /**< libxc info: domid, ssidref, stats, etc */
+            uint32_t size;       /**< total size of domain's memory */
             unsigned long *live_pfn_to_mfn_table;
             unsigned long nr_pfns;
         } xen;
         struct file{
             FILE *fhandle;       /**< handle to the memory image file */
+            uint32_t size;       /**< total size of file, in bytes */
         } file;
     } m;
 } xa_instance_t;
@@ -229,7 +231,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance);
  * @param[out] instance Struct that holds instance information
  * @return XA_SUCCESS or XA_FAILURE
  */
-int xa_init_file (char *filename, xa_instance_t *instance);
+int xa_init_file (char *filename, char *image_type, xa_instance_t *instance);
 
 /**
  * Destroys an instance by freeing memory and closing any open handles.

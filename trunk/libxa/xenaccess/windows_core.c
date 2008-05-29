@@ -29,23 +29,50 @@
 #include "xenaccess.h"
 #include "xa_private.h"
 
-int windows_init (xa_instance_t *instance)
+/* Tries to find the kernel page directory by doing an exhaustive search
+ * through the memory space for the Idle process.  The page directory
+ * location is then pulled from this eprocess struct.
+ */
+int get_kpgd_method2 (xa_instance_t *instance)
+{
+    int ret = XA_SUCCESS;
+    uint32_t idle = 0;
+
+    /* get address for Idle process */
+    if ((idle = windows_find_eprocess(instance, "Idle")) == 0){
+        printf("WARNING: failed to find Idle process.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    xa_dbprint("--got idle (0x%.8x).\n", idle);
+
+    /* get address for page directory (from system process) */
+    /*TODO this 0x18 offset should not be hard coded below */
+    if (xa_read_long_phys(
+            instance, idle + 0x18, &(instance->kpgd)) == XA_FAILURE){
+        printf("WARNING: failed to resolve PD for Idle process\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    instance->kpgd += instance->page_offset; /* store vaddr */
+
+error_exit:
+    return ret;
+}
+
+/* Tries to find the kernel page directory using the RVA value for
+ * PSInitialSystemProcess and the ntoskrnl value to lookup the System
+ * process, and the extract the page directory location from this
+ * eprocess struct.
+ */
+int get_kpgd_method1 (xa_instance_t *instance)
 {
     int ret = XA_SUCCESS;
     uint32_t sysproc = 0;
 
-    /* get base address for kernel image in memory */
-    instance->ntoskrnl = get_ntoskrnl_base(instance);
-    if (!instance->ntoskrnl){
-        ret = XA_FAILURE;
-        goto error_exit;
-    }
-    xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->ntoskrnl);
-
-    /* get address for page directory (from system process) */
     if (xa_read_long_sym(
             instance, "PsInitialSystemProcess", &sysproc) == XA_FAILURE){
-        printf("ERROR: failed to resolve pointer for system process\n");
+        printf("WARNING: failed to read pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -56,19 +83,46 @@ int windows_init (xa_instance_t *instance)
             instance,
             sysproc + instance->os.windows_instance.pdbase_offset,
             &(instance->kpgd)) == XA_FAILURE){
-        printf("ERROR: failed to resolve pointer for system process\n");
+        printf("WARNING: failed to resolve pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
     instance->kpgd += instance->page_offset; /* store vaddr */
+
+error_exit:
+    return ret;
+}
+
+int windows_init (xa_instance_t *instance)
+{
+    int ret = XA_SUCCESS;
+
+    /* get base address for kernel image in memory */
+    instance->ntoskrnl = get_ntoskrnl_base(instance);
+    if (!instance->ntoskrnl){
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->ntoskrnl);
+
+    /* get the kernel page directory location */
+    if (get_kpgd_method1(instance) == XA_FAILURE){
+        xa_dbprint("--kpgd method1 failed, trying method2\n");
+        if (get_kpgd_method2(instance) == XA_FAILURE){
+            printf("ERROR: failed to find kernel page directory.\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+    }
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 
     /* get address start of process list */
-    xa_read_long_phys(
-        instance,
-        sysproc + instance->os.windows_instance.tasks_offset,
-        &(instance->init_task));
-    xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
+//TODO figure out how to set init_task under different failure conditions
+//    xa_read_long_phys(
+//        instance,
+//        sysproc + instance->os.windows_instance.tasks_offset,
+//        &(instance->init_task));
+//    xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
 
 error_exit:
     return ret;
