@@ -27,18 +27,23 @@
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  */
 
+#include <stdio.h>
 #include <sys/mman.h>
 #include "xenaccess.h"
 
 void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn)
 {
     void *memory = NULL;
-    FILE *f = instance->m.file.fhandle;
     long address = pfn << instance->page_shift;
-    int fildes = fileno(f);
+    int fildes = fileno(instance->m.file.fhandle);
 
-    memory = mmap(0, instance->page_size, prot, MAP_FILE, fildes, address);
-    if (memory == -1){
+    if (address > instance->m.file.size){
+        return NULL;
+    }
+
+    memory = mmap(NULL, instance->page_size, prot, MAP_SHARED, fildes, address);
+    if (MAP_FAILED == memory){
+        perror("xa_file.c: file mmap failed");
         return NULL;
     }
     return memory;

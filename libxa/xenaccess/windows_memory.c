@@ -35,6 +35,28 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
+/* brute force to find most likely location */
+int bf_test_ntoskrnl_base (xa_instance_t *instance, uint32_t base)
+{
+    uint32_t header = 0;
+    int offset = 0;
+    uint32_t testval;
+    int count = 0;
+
+    for (offset = 0; offset < 0xd0000; offset += 4){
+        xa_read_long_phys(instance, base + offset, &testval);
+        if (testval > instance->page_offset){
+            testval -= instance->page_offset;
+            xa_read_long_phys(instance, testval, &header);
+            if (header == 0x001b0003){
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
 /* test a candidate location */
 int test_ntoskrnl_base (
         xa_instance_t *instance, uint32_t base, uint32_t sysproc)
@@ -57,6 +79,34 @@ int test_ntoskrnl_base (
         return XA_FAILURE;
     }
     return XA_SUCCESS;
+}
+
+/* find the ntoskrnl base address by brute force scanning */
+uint32_t bf_get_ntoskrnl_base (xa_instance_t *instance)
+{
+    uint32_t paddr = 0x0 + instance->page_size;
+    int best_count = 0;
+    uint32_t best_answer = 0;
+
+    /* start the downward search looking for MZ header */
+    while (1){
+        uint32_t header;
+        xa_read_long_phys(instance, paddr, &header);
+        if ((header & 0xffff) == 0x5a4d){
+            int count = 0;
+            if ((count = bf_test_ntoskrnl_base(instance, paddr)) > best_count){
+                best_count = count;
+                best_answer = paddr;
+            }
+        }
+
+        paddr += instance->page_size;
+        if (paddr <= 0 || 0x01000000 <= paddr){
+            break;
+        }
+    }
+
+    return best_answer;
 }
 
 /* find the ntoskrnl base address by backwards scanning */
@@ -83,7 +133,8 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 
         paddr += instance->page_size;
         if (paddr <= 0 || 0x01000000 <= paddr){
-            return 0;
+            xa_dbprint("--get_ntoskrnl_base failed, switching to search\n");
+            return bf_get_ntoskrnl_base(instance);
         }
     }
 
