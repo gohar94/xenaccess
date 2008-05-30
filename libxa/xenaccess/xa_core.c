@@ -360,6 +360,8 @@ int helper_init (xa_instance_t *instance)
     }
     else{
         /*TODO add memory layout discovery here for file */
+        instance->hvm = 1; /* assume nonvirt image or hvm image for now */
+        instance->pae = 1; /* assume pae for now */
     }
     xa_dbprint("--got memory layout.\n");
 
@@ -458,8 +460,6 @@ int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
 
     xa_init_common(instance);
     instance->image_type = strndup(image_type, 256);
-    instance->hvm = 1; /* assume nonvirt image or hvm image for now */
-    instance->pae = 1; /* assume pae for now */
     return helper_init(instance);
 }
 

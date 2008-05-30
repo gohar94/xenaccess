@@ -135,7 +135,7 @@ error_exit:
 
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
 {
-    xa_dbprint("--MapMFN: Mapping mfn = 0x%.8x.\n", (unsigned int)mfn);
+//    xa_dbprint("--MapMFN: Mapping mfn = 0x%.8x.\n", (unsigned int)mfn);
     return xa_map_page(instance, prot, mfn);
 }
 
@@ -155,7 +155,7 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
         return NULL;
     }
     else{
-        xa_dbprint("--MapPFN: Mapping mfn = %lu / pfn = %lu.\n", mfn, pfn);
+//        xa_dbprint("--MapPFN: Mapping mfn = %lu / pfn = %lu.\n", mfn, pfn);
         return xa_map_page(instance, prot, mfn);
     }
 }
@@ -409,7 +409,7 @@ uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
     if (entry_present(pgd)){
         if (page_size_flag(pgd)){
             paddr = get_large_paddr(instance, vaddr, pgd);
-            xa_dbprint("--PTLookup: 2MB page\n", pgd);
+            xa_dbprint("--PTLookup: 2MB page\n");
         }
         else{
             pte = get_pte_pae(instance, vaddr, pgd);
