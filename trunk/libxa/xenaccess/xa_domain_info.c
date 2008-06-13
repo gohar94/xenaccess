@@ -31,6 +31,7 @@
  * $Date$
  */
 
+#include <fnmatch.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -108,14 +109,14 @@ int xa_ishvm (int id)
         goto error_exit;
     }
     memset(tmp, 0, 100);
-    sprintf(tmp, "%s/image/ostype", vmpath);
+    sprintf(tmp, "%s/image/kernel", vmpath);
     xsh = xs_domain_open();
     ostype = xs_read(xsh, xth, tmp, NULL);
 
     if (NULL == ostype){
         goto error_exit;
     }
-    else if (strcmp(ostype, "hvm") == 0){
+    else if (fnmatch("*hvmloader", ostype, NULL) == 0){
         ret = 1;
     }
 

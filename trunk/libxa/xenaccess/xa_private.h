@@ -377,6 +377,7 @@ int get_symbol_row (FILE *f, char *row, char *symbol, int position);
 void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn);
 void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num);
 uint32_t windows_find_eprocess (xa_instance_t *instance, char *name);
+uint32_t xa_find_kernel_pd (xa_instance_t *instance);
 
 /** Duplicate function from xc_util that should remain
  *  here until Xen 3.1.2 becomes widely distributed.
