@@ -675,3 +675,311 @@ void *xa_access_machine_address (
 {
     return xa_access_ma(instance, mach_address, offset, PROT_READ);
 }
+
+/* ------------------------------------------------------------------------ */
+/* The code below is experimental and needs some cleanup and optimization
+ * before being ready for prime time.  This code is designed to search the
+ * entire memory space to find page directories, with the ultimate goal of
+ * finding the kernel page directory that can be used for kpgd.  The
+ * techinque, as implemented right now, has been tested on a Windows XP SP2
+ * VM and works well in that setting.
+ *
+ * The algorthims used are a combination of previously used algorithms from
+ * Andreas Schuster (see blog posts titled 'Searching for Page Directories'),
+ * Joe Stewart (see pmodump.pl), and Jacky We (see blog post titled 'Search
+ * PDEs in Memory Dump of Windows XP SP2 with PAE').
+ *
+ * Current limitations include:
+ *  - the inline code for list management is ugly, need macros or functions
+ *    setup to handle this in a more clean fashion
+ *  - performance is decent, but would be nice to remove the n^2 loop so that
+ *    all scanning is linear as this will improve startup speed
+ *  - only works for non-PAE
+ *  - only tested on Windows
+ *  - functions could use general cleanup (single exit point, error checking,
+ *    and other generally useful coding practices).
+ */
+
+/* MIT Hackmem Count algorithm */
+int xa_kernel_pd_bitcount (uint32_t n)
+{
+    uint32_t count = 0;
+    count = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
+    return ((count + (count >> 3)) & 030707070707) % 63;
+}
+
+int xa_kernel_pd_valid_entry (uint32_t value, uint32_t msize)
+{
+    if (0xffffffff == value){
+        return 0;
+    }
+
+    /* 4 MB page entry */
+    if (xa_get_bit(value, 7)){
+        /* check that page falls within memory bounds */
+        if ((value & 0xFFE00000) > msize){
+            return 0;
+        }
+    }
+
+    /* 4 KB page entry */
+    else{
+        /* check that page falls within memory bounds */
+        if ((value & 0xFFFFF000) > msize){
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* scores the page by determining how many bits are set the same (zero or one)
+   for all non-zero entries in the page.  this works under the idea that page
+   directory entires have some similarity between then (same bits flipped on,
+   pointing to similar areas in the kernel, etc).  we also penalize any pages
+   that contain entries that are trivially not valid PDEs */
+int xa_kernel_pd_score (unsigned char *memory, uint32_t length, uint32_t msize)
+{
+    uint32_t offset = 0;
+    uint32_t matches0 = 0;
+    uint32_t matches1 = 0;
+    int started = 0;
+    int correction = 0;
+
+    if (NULL == memory){
+        return 0;
+    }
+
+    while (offset < length){
+        uint32_t value = *((uint32_t*)(memory + offset));
+        
+        /* check for valid PD entries */
+        if (!xa_kernel_pd_valid_entry(value, msize)){
+            correction--;
+        }
+
+        if (0 != value){
+            /* start by comparing first two non-zero entries */
+            if (!started){
+                offset += 4;
+                while (offset < length){
+                    uint32_t value2 = *((uint32_t*)(memory + offset));
+                    if (0 != value2){
+                        matches0 = (~value) & (~value2);
+                        matches1 = value & value2;
+                        started = 1;
+                        break;
+                    }
+                    offset += 4;
+                }
+            }
+
+            /* then add each remaining non-zero entry to the comparison */
+            else if (0 != value){
+                matches0 = matches0 & (~value);
+                matches1 = matches1 & value;
+            }
+        }
+        offset += 4;
+    }
+    /* score by adding the number of matching 0 or 1 bits */
+    return xa_kernel_pd_bitcount(matches0) +
+           xa_kernel_pd_bitcount(matches1) +
+           correction;
+}
+
+/* create a simple checksum of the first few entries in the kernel region 
+   of the PD.  the checksum is simply the addition of the entries, with
+   no regard to overflow.  this seems sufficient for our purposes of just
+   knowing which pages have identical entries */
+uint32_t xa_kernel_pd_checksum (xa_instance_t *instance, unsigned char *memory)
+{
+    uint32_t start = 0;
+    uint32_t end = 0;
+    uint32_t checksum = 0;
+
+    if (NULL == memory){
+        return 0;
+    }
+
+    if (0x80000000 == instance->page_offset){
+        start = instance->page_size / 2;
+    }
+    else if (0xc0000000 == instance->page_offset){
+        start = 3 * instance->page_size / 4;
+    }
+    end = start + 8 * 4;
+
+    while (start < end){
+        uint32_t value = *((uint32_t*)(memory + start));
+        checksum += value;
+        start += 4;
+    }
+
+    return checksum;
+}
+
+/* returns the number of entries in this page that, if parsed as a PDE, point
+   to the same pfn as the current page */
+int xa_kernel_pd_selfref(
+        xa_instance_t *instance, unsigned char *memory, uint32_t address)
+{
+    uint32_t offset = 0;
+    int selfref = 0;
+
+    if (NULL == memory){
+        return 0;
+    }
+
+    while (offset < instance->page_size){
+        uint32_t value = *((uint32_t*)(memory + offset));
+        if (0 != value){
+            value &= 0xFFFFF000;
+            if (value == address){
+                selfref++;
+            }
+        }
+        offset += 4;
+    }
+
+    return selfref;
+}
+
+/* entry point into the search algorithm, this is the function to call */
+uint32_t xa_find_kernel_pd (xa_instance_t *instance)
+{
+    uint32_t end = 0;
+    uint32_t address = 0;
+    uint32_t offset = 0;
+    int score = 0;
+    int max_score = 0;
+    unsigned char *memory = NULL;
+
+    /* this is used to hold a list of the candidate pages */
+    struct candidates{
+        uint32_t address;
+        uint32_t checksum;
+        int score;
+        int matches;
+        int selfref;
+        struct candidates *next;
+    };
+    typedef struct candidates* candidates_t;
+    candidates_t list = (candidates_t) malloc(sizeof(struct candidates));
+    candidates_t cur = list;
+    candidates_t prev = NULL;
+
+    /* get the size of the physical memory */
+    if (XA_MODE_XEN == instance->mode){
+        end = instance->m.xen.size;
+    }
+    else if (XA_MODE_FILE == instance->mode){
+        end = instance->m.file.size;
+    }
+
+    /* look for pages with similarity between entries */
+    while (address < end){
+        memory = xa_access_pa(instance, address, &offset, PROT_READ);
+        score = xa_kernel_pd_score(memory, instance->page_size, end);
+        if (0 < score){
+            /* list add */
+            cur->address = address;
+            cur->score = score;
+            cur->next = (candidates_t) malloc(sizeof(struct candidates));
+            cur = cur->next;
+            cur->address = 0;
+        }
+        if (NULL != memory){
+            munmap(memory, instance->page_size);
+        }
+        address += instance->page_size;
+    }
+
+    /* check for matching entries in the kernel region */
+    for (cur = list; cur->address != 0; cur = cur->next){
+        /* create a simple checksum for each page */
+        memory = xa_access_pa(instance, cur->address, &offset, PROT_READ);
+        cur->checksum = xa_kernel_pd_checksum(instance, memory);
+        if (NULL != memory){
+            munmap(memory, instance->page_size);
+        }
+    }
+    for (cur = list; cur->address != 0; cur = cur->next){
+        /* compare the checksums to see who's entries match */
+        candidates_t cur2 = list;
+        cur->matches = -1;
+        for (cur2 = list; cur2->address != 0; cur2 = cur2->next){
+            if (cur->checksum == cur2->checksum && cur->checksum != 0){
+                cur->matches++;
+            }
+        }
+    }
+    /* remove the ones that didn't have matches */
+    prev = NULL;
+    for (cur = list; cur->address != 0; ){
+        if (cur->matches <= 0){
+            /* list remove */
+            if (cur == list){
+                candidates_t tmp = cur;
+                cur = cur->next;
+                list = cur;
+                free(tmp);
+            }
+            else{
+                candidates_t tmp = cur;
+                cur = cur->next;
+                prev->next = cur;
+                free(tmp);
+            }
+        }
+        else{
+            prev = cur;
+            cur = cur->next;
+        }
+    }
+
+    /* check for self referencing entries */
+    for (cur = list; cur->address != 0; cur = cur->next){
+        memory = xa_access_pa(instance, cur->address, &offset, PROT_READ);
+        cur->selfref = xa_kernel_pd_selfref(instance, memory, cur->address);
+        if (NULL != memory){
+            munmap(memory, instance->page_size);
+        }
+    }
+    /* remove the ones that didn't have selfrefs */
+    prev = NULL;
+    for (cur = list; cur->address != 0; ){
+        if (cur->selfref <= 0){
+            /* list remove */
+            if (cur == list){
+                candidates_t tmp = cur;
+                cur = cur->next;
+                list = cur;
+                free(tmp);
+            }
+            else{
+                candidates_t tmp = cur;
+                cur = cur->next;
+                prev->next = cur;
+                free(tmp);
+            }
+        }
+        else{
+            prev = cur;
+            cur = cur->next;
+        }
+    }
+
+/*
+    for (cur = list; cur->address != 0; cur = cur->next){
+        printf("Candidate at 0x%.8x (%d)\n", cur->address, cur->selfref);
+    }
+*/
+
+    // for each candidate
+        // the kernel PD should have no lower entries
+        // find this one and return it's virtual address
+
+    /* return the lowest physical address that is still in the list */
+    return list->address + instance->page_offset;
+}
