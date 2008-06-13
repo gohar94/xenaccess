@@ -682,12 +682,14 @@ void *xa_access_machine_address (
  * entire memory space to find page directories, with the ultimate goal of
  * finding the kernel page directory that can be used for kpgd.  The
  * techinque, as implemented right now, has been tested on a Windows XP SP2
- * VM and works well in that setting.
+ * HVM VM and a Fedora Linux HVM VM and works well in those settings.
  *
  * The algorthims used are a combination of previously used algorithms from
  * Andreas Schuster (see blog posts titled 'Searching for Page Directories'),
  * Joe Stewart (see pmodump.pl), and Jacky We (see blog post titled 'Search
- * PDEs in Memory Dump of Windows XP SP2 with PAE').
+ * PDEs in Memory Dump of Windows XP SP2 with PAE'); combined with some new
+ * ideas that extend these to work more robustly.  The benefit is that this
+ * works for both Linux and Windows VMs.
  *
  * Current limitations include:
  *  - the inline code for list management is ugly, need macros or functions
@@ -695,7 +697,6 @@ void *xa_access_machine_address (
  *  - performance is decent, but would be nice to remove the n^2 loop so that
  *    all scanning is linear as this will improve startup speed
  *  - only works for non-PAE
- *  - only tested on Windows
  *  - functions could use general cleanup (single exit point, error checking,
  *    and other generally useful coding practices).
  */
@@ -710,6 +711,7 @@ int xa_kernel_pd_bitcount (uint32_t n)
 
 int xa_kernel_pd_valid_entry (uint32_t value, uint32_t msize)
 {
+    /* basic sanity checks */
     if (0xffffffff == value){
         return 0;
     }
@@ -894,6 +896,11 @@ uint32_t xa_find_kernel_pd (xa_instance_t *instance)
         }
         address += instance->page_size;
     }
+//    printf("---------------------------------------\n");
+//    printf("score\n");
+//    for (cur = list; cur->address != 0; cur = cur->next){
+//        printf("Candidate at 0x%.8x (%d)\n", cur->address, cur->score);
+//    }
 
     /* check for matching entries in the kernel region */
     for (cur = list; cur->address != 0; cur = cur->next){
@@ -938,48 +945,59 @@ uint32_t xa_find_kernel_pd (xa_instance_t *instance)
         }
     }
 
+//    printf("---------------------------------------\n");
+//    printf("matches\n");
+//    for (cur = list; cur->address != 0; cur = cur->next){
+//        printf("Candidate at 0x%.8x (%d)\n", cur->address, cur->matches);
+//    }
+
     /* check for self referencing entries */
-    for (cur = list; cur->address != 0; cur = cur->next){
-        memory = xa_access_pa(instance, cur->address, &offset, PROT_READ);
-        cur->selfref = xa_kernel_pd_selfref(instance, memory, cur->address);
-        if (NULL != memory){
-            munmap(memory, instance->page_size);
+    /* from some basic testing it appears that only windows does this */
+    if (XA_OS_WINDOWS == instance->os_type){
+        for (cur = list; cur->address != 0; cur = cur->next){
+            memory = xa_access_pa(instance, cur->address, &offset, PROT_READ);
+            cur->selfref = xa_kernel_pd_selfref(instance, memory, cur->address);
+            if (NULL != memory){
+                munmap(memory, instance->page_size);
+            }
         }
-    }
-    /* remove the ones that didn't have selfrefs */
-    prev = NULL;
-    for (cur = list; cur->address != 0; ){
-        if (cur->selfref <= 0){
-            /* list remove */
-            if (cur == list){
-                candidates_t tmp = cur;
-                cur = cur->next;
-                list = cur;
-                free(tmp);
+        /* remove the ones that didn't have selfrefs */
+        prev = NULL;
+        for (cur = list; cur->address != 0; ){
+            if (cur->selfref <= 0){
+                /* list remove */
+                if (cur == list){
+                    candidates_t tmp = cur;
+                    cur = cur->next;
+                    list = cur;
+                    free(tmp);
+                }
+                else{
+                    candidates_t tmp = cur;
+                    cur = cur->next;
+                    prev->next = cur;
+                    free(tmp);
+                }
             }
             else{
-                candidates_t tmp = cur;
+                prev = cur;
                 cur = cur->next;
-                prev->next = cur;
-                free(tmp);
             }
         }
-        else{
-            prev = cur;
-            cur = cur->next;
-        }
-    }
 
-/*
-    for (cur = list; cur->address != 0; cur = cur->next){
-        printf("Candidate at 0x%.8x (%d)\n", cur->address, cur->selfref);
+//        printf("---------------------------------------\n");
+//        printf("selfref\n");
+//        for (cur = list; cur->address != 0; cur = cur->next){
+//            printf("Candidate at 0x%.8x (%d)\n", cur->address, cur->selfref);
+//        }
+//        printf("---------------------------------------\n");
     }
-*/
 
     // for each candidate
         // the kernel PD should have no lower entries
         // find this one and return it's virtual address
 
     /* return the lowest physical address that is still in the list */
+    /*TODO need some better method to check that this is the correct value */
     return list->address + instance->page_offset;
 }
