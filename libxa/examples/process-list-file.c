@@ -58,7 +58,7 @@ int main (int argc, char **argv)
     char *filename = argv[1];
 
     /* initialize the xen access library */
-    if (xa_init_file(filename, "WinXP-HVM-PAE", &xai) == XA_FAILURE){
+    if (xa_init_file(filename, "WinXP-HVM", &xai) == XA_FAILURE){
         perror("failed to init XenAccess library");
         goto error_exit;
     }
