@@ -51,9 +51,11 @@ int main (int argc, char **argv)
     }
 
     /* get the symbol's memory page */
-    memory = xa_access_virtual_address(&xai, addr, &offset);
+    memory = xa_access_kernel_va(&xai, addr, &offset, PROT_READ);
+//    memory = xa_access_pa(&xai, addr, &offset, PROT_READ);
+//    memory = xa_access_ma(&xai, addr, &offset, PROT_READ);
     if (NULL == memory){
-        perror("failed to get symbol's memory");
+        perror("failed to map memory");
         goto error_exit;
     }
     printf("offset = 0x%.8x\n", offset);
