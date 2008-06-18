@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2008  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,19 +32,6 @@
 #include <xenaccess/xenaccess.h>
 #include <xenaccess/xa_private.h>
 
-/* offset to each of these fields from the beginning of the struct
-   assuming that CONFIG_SCHEDSTATS is not defined  and CONFIG_KEYS
-   is defined in the guest's kernel (this is the default in xen) */
-#define TASKS_OFFSET 24 * 4   /* task_struct->tasks */
-#define PID_OFFSET 39 * 4     /* task_struct->pid */
-#define NAME_OFFSET 108 * 4   /* task_struct->comm */
-
-/* offsets for Windows XP SP2.  These can be looked up using windbg
-   using the following command:  dt _eprocess -r1 */
-#define ActiveProcessLinks_OFFSET 0x88
-#define UniqueProcessId_OFFSET 0x84
-#define ImageFileName_OFFSET 0x174
-
 int main (int argc, char **argv)
 {
     xa_instance_t xai;
@@ -52,6 +39,7 @@ int main (int argc, char **argv)
     uint32_t offset, next_process, list_head;
     char *name = NULL;
     int pid = 0;
+    int tasks_offset, pid_offset, name_offset;
 
     /* this is the domain ID that we are looking at */
     uint32_t dom = atoi(argv[1]);
@@ -62,6 +50,19 @@ int main (int argc, char **argv)
         goto error_exit;
     }
 
+    /* init the offset values */
+    if (XA_OS_LINUX == xai.os_type){
+        tasks_offset = xai.os.linux_instance.tasks_offset;
+        name_offset = 108*4; /* pv, xen 3.0.4, linux 2.6.16 */
+//        name_offset = ??; /* pv, xen 3.1.0, centos 2.6.18-53.el5xen */
+        pid_offset = xai.os.linux_instance.pid_offset;
+    }
+    else if (XA_OS_WINDOWS == xai.os_type){
+        tasks_offset = xai.os.windows_instance.tasks_offset;
+        name_offset = 0x174; /* Windows XP SP2 */
+        pid_offset = xai.os.windows_instance.pid_offset;
+    }
+
     /* get the head of the list */
     if (XA_OS_LINUX == xai.os_type){
         memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
@@ -69,7 +70,7 @@ int main (int argc, char **argv)
             perror("failed to get process list head");
             goto error_exit;
         }    
-        memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
+        memcpy(&next_process, memory + offset + tasks_offset, 4);
     }
     else if (XA_OS_WINDOWS == xai.os_type){
         xa_read_long_sym(&xai, "PsInitialSystemProcess", &list_head);
@@ -78,9 +79,9 @@ int main (int argc, char **argv)
             perror("failed to get EPROCESS for PsInitialSystemProcess");
             goto error_exit;
         }
-        memcpy(&next_process, memory + offset + ActiveProcessLinks_OFFSET, 4);
-        name = (char *) (memory + offset + ImageFileName_OFFSET);
-        memcpy(&pid, memory + offset + UniqueProcessId_OFFSET, 4);
+        memcpy(&next_process, memory + offset + tasks_offset, 4);
+        name = (char *) (memory + offset + name_offset);
+        memcpy(&pid, memory + offset + pid_offset, 4);
         printf("[%5d] %s\n", pid, name);
     }
     list_head = next_process;
@@ -112,18 +113,8 @@ int main (int argc, char **argv)
            code cleaner, if not more fragile.  In a real app, you'd
            want to do this a little more robust :-)  See
            include/linux/sched.h for mode details */
-        if (XA_OS_LINUX == xai.os_type){
-            name = (char *) (memory + offset + NAME_OFFSET - TASKS_OFFSET);
-            memcpy(&pid, memory + offset + PID_OFFSET - TASKS_OFFSET, 4);
-        }
-
-        /* Same note applies to the way that Windows data is parsed */
-        else if (XA_OS_WINDOWS == xai.os_type){
-            name = (char *) (memory + offset + ImageFileName_OFFSET -
-                   ActiveProcessLinks_OFFSET);
-            memcpy(&pid, memory + offset + UniqueProcessId_OFFSET -
-                   ActiveProcessLinks_OFFSET, 4);
-        }
+        name = (char *) (memory + offset + name_offset - tasks_offset);
+        memcpy(&pid, memory + offset + pid_offset - tasks_offset, 4);
 
         /* trivial sanity check on data */
         if (pid < 0){
