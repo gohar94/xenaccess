@@ -366,7 +366,7 @@ int helper_init (xa_instance_t *instance)
     else{
         /*TODO add memory layout discovery here for file */
         instance->hvm = 1; /* assume nonvirt image or hvm image for now */
-        instance->pae = 1; /* assume pae for now */
+        instance->pae = 0; /* assume no pae for now */
     }
     xa_dbprint("--got memory layout.\n");
 

@@ -438,16 +438,22 @@ uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
 {
     int ret = XA_SUCCESS;
     vcpu_guest_context_t ctxt;
-    if ((ret = xc_vcpu_getcontext(
+
+    if (XA_MODE_XEN == instance->mode){
+        if ((ret = xc_vcpu_getcontext(
                 instance->m.xen.xc_handle,
                 instance->m.xen.domain_id,
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
-        printf("ERROR: failed to get context information.\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+            printf("ERROR: failed to get context information.\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
+        *cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
     }
-    *cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
+    else if (XA_MODE_FILE == instance->mode){
+        *cr3 = instance->kpgd - instance->page_offset;
+    }
 
 error_exit:
     return ret;
