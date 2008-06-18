@@ -55,6 +55,10 @@ int get_kpgd_method2 (xa_instance_t *instance, uint32_t *sysproc)
     }
     instance->kpgd += instance->page_offset; /* store vaddr */
 
+    if (instance->kpgd == instance->page_offset){
+        ret = XA_FAILURE;
+    }
+
 error_exit:
     return ret;
 }
@@ -86,6 +90,10 @@ int get_kpgd_method1 (xa_instance_t *instance, uint32_t *sysproc)
         goto error_exit;
     }
     instance->kpgd += instance->page_offset; /* store vaddr */
+
+    if (instance->kpgd == instance->page_offset){
+        ret = XA_FAILURE;
+    }
 
 error_exit:
     return ret;
