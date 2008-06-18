@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2008  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -53,12 +53,19 @@ int linux_init (xa_instance_t *instance)
         }
     }
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
+//    printf("kpgd search --> 0x%.8x\n", xa_find_kernel_pd(instance));
 
     memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
     if (NULL == memory){
-        printf("ERROR: failed to get task list head 'init_task'\n");
-        ret = XA_FAILURE;
-        goto error_exit;
+        xa_dbprint("--address lookup failure, switching PAE mode\n");
+        instance->pae = !instance->pae;
+        xa_dbprint("**set instance->pae = %d\n", instance->pae);
+        memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
+        if (NULL == memory){
+            printf("ERROR: failed to get task list head 'init_task'\n");
+            ret = XA_FAILURE;
+            goto error_exit;
+        }
     }
     instance->init_task =
         *((uint32_t*)(memory + local_offset +

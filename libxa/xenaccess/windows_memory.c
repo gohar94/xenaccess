@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2008  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,9 +25,6 @@
  * File: windows_memory.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date$
  */
 
 #include <stdio.h>
@@ -229,7 +226,6 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
     /* now follow the pointer to the memory descriptor and
        grab the pgd value */
     pgd = *((uint32_t*)(memory + offset + pdbase_offset - tasks_offset));
-    pgd += instance->page_offset;
     munmap(memory, instance->page_size);
 
 error_exit:

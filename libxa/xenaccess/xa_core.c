@@ -264,6 +264,10 @@ int get_page_info_xen (xa_instance_t *instance)
     instance->pse = xa_get_bit(ctxt.ctrlreg[4], 4);
     xa_dbprint("**set instance->pse = %d\n", instance->pse);
 
+    /* testing to see CR3 value */
+    instance->cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
+    xa_dbprint("**set instance->cr3 = 0x%.8x\n", instance->cr3);
+
 error_exit:
     return ret;
 }
@@ -279,6 +283,7 @@ void init_page_offset (xa_instance_t *instance)
     else{
         instance->page_offset = 0;
     }
+    xa_dbprint("**set instance->page_offset = 0x%.8x\n", instance->page_offset);
 
     /* assume 4k pages for now, update when 4M page is found */
     instance->page_shift = 12;

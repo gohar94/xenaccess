@@ -114,6 +114,7 @@ int windows_init (xa_instance_t *instance)
         }
     }
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
+//    printf("kpgd search --> 0x%.8x\n", xa_find_kernel_pd(instance));
 
     /* get address start of process list */
     xa_read_long_phys(
@@ -121,6 +122,8 @@ int windows_init (xa_instance_t *instance)
         sysproc + instance->os.windows_instance.tasks_offset,
         &(instance->init_task));
     xa_dbprint("**set instance->init_task (0x%.8x).\n", instance->init_task);
+
+    /*TODO add some checking to test for PAE mode like in linux_core */
 
 error_exit:
     return ret;

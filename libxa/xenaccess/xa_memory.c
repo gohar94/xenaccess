@@ -1,7 +1,7 @@
 /*
  * The libxa library provides access to resources in domU machines.
  * 
- * Copyright (C) 2005 - 2007  Bryan D. Payne (bryan@thepaynes.cc)
+ * Copyright (C) 2005 - 2008  Bryan D. Payne (bryan@thepaynes.cc)
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,9 +26,6 @@
  * File: xa_memory.c
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
- *
- * $Id$
- * $Date: 2006-11-29 20:38:20 -0500 (Wed, 29 Nov 2006) $
  */
 
 #include <stdlib.h>
@@ -185,8 +182,7 @@ uint64_t get_pdpi (
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
     xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
     if (k){
-        xa_read_long_long_phys(
-            instance, pdpi_entry-instance->page_offset, &value);
+        xa_read_long_long_mach(instance, pdpi_entry, &value);
     }
     else{
         xa_read_long_long_virt(instance, pdpi_entry, 0, &value);
@@ -219,7 +215,7 @@ uint32_t get_pgd_nopae (
     uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
     if (k){
-        xa_read_long_phys(instance, pgd_entry-instance->page_offset, &value);
+        xa_read_long_mach(instance, pgd_entry, &value);
     }
     else{
         xa_read_long_virt(instance, pgd_entry, 0, &value);
@@ -233,7 +229,7 @@ uint64_t get_pgd_pae (
     uint64_t value;
     uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
-    xa_read_long_long_phys(instance, pgd_entry, &value);
+    xa_read_long_long_mach(instance, pgd_entry, &value);
     return value;
 }
 
@@ -438,10 +434,31 @@ uint32_t xa_pagetable_lookup (
     }
 }
 
+uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
+{
+    int ret = XA_SUCCESS;
+    vcpu_guest_context_t ctxt;
+    if ((ret = xc_vcpu_getcontext(
+                instance->m.xen.xc_handle,
+                instance->m.xen.domain_id,
+                0, /*TODO vcpu, assuming only 1 for now */
+                &ctxt)) != 0){
+        printf("ERROR: failed to get context information.\n");
+        ret = XA_FAILURE;
+        goto error_exit;
+    }
+    *cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
+
+error_exit:
+    return ret;
+}
+
 /* expose virtual to physical mapping via api call */
 uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address)
 {
-    return xa_pagetable_lookup(instance, instance->kpgd, virt_address, 1);
+    uint32_t cr3 = 0;
+    xa_current_cr3(instance, &cr3);
+    return xa_pagetable_lookup(instance, cr3, virt_address, 1);
 }
 
 /* map memory given a kernel symbol */
@@ -466,6 +483,7 @@ void *xa_access_kernel_symbol (
     return xa_access_kernel_sym(instance, symbol, offset, PROT_READ);
 }
 
+/*TODO fix these functions to return machine address just like real CR3 */
 /* finds the address of the page global directory for a given pid */
 uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
 {
@@ -499,8 +517,9 @@ void *xa_access_user_va (
       Figure out what this should be b/c there still may be a fixed
       mapping range between the page'd addresses and VIRT_START */
     if (!pid){
-        address = xa_pagetable_lookup(
-                            instance, instance->kpgd, virt_address, 1);
+        uint32_t cr3 = 0;
+        xa_current_cr3(instance, &cr3);
+        address = xa_pagetable_lookup(instance, cr3, virt_address, 1);
         if (!address){
             printf("ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
