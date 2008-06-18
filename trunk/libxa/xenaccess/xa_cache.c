@@ -73,8 +73,14 @@ int xa_check_cache_virt (xa_instance_t *instance,
     uint32_t lookup = virt_address & ~(instance->page_size - 1);
 
     current = instance->cache_head;
-    while (current != NULL){
-        if ((current->virt_address == lookup) &&
+    for (current = instance->cache_head;
+         current != NULL;
+         current = current->next)
+    {
+        if (!current->virt_address){
+            continue;
+        }
+        else if ((current->virt_address == lookup) &&
             (current->pid == pid) &&
             (current->mach_address)){
             current->last_used = time(NULL);
@@ -85,7 +91,6 @@ int xa_check_cache_virt (xa_instance_t *instance,
                 virt_address, *mach_address, current->mach_address);
             goto exit;
         }
-        current = current->next;
     }
 
 exit:
@@ -123,7 +128,7 @@ int xa_update_cache (xa_instance_t *instance,
                     current->mach_address =
                         xa_translate_kv2p(instance, virt_address);
                 }
-                xa_dbprint("++Cache set (%s --> 0x%.8x)\n",
+                xa_dbprint("++Cache update (%s --> 0x%.8x)\n",
                     symbol_name, current->mach_address);
                 goto exit;
             }
@@ -140,12 +145,17 @@ int xa_update_cache (xa_instance_t *instance,
                 current->last_used = time(NULL);
                 current->pid = pid;
                 current->mach_address = mlookup;
-                xa_dbprint("++Cache set (0x%.8x --> 0x%.8x)\n",
+                xa_dbprint("++Cache update (0x%.8x --> 0x%.8x)\n",
                     vlookup, mlookup);
                 goto exit;
             }
             current = current->next;
         }
+    }
+
+    /* was this a spurious call with bad info? */
+    if (!symbol_name && !virt_address){
+        goto exit;
     }
 
     /* do we need to remove anything from the cache? */

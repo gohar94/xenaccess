@@ -127,6 +127,7 @@ typedef struct xa_instance{
     int hvm;                /**< nonzero if HVM memory image */
     int pae;                /**< nonzero if PAE is enabled */
     int pse;                /**< nonzero if PSE is enabled */
+    uint32_t cr3;           /**< value in the CR3 register */
     xa_cache_entry_t cache_head;
     xa_cache_entry_t cache_tail;
     int current_cache_size;
