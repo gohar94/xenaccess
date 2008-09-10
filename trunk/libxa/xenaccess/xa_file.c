@@ -37,7 +37,7 @@ void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn)
     long address = pfn << instance->page_shift;
     int fildes = fileno(instance->m.file.fhandle);
 
-    if (address > instance->m.file.size){
+    if (address >= instance->m.file.size){
         return NULL;
     }
 
