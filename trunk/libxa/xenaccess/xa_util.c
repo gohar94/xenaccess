@@ -42,7 +42,7 @@ int xa_read_long_mach (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_machine_address(instance, maddr, &offset);
+    memory = xa_access_ma(instance, maddr, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -58,7 +58,7 @@ int xa_read_long_long_mach (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_machine_address(instance, maddr, &offset);
+    memory = xa_access_ma(instance, maddr, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -74,7 +74,7 @@ int xa_read_long_phys (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_physical_address(instance, paddr, &offset);
+    memory = xa_access_pa(instance, paddr, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -90,7 +90,7 @@ int xa_read_long_long_phys (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_physical_address(instance, paddr, &offset);
+    memory = xa_access_pa(instance, paddr, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -106,7 +106,7 @@ int xa_read_long_virt (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
+    memory = xa_access_user_va(instance, vaddr, &offset, pid, PROT_READ);
     if (NULL != memory){
         *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -122,7 +122,7 @@ int xa_read_long_long_virt (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_user_virtual_address(instance, vaddr, &offset, pid);
+    memory = xa_access_user_va(instance, vaddr, &offset, pid, PROT_READ);
     if (NULL != memory){
         *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -138,7 +138,7 @@ int xa_read_long_sym (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_kernel_symbol(instance, sym, &offset);
+    memory = xa_access_kernel_sym(instance, sym, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint32_t*)(memory + offset));
         munmap(memory, instance->page_size);
@@ -154,7 +154,7 @@ int xa_read_long_long_sym (
 {
     unsigned char *memory = NULL;
     uint32_t offset = 0;
-    memory = xa_access_kernel_symbol(instance, sym, &offset);
+    memory = xa_access_kernel_sym(instance, sym, &offset, PROT_READ);
     if (NULL != memory){
         *value = *((uint64_t*)(memory + offset));
         munmap(memory, instance->page_size);

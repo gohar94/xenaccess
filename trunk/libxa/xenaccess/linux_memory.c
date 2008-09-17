@@ -50,7 +50,7 @@ unsigned char *linux_get_taskstruct (
     list_head = next_process;
 
     while (1){
-        memory = xa_access_virtual_address(instance, next_process, offset);
+        memory = xa_access_kernel_va(instance, next_process, offset, PROT_READ);
         if (NULL == memory){
             printf("ERROR: failed to get task list next pointer");
             goto error_exit;
@@ -114,7 +114,7 @@ void *linux_access_kernel_symbol (
 
     /* check the LRU cache */
     if (xa_check_cache_sym(instance, symbol, 0, &address)){
-        return xa_access_machine_address(instance, address, offset);
+        return xa_access_ma(instance, address, offset, PROT_READ);
     }
 
     /* get the virtual address of the symbol */
@@ -147,7 +147,7 @@ int xa_linux_get_taskaddr (
     /* copy the information out of the memory descriptor */
     memcpy(&ptr, memory + offset + mm_offset - tasks_offset, 4);
     munmap(memory, instance->page_size);
-    memory = xa_access_virtual_address(instance, ptr, &offset);
+    memory = xa_access_kernel_va(instance, ptr, &offset, PROT_READ);
     if (NULL == memory){
         printf("ERROR: failed to follow mm pointer (0x%x)\n", ptr);
         goto error_exit;

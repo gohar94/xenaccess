@@ -65,7 +65,7 @@ int main (int argc, char **argv)
 
     /* get the head of the list */
     if (XA_OS_LINUX == xai.os_type){
-        memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
+        memory = xa_access_kernel_sym(&xai, "init_task", &offset, PROT_READ);
         if (NULL == memory){
             perror("failed to get process list head");
             goto error_exit;
@@ -74,7 +74,7 @@ int main (int argc, char **argv)
     }
     else if (XA_OS_WINDOWS == xai.os_type){
         xa_read_long_sym(&xai, "PsInitialSystemProcess", &list_head);
-        memory = xa_access_virtual_address(&xai, list_head, &offset);
+        memory = xa_access_kernel_va(&xai, list_head, &offset, PROT_READ);
         if (NULL == memory){
             perror("failed to get EPROCESS for PsInitialSystemProcess");
             goto error_exit;
@@ -91,7 +91,7 @@ int main (int argc, char **argv)
     while (1){
 
         /* follow the next pointer */
-        memory = xa_access_virtual_address(&xai, next_process, &offset);
+        memory = xa_access_kernel_va(&xai, next_process, &offset, PROT_READ);
         if (NULL == memory){
             perror("failed to map memory for process list pointer");
             goto error_exit;

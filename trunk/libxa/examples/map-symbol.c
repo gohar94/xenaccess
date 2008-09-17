@@ -50,7 +50,7 @@ int main (int argc, char **argv)
     }
 
     /* get the symbol's memory page */
-    memory = xa_access_kernel_symbol(&xai, symbol, &offset);
+    memory = xa_access_kernel_sym(&xai, symbol, &offset, PROT_READ);
     if (NULL == memory){
         perror("failed to get symbol's memory");
         goto error_exit;

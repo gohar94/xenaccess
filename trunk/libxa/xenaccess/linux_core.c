@@ -40,6 +40,7 @@ int linux_init (xa_instance_t *instance)
         printf("ERROR: failed to lookup 'swapper_pg_dir' address\n");
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     xa_dbprint("--got vaddr for swapper_pg_dir (0x%.8x).\n", instance->kpgd);
 
@@ -50,21 +51,23 @@ int linux_init (xa_instance_t *instance)
             printf("ERROR: failed to get physical addr for kpgd\n");
             ret = XA_FAILURE;
             goto error_exit;
+// soft error
         }
     }
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);
 //    printf("kpgd search --> 0x%.8x\n", xa_find_kernel_pd(instance));
 
-    memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
+    memory = xa_access_kernel_sym(instance, "init_task", &local_offset, PROT_READ);
     if (NULL == memory){
         xa_dbprint("--address lookup failure, switching PAE mode\n");
         instance->pae = !instance->pae;
         xa_dbprint("**set instance->pae = %d\n", instance->pae);
-        memory = xa_access_kernel_symbol(instance, "init_task", &local_offset);
+        memory = xa_access_kernel_sym(instance, "init_task", &local_offset, PROT_READ);
         if (NULL == memory){
             printf("ERROR: failed to get task list head 'init_task'\n");
             ret = XA_FAILURE;
             goto error_exit;
+// soft error -- should we switch PAE mode back?
         }
     }
     instance->init_task =

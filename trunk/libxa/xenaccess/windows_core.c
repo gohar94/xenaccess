@@ -42,6 +42,7 @@ int get_kpgd_method2 (xa_instance_t *instance, uint32_t *sysproc)
         xa_dbprint("WARNING: failed to find System process.\n");
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
 
@@ -52,6 +53,7 @@ int get_kpgd_method2 (xa_instance_t *instance, uint32_t *sysproc)
         xa_dbprint("WARNING: failed to resolve PD for Idle process\n");
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     instance->kpgd += instance->page_offset; /* store vaddr */
 
@@ -77,6 +79,7 @@ int get_kpgd_method1 (xa_instance_t *instance, uint32_t *sysproc)
         xa_dbprint("WARNING: failed to read pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     *sysproc -= instance->page_offset; /* PA to PsInit.. */
     xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
@@ -88,6 +91,7 @@ int get_kpgd_method1 (xa_instance_t *instance, uint32_t *sysproc)
         xa_dbprint("WARNING: failed to resolve pointer for system process\n");
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     instance->kpgd += instance->page_offset; /* store vaddr */
 
@@ -109,6 +113,7 @@ int windows_init (xa_instance_t *instance)
     if (!instance->os.windows_instance.ntoskrnl){
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->os.windows_instance.ntoskrnl);
 
@@ -119,6 +124,7 @@ int windows_init (xa_instance_t *instance)
             printf("ERROR: failed to find kernel page directory.\n");
             ret = XA_FAILURE;
             goto error_exit;
+// soft error
         }
     }
     xa_dbprint("**set instance->kpgd (0x%.8x).\n", instance->kpgd);

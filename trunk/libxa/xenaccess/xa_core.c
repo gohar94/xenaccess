@@ -342,6 +342,7 @@ int helper_init (xa_instance_t *instance)
             printf("ERROR: Failed to get domain info\n");
             ret = XA_FAILURE;
             goto error_exit;
+// critical error
         }
         xa_dbprint("--got domain info.\n");
 
@@ -353,6 +354,7 @@ int helper_init (xa_instance_t *instance)
     if (read_config_file(instance) == XA_FAILURE){
         ret = XA_FAILURE;
         goto error_exit;
+// soft error
     }
     
     /* determine the page sizes and layout for target OS */
@@ -361,6 +363,7 @@ int helper_init (xa_instance_t *instance)
             printf("ERROR: memory layout not supported\n");
             ret = XA_FAILURE;
             goto error_exit;
+// critical error
         }
     }
     else{
@@ -391,6 +394,7 @@ int helper_init (xa_instance_t *instance)
         printf("ERROR: Failed to get memory size.\n");
         ret = XA_FAILURE;
         goto error_exit;
+// critical error
     }
 
     /* setup OS specific stuff */

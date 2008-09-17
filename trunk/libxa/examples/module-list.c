@@ -55,10 +55,10 @@ int main (int argc, char **argv)
     else if (XA_OS_WINDOWS == xai.os_type){
         /*TODO don't use a hard-coded address here */
         if (xai.pae){
-            memory = xa_access_virtual_address(&xai, 0x805533a0, &offset);
+            memory = xa_access_kernel_va(&xai, 0x805533a0, &offset, PROT_READ);
         }
         else{
-            memory = xa_access_virtual_address(&xai, 0x8055a620, &offset);
+            memory = xa_access_kernel_va(&xai, 0x8055a620, &offset, PROT_READ);
         }
         if (NULL == memory){
             perror("failed to get PsLoadedModuleList");
@@ -73,7 +73,7 @@ int main (int argc, char **argv)
     while (1){
 
         /* follow the next pointer */
-        memory = xa_access_virtual_address(&xai, next_module, &offset);
+        memory = xa_access_kernel_va(&xai, next_module, &offset, PROT_READ);
         if (NULL == memory){
             perror("failed to map memory for module list pointer");
             goto error_exit;

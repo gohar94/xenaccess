@@ -169,63 +169,6 @@ void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn);
 void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn);
 
 /**
- * @deprecated Memory maps page in domU that contains given physical address.
- * The mapped memory is read-only.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] phys_address Requested physical address.
- * @param[out] offset Offset of the address in returned page.
- *
- * @return Address of a page copy that contains phys_address.
- */
-void *xa_access_physical_address (
-        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset);
-
-/**
- * Memory maps page in domU that contains given physical address.
- * The mapped memory is read-only.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] phys_address Requested physical address.
- * @param[out] offset Offset of the address in returned page.
- * @param[in] prot Desired memory protection (PROT_READ, PROT_WRITE, etc)
- *
- * @return Address of a page copy that contains phys_address.
- */
-void *xa_access_pa (
-        xa_instance_t *instance, uint32_t phys_address,
-        uint32_t *offset, int prot);
-
-/**
- * @deprecated Memory maps page in domU that contains given machine
- * address. For more
- * info about machine, virtual and pseudo-physical page see xen dev docs.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] mach_address Requested machine address.
- * @param[out] offset Offset of the address in returned page.
- *
- * @return Address of a page copy with content like mach_address.
- */
-void *xa_access_machine_address (
-        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset);
-
-/**
- * Memory maps page in domU that contains given machine address. For more
- * info about machine, virtual and pseudo-physical page see xen dev docs.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] mach_address Requested machine address.
- * @param[out] offset Offset of the address in returned page.
- * @param[in] prot Desired memory protection (PROT_READ, PROT_WRITE, etc)
- *
- * @return Address of a page copy with content like mach_address.
- */
-void *xa_access_ma (
-        xa_instance_t *instance, uint32_t mach_address,
-        uint32_t *offset, int prot);
-
-/**
  * Covert virtual address to machine address via page table lookup.
  *
  * @param[in] instance Handle to xenaccess instance.
@@ -238,34 +181,6 @@ void *xa_access_ma (
 uint32_t xa_pagetable_lookup (
             xa_instance_t *instance, uint32_t pgd,
             uint32_t virt_address, int kernel);
-
-/** 
- * Memory maps page in domU that contains given virtual address
- * and belongs to process \a pid. 
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] virt_address Requested virtual address.
- * @param[out] offset Offset of the address in returned page.
- * @param[in] pid Id of the process in which the virt_address is.
- *
- * @return Address of a page copy that contains virt_address.
- */
-void *xa_access_user_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address,
-        uint32_t *offset, int pid);
-
-/**
- * Memory maps page in domU that contains given virtual address.
- * The func is mainly useful for accessing kernel memory.
- *
- * @param[in] instance Handle to xenaccess instance.
- * @param[in] virt_address Requested virtual address.
- * @param[out] offset Offset of the address in returned page.
- *
- * @return Address of a page copy that contains virt_address.
- */
-void *xa_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
 
 /**
  * Find the address of the page global directory for a given PID
@@ -301,16 +216,6 @@ int linux_system_map_symbol_to_address (
  */
 void *linux_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset, int prot);
-
-/**
- * \deprecated Tries to guess the right System.map file for the
- * domU kernel. The configuration option is now preferred.
- * 
- * @param[in] id Domain id.
- *
- * @return String with the path for the System.map (must be freed by caller). 
- */
-char *linux_predict_sysmap_name (int id);
 
 /**
  * Releases the cache.
