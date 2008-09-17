@@ -100,12 +100,12 @@ int main (int argc, char **argv)
     /* grab the memory at the start of the code segment
        for this process and print it out */
     if (XA_OS_LINUX == xai.os_type){
-        memory = xa_access_user_virtual_address(
-                 &xai, taskaddr.start_code, &offset, pid);
+        memory = xa_access_user_va(
+                 &xai, taskaddr.start_code, &offset, pid, PROT_READ);
     }
     else if (XA_OS_WINDOWS == xai.os_type){
-        memory = xa_access_user_virtual_address(
-                 &xai, peb.ImageBaseAddress, &offset, pid);
+        memory = xa_access_user_va(
+                 &xai, peb.ImageBaseAddress, &offset, pid, PROT_READ);
     }
     if (NULL == memory){
         perror("failed to map memory");

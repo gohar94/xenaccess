@@ -483,11 +483,13 @@ void *xa_access_kernel_sym (
 }
 
 /*TODO this is deprecated */
+/*
 void *xa_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset)
 {
     return xa_access_kernel_sym(instance, symbol, offset, PROT_READ);
 }
+*/
 
 /*TODO fix these functions to return machine address just like real CR3 */
 /* finds the address of the page global directory for a given pid */
@@ -515,7 +517,7 @@ void *xa_access_user_va (
 
     /* check the LRU cache */
     if (xa_check_cache_virt(instance, virt_address, pid, &address)){
-        return xa_access_machine_address(instance, address, offset);
+        return xa_access_ma(instance, address, offset, PROT_READ);
     }
 
     /* use kernel page tables */
@@ -550,16 +552,6 @@ void *xa_access_user_va (
     /* update cache and map the memory */
     xa_update_cache(instance, NULL, virt_address, pid, address);
     return xa_access_ma(instance, address, offset, prot);
-}
-
-/*TODO this is deprecated */
-void *xa_access_user_virtual_address (
-        xa_instance_t *instance,
-        uint32_t virt_address,
-        uint32_t *offset,
-        int pid)
-{
-    return xa_access_user_va(instance, virt_address, offset, pid, PROT_READ);
 }
 
 void *xa_access_user_va_range (
@@ -599,18 +591,6 @@ void *xa_access_user_va_range (
         instance->m.xen.domain_id, prot, pfns, num_pages);
 }
 
-/*TODO this is deprecated */
-void *xa_access_user_virtual_range (
-        xa_instance_t *instance,
-        uint32_t virt_address,
-		uint32_t size,
-        uint32_t *offset,
-        int pid)
-{
-    return xa_access_user_va_range(instance, virt_address, size, offset,
-            pid, PROT_READ);
-}
-
 void *xa_access_kernel_va (
         xa_instance_t *instance,
         uint32_t virt_address,
@@ -618,13 +598,6 @@ void *xa_access_kernel_va (
         int prot)
 {
     return xa_access_user_va(instance, virt_address, offset, 0, prot);
-}
-
-/*TODO this is deprecated */
-void *xa_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset)
-{
-    return xa_access_user_va(instance, virt_address, offset, 0, PROT_READ);
 }
 
 void *xa_access_kernel_va_range (
@@ -636,17 +609,6 @@ void *xa_access_kernel_va_range (
 {
 	return xa_access_user_va_range(
         instance, virt_address, size, offset, 0, prot);
-}
-
-/*TODO this is deprecated */
-void *xa_access_virtual_range (
-	xa_instance_t *instance,
-	uint32_t virt_address,
-	uint32_t size,
-	uint32_t* offset)
-{
-	return xa_access_user_va_range(
-        instance, virt_address, size, offset, 0, PROT_READ);
 }
 
 void *xa_access_pa (
@@ -668,13 +630,6 @@ void *xa_access_pa (
     return xa_mmap_pfn(instance, prot, pfn);
 }
 
-/*TODO this is deprecated */
-void *xa_access_physical_address (
-        xa_instance_t *instance, uint32_t phys_address, uint32_t *offset)
-{
-    return xa_access_pa(instance, phys_address, offset, PROT_READ);
-}
-
 void *xa_access_ma (
         xa_instance_t *instance,
         uint32_t mach_address,
@@ -692,13 +647,6 @@ void *xa_access_ma (
 
     /* access the memory */
     return xa_mmap_mfn(instance, prot, mfn);
-}
-
-/*TODO this is deprecated */
-void *xa_access_machine_address (
-        xa_instance_t *instance, uint32_t mach_address, uint32_t *offset)
-{
-    return xa_access_ma(instance, mach_address, offset, PROT_READ);
 }
 
 /* ------------------------------------------------------------------------ */

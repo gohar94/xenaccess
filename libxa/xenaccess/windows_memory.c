@@ -148,7 +148,7 @@ void *windows_access_kernel_symbol (
 
     /* check the LRU cache */
     if (xa_check_cache_sym(instance, symbol, 0, &address)){
-        return xa_access_machine_address(instance, address, offset);
+        return xa_access_ma(instance, address, offset, PROT_READ);
     }
 
     /* get the RVA of the symbol */
@@ -179,7 +179,7 @@ unsigned char *windows_get_EPROCESS (
     list_head = next_process;
 
     while (1){
-        memory = xa_access_virtual_address(instance, next_process, offset);
+        memory = xa_access_kernel_va(instance, next_process, offset, PROT_READ);
         if (NULL == memory){
             printf("ERROR: failed to get EPROCESS list next pointer");
             goto error_exit;
@@ -254,7 +254,7 @@ int xa_windows_get_peb (
     munmap(memory, instance->page_size);
 
     /* map the PEB struct */
-    memory = xa_access_user_virtual_address(instance, ptr, &offset, pid);
+    memory = xa_access_user_va(instance, ptr, &offset, pid, PROT_READ);
     if (NULL == memory){
         printf("ERROR: could not find PEB struct for pid = %d\n", pid);
         goto error_exit;

@@ -38,6 +38,7 @@
 
 #include <xenctrl.h>
 #include <stdio.h>
+#include <sys/mman.h>
 
 /* uncomment this to enable debug output */
 //#define XA_DEBUG
@@ -247,18 +248,34 @@ int xa_destroy (xa_instance_t *instance);
  */
 
 /**
- * @deprecated Memory maps one page from domU to a local address range.  The
- * memory to be mapped is specified with a kernel symbol (e.g.,
- * from System.map on linux).  This memory must be unmapped manually
- * with munmap.
+ * Memory maps page in domU that contains given physical address.
+ * The mapped memory is read-only.
  *
- * @param[in] instance XenAccess instance
- * @param[in] symbol Desired kernel symbol to access
- * @param[out] offset Offset to kernel symbol within the mapped memory
- * @return Beginning of mapped memory page or NULL on error
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] phys_address Requested physical address.
+ * @param[out] offset Offset of the address in returned page.
+ * @param[in] prot Desired memory protection (PROT_READ, PROT_WRITE, etc)
+ *
+ * @return Address of a page copy that contains phys_address.
  */
-void *xa_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset);
+void *xa_access_pa (
+        xa_instance_t *instance, uint32_t phys_address,
+        uint32_t *offset, int prot);
+
+/**
+ * Memory maps page in domU that contains given machine address. For more
+ * info about machine, virtual and pseudo-physical page see xen dev docs.
+ *
+ * @param[in] instance Handle to xenaccess instance.
+ * @param[in] mach_address Requested machine address.
+ * @param[out] offset Offset of the address in returned page.
+ * @param[in] prot Desired memory protection (PROT_READ, PROT_WRITE, etc)
+ *
+ * @return Address of a page copy with content like mach_address.
+ */
+void *xa_access_ma (
+        xa_instance_t *instance, uint32_t mach_address,
+        uint32_t *offset, int prot);
 
 /**
  * Memory maps one page from domU to a local address range.  The
@@ -276,19 +293,6 @@ void *xa_access_kernel_sym (
         xa_instance_t *instance, char *symbol, uint32_t *offset, int prot);
 
 /**
- * @deprecated Memory maps one page from domU to a local address range.  The
- * memory to be mapped is specified with a kernel virtual address.
- * This memory must be unmapped manually with munmap.
- *
- * @param[in] instance XenAccess instance
- * @param[in] virt_address Virtual address to access
- * @param[out] offset Offset to address within the mapped memory
- * @return Beginning of mapped memory page or NULL on error
- */
-void *xa_access_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address, uint32_t *offset);
-
-/**
  * Memory maps one page from domU to a local address range.  The
  * memory to be mapped is specified with a kernel virtual address.
  * This memory must be unmapped manually with munmap.
@@ -302,21 +306,6 @@ void *xa_access_virtual_address (
 void *xa_access_kernel_va (
         xa_instance_t *instance, uint32_t virt_address,
         uint32_t *offset, int prot);
-
-/**
- * @deprecated Memory maps multiple pages from domU to a local address range.
- * The memory to be mapped is specified with a kernel virtual
- * address.  This memory must be unmapped manually with munmap.
- *
- * @param[in] instance XenAccess instance
- * @param[in] virt_address Desired virtual address to access
- * @param[in] size Size in bytes of the accessed range
- * @param[out] offset Offset to the address within mapped memory
- * @return Beginning of the mapped memory pages or NULL on error
- */ 
-void *xa_access_virtual_range (
-	xa_instance_t* instance, uint32_t virt_address,
-	uint32_t size, uint32_t* offset);
 
 /**
  * Memory maps multiple pages from domU to a local address range.
@@ -333,24 +322,6 @@ void *xa_access_virtual_range (
 void *xa_access_kernel_va_range (
 	xa_instance_t* instance, uint32_t virt_address,
 	uint32_t size, uint32_t* offset, int prot);
-
-/**
- * @deprecated Memory maps one page from domU to a local address range.  The
- * memory to be mapped is specified with a virtual address from a 
- * process' address space.  This memory must be unmapped manually
- * with munmap.
- *
- * @param[in] instance XenAccess instance
- * @param[in] virt_address Desired virtual address to access
- * @param[out] offset Offset to address within the mapped memory
- * @param[in] pid PID of process' address space to use.  If you specify
- *     0 here, XenAccess will access the kernel virtual address space and
- *     this function's behavior will be the same as xa_access_virtual_address.
- * @return Beginning of mapped memory page or NULL on error
- */
-void *xa_access_user_virtual_address (
-        xa_instance_t *instance, uint32_t virt_address,
-        uint32_t *offset, int pid);
 
 /**
  * Memory maps one page from domU to a local address range.  The
@@ -370,26 +341,6 @@ void *xa_access_user_virtual_address (
 void *xa_access_user_va (
         xa_instance_t *instance, uint32_t virt_address,
         uint32_t *offset, int pid, int prot);
-
-/**
- * @deprecated Memory maps multiple pages from domU to a local address range.
- * the memory to be mapped is specified by a virtual address from
- * process' address space.  Data structures that span multiple
- * pages can be mapped without dealing with fragmentation.
- *
- * @param[in] instance XenAccess instance
- * @param[in] virt_address Desired virtual address to access
- * @param[in] size Size in bytes of the accessed range
- * @param[out] offset Offset to the address within mapped memory
- * @param[in] pid PID of process' address space to use.  If you
- * 		specify 0 here, XenAccess will access the kernel virtual
- *  	address space and this function's be the same as
- *  	xa_access_virtual_range.
- * @return Beginning of the mapped memory pages or NULL on error
- */
-void *xa_access_user_virtual_range (
-	xa_instance_t* instance, uint32_t virt_address,
-	uint32_t size, uint32_t* offset, int pid);
 
 /**
  * Memory maps multiple pages from domU to a local address range.
