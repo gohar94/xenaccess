@@ -157,7 +157,7 @@ void *windows_access_kernel_symbol (
     }
 
     /* convert RVA into virt address */
-    phys_address = instance->ntoskrnl + rva;
+    phys_address = instance->os.windows_instance.ntoskrnl + rva;
     virt_address = phys_address + instance->page_offset;
 
     xa_update_cache(instance, symbol, virt_address, 0, 0);
