@@ -122,7 +122,6 @@ typedef struct xa_instance{
     uint32_t page_size;     /**< page size for last mapped page */
     uint32_t kpgd;          /**< kernel page global directory */
     uint32_t init_task;     /**< address of task struct for init */
-    uint32_t ntoskrnl;      /**< base physical address for ntoskrnl image */
     int os_type;            /**< type of os: XA_OS_LINUX, etc */
     int hvm;                /**< nonzero if HVM memory image */
     int pae;                /**< nonzero if PAE is enabled */
@@ -140,6 +139,7 @@ typedef struct xa_instance{
             int addr_offset;     /**< mm_struct->start_code */
         } linux_instance;
         struct windows_instance{
+            uint32_t ntoskrnl;   /**< base phys address for ntoskrnl image */
             int tasks_offset;    /**< EPROCESS->ActiveProcessLinks */
             int pdbase_offset;   /**< EPROCESS->Pcb->DirectoryTableBase */
             int pid_offset;      /**< EPROCESS->UniqueProcessId */
