@@ -340,9 +340,8 @@ int helper_init (xa_instance_t *instance)
                 1, &(instance->m.xen.info)
             ) != 1){
             printf("ERROR: Failed to get domain info\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-// critical error
+            ret = xa_report_error(instance, 0, XA_ECRITICAL);
+            if (XA_FAILURE == ret) goto error_exit;
         }
         xa_dbprint("--got domain info.\n");
 
@@ -352,18 +351,16 @@ int helper_init (xa_instance_t *instance)
 
     /* read in configure file information */
     if (read_config_file(instance) == XA_FAILURE){
-        ret = XA_FAILURE;
-        goto error_exit;
-// soft error
+        ret = xa_report_error(instance, 0, XA_EMINOR);
+        if (XA_FAILURE == ret) goto error_exit;
     }
     
     /* determine the page sizes and layout for target OS */
     if (XA_MODE_XEN == instance->mode){
         if (get_page_info_xen(instance) == XA_FAILURE){
             printf("ERROR: memory layout not supported\n");
-            ret = XA_FAILURE;
-            goto error_exit;
-// critical error
+            ret = xa_report_error(instance, 0, XA_ECRITICAL);
+            if (XA_FAILURE == ret) goto error_exit;
         }
     }
     else{
@@ -392,9 +389,8 @@ int helper_init (xa_instance_t *instance)
     /* get the memory size */
     if (get_memory_size(instance) == XA_FAILURE){
         printf("ERROR: Failed to get memory size.\n");
-        ret = XA_FAILURE;
-        goto error_exit;
-// critical error
+        ret = xa_report_error(instance, 0, XA_ECRITICAL);
+        if (XA_FAILURE == ret) goto error_exit;
     }
 
     /* setup OS specific stuff */
@@ -430,6 +426,7 @@ void xa_init_common (xa_instance_t *instance)
     instance->cache_head = NULL;
     instance->cache_tail = NULL;
     instance->current_cache_size = 0;
+    instance->error_mode = XA_FAILHARD; //TODO user sets this at init
 }
 
 /* initialize to view an actively running Xen domain */

@@ -30,12 +30,10 @@
  * $Date: 2006-11-29 20:38:20 -0500 (Wed, 29 Nov 2006) $
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdarg.h>
 #include "xenaccess.h"
 #include "xa_private.h"
+#include <string.h>
+#include <stdarg.h>
 
 int xa_read_long_mach (
         xa_instance_t *instance, uint32_t maddr, uint32_t *value)
