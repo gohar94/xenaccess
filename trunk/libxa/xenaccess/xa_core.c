@@ -426,15 +426,17 @@ void xa_init_common (xa_instance_t *instance)
     instance->cache_head = NULL;
     instance->cache_tail = NULL;
     instance->current_cache_size = 0;
-    instance->error_mode = XA_FAILHARD; //TODO user sets this at init
 }
 
 /* initialize to view an actively running Xen domain */
-int xa_init (uint32_t domain_id, xa_instance_t *instance)
+int xa_init_vm_private
+    (uint32_t domain_id, xa_instance_t *instance, uint32_t error_mode)
 {
     int xc_handle;
     instance->mode = XA_MODE_XEN;
     xa_dbprint("XenAccess Mode Xen\n");
+    instance->error_mode = error_mode;
+    xa_dbprint("XenAccess Error Mode = %d\n", instance->error_mode);
 
     /* open handle to the libxc interface */
     if ((xc_handle = xc_interface_open()) == -1){
@@ -451,11 +453,17 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
 }
 
 /* initialize to view a file image (currently only dd images supported) */
-int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
+int xa_init_file_private (
+    char *filename,
+    char *image_type,
+    xa_instance_t *instance,
+    uint32_t error_mode)
 {
     FILE *fhandle = NULL;
     instance->mode = XA_MODE_FILE;
     xa_dbprint("XenAccess Mode File\n");
+    instance->error_mode = error_mode;
+    xa_dbprint("XenAccess Error Mode = %d\n", instance->error_mode);
 
     /* open handle to memory file */
     if ((fhandle = fopen(filename, "rb")) == NULL){
@@ -467,6 +475,37 @@ int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
     xa_init_common(instance);
     instance->image_type = strndup(image_type, 256);
     return helper_init(instance);
+}
+
+/* below are stub init functions that are called by library users */
+/* xa_init is deprecated */
+int xa_init (uint32_t domain_id, xa_instance_t *instance)
+{
+    xa_init_vm_private(domain_id, instance, XA_FAILHARD);
+}
+int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance)
+{
+    xa_init_vm_private(domain_id, instance, XA_FAILHARD);
+}
+int xa_init_vm_lax (uint32_t domain_id, xa_instance_t *instance)
+{
+    xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
+}
+
+/* xa_init_file is deprecated */
+int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
+{
+    xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
+}
+int xa_init_file_strict
+    (char *filename, char *image_type, xa_instance_t *instance)
+{
+    xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
+}
+int xa_init_file_lax
+    (char *filename, char *image_type, xa_instance_t *instance)
+{
+    xa_init_file_private(filename, image_type, instance, XA_FAILSOFT);
 }
 
 int xa_destroy (xa_instance_t *instance)
