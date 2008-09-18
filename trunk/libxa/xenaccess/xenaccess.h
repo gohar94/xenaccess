@@ -39,6 +39,7 @@
 #include <xenctrl.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 /* uncomment this to enable debug output */
 //#define XA_DEBUG
@@ -67,6 +68,24 @@
  * Return value indicating failure.
  */
 #define XA_FAILURE -1
+/**
+ * Failure mode where XenAccess will exit with failure if there are
+ * any problems found on startup.  This will provide for strict
+ * checking of the configuration file parameters and the memory 
+ * image itself.  If initialization completes successfully in this
+ * mode, then you should then have full use of the XenAccess memory
+ * access functionality (e.g., virtual, physical, and symbolic lookups).
+ */
+#define XA_FAILHARD 0
+/**
+ * Failure mode where XenAccess will try to complete initialization
+ * unless there is a fatal failure.  Assuming that initialization does
+ * complete, memory access may be available with reduced functionality
+ * (e.g., only able to access physical addresses).  The exact functionality
+ * available will depend on the problems that were bypassed during 
+ * initialization.
+ */
+#define XA_FAILSOFT 1
 /**
  * Constant used to specify Linux in the os_type member of the
  * xa_instance struct.
@@ -116,6 +135,7 @@ typedef struct xa_cache_entry* xa_cache_entry_t;
  */
 typedef struct xa_instance{
     uint32_t mode;          /**< file or xen VM data source */
+    uint32_t error_mode;    /**< XA_FAILHARD or XA_FAILSOFT */
     char *sysmap;           /**< system map file for domain's running kernel */
     char *image_type;       /**< image type that we are accessing */
     uint32_t page_offset;   /**< page offset for this instance */

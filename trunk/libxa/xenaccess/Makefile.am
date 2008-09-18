@@ -1,7 +1,7 @@
 SUBDIRS = config
 
 h_sources = xenaccess.h xa_private.h
-c_sources = linux_core.c linux_domain_info.c linux_symbols.c xa_core.c xa_memory.c linux_memory.c xa_cache.c xa_domain_info.c xa_file.c xa_pretty_print.c xa_util.c windows_memory.c windows_symbols.c windows_core.c windows_process.c xa_symbols.c
+c_sources = linux_core.c linux_domain_info.c linux_symbols.c xa_core.c xa_memory.c linux_memory.c xa_cache.c xa_domain_info.c xa_file.c xa_pretty_print.c xa_util.c windows_memory.c windows_symbols.c windows_core.c windows_process.c xa_symbols.c xa_error.c
 
 library_includedir=$(includedir)/$(LIBRARY_NAME)
 library_include_HEADERS = $(h_sources)

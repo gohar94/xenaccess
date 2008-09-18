@@ -47,6 +47,11 @@
 /* other globals */
 #define MAX_ROW_LENGTH 200
 
+/* internal error types */
+#define XA_ENONE 0
+#define XA_ECRITICAL 1
+#define XA_EMINOR 2
+
 /*------------------------------
  * Utility function from xa_util
  */
@@ -283,6 +288,7 @@ void *xa_map_file_range (xa_instance_t *instance, int prot, unsigned long pfn);
 void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num);
 uint32_t windows_find_eprocess (xa_instance_t *instance, char *name);
 uint32_t xa_find_kernel_pd (xa_instance_t *instance);
+int xa_report_error (xa_instance_t *instance, int error, int error_type);
 
 /** Duplicate function from xc_util that should remain
  *  here until Xen 3.1.2 becomes widely distributed.
