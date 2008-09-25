@@ -45,7 +45,7 @@ int bf_test_ntoskrnl_base (xa_instance_t *instance, uint32_t base)
         if (testval > instance->page_offset){
             testval -= instance->page_offset;
             xa_read_long_phys(instance, testval, &header);
-            if (header == 0x001b0003){
+            if (header == 0x001b0003 || header == 0x00200003){
                 count++;
             }
         }
@@ -70,9 +70,21 @@ int test_ntoskrnl_base (
     /* sysproc should now be the PA of a an EPROCESS location */
     xa_read_long_phys(instance, sysproc, &header);
     
-    /* Test for EPROCESS using technique from 'Searching for Processes
-       and Threads in Microsoft Windows memory dumps' in DFRWS 2006 */
-    if (header != 0x001b0003){
+    /*  Look for EPROCESS by checking of the first 4 bytes of the
+        structure.  
+
+        This was obtained from Table 1 (p. S14) of:
+   
+        A. Schuster.  "Searching for Processes and Threads in
+        Microsoft Windows Memory Dumps".  Proceedings of the
+        Digital Forensic Research Workshop 2006 (DFRWS '06).
+
+        The XP value is 0x001b0003, the Vista value is 0x00200003.
+        This is taken from <EPROCESS>.Pcb.Header.  The type is 
+        3, for process.  The differing value comes from the size,
+        which is 0x1b in Win 2000 SP 4, XP, XP SP2, and Win 2003,
+        but 0x20 in Vista.  */
+    if (header != 0x001b0003 && header != 0x00200003){
         return XA_FAILURE;
     }
     return XA_SUCCESS;
@@ -98,7 +110,7 @@ uint32_t bf_get_ntoskrnl_base (xa_instance_t *instance)
         }
 
         paddr += instance->page_size;
-        if (paddr <= 0 || 0x01000000 <= paddr){
+        if (paddr <= 0 || 0x40000000 <= paddr){
             break;
         }
     }
@@ -129,7 +141,7 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
         }
 
         paddr += instance->page_size;
-        if (paddr <= 0 || 0x01000000 <= paddr){
+        if (paddr <= 0 || 0x40000000 <= paddr){
             xa_dbprint("--get_ntoskrnl_base failed, switching to search\n");
             return bf_get_ntoskrnl_base(instance);
         }

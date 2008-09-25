@@ -60,6 +60,7 @@ int main (int argc, char **argv)
     else if (XA_OS_WINDOWS == xai.os_type){
         tasks_offset = xai.os.windows_instance.tasks_offset;
         name_offset = 0x174; /* Windows XP SP2 */
+//        name_offset = 0x14c; /* Windows Vista */
         pid_offset = xai.os.windows_instance.pid_offset;
     }
 
