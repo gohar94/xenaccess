@@ -162,11 +162,11 @@ typedef struct xa_instance{
         struct windows_instance{
             uint32_t ntoskrnl;   /**< base phys address for ntoskrnl image */
             int tasks_offset;    /**< EPROCESS->ActiveProcessLinks */
-            int pdbase_offset;   /**< EPROCESS->Pcb->DirectoryTableBase */
+            int pdbase_offset;   /**< EPROCESS->Pcb.DirectoryTableBase */
             int pid_offset;      /**< EPROCESS->UniqueProcessId */
             int peb_offset;      /**< EPROCESS->Peb */
-            int iba_offset;      /**< EPROCESS->Peb->ImageBaseAddress */
-            int ph_offset;       /**< EPROCESS->Peb->ProcessHeap */
+            int iba_offset;      /**< EPROCESS->Peb.ImageBaseAddress */
+            int ph_offset;       /**< EPROCESS->Peb.ProcessHeap */
         } windows_instance;
     } os;
     union{

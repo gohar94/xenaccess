@@ -58,7 +58,9 @@ uint32_t windows_find_eprocess (xa_instance_t *instance, char *name)
     
     while (offset < end){
         xa_read_long_phys(instance, offset, &value);
-        if (value == 0x001b0003){
+        // Magic header numbers.  See get_ntoskrnl_base for
+        // an explanation.
+        if (value == 0x001b0003 || value == 0x00200003){
             char *procname = windows_get_eprocess_name(instance, offset);
             if (procname){
                 if (strncmp(procname, name, 50) == 0){
