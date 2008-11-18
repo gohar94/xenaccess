@@ -1,3 +1,5 @@
+#summary Status of !XenAccess support for various Xen versions.
+
 = Introduction =
 
 This page lists the different versions of Xen that !XenAccess is known to work on.  For all new entries, please be sure to add details for each column in the table below.
@@ -27,5 +29,3 @@ This page lists the different versions of Xen that !XenAccess is known to work o
 ||3.2.1||
 ||3.2.2||
 ||3.3.0||
-
-#summary Status of !XenAccess support for various Xen versions.
