@@ -8,9 +8,9 @@ Note that the sysmap value in each entry should be omitted because this is a pat
 
 = Configuration Entries =
 
-===Windows XP Professional, Service Pack 2, PAE enabled===
+===Windows XP Professional, Service Pack 2, PAE disabled===
 {{{
-WinXPProSP2-PAE {
+WinXPProSP2 {
     ostype = "Windows";
     win_tasks   = 0x88;
     win_pdbase  = 0x18;
@@ -18,5 +18,29 @@ WinXPProSP2-PAE {
     win_peb     = 0x1b0;
     win_iba     = 0x8;
     win_ph      = 0x18;
+}
+}}}
+
+===PV Linux shipped with Xen 3.0.4_1 (2.6.16.33-xen)===
+{{{
+Linux2-6-16-33-PV{
+    ostype = "Linux";
+    linux_tasks = 0x60;
+    linux_mm    = 0x78;
+    linux_pid   = 0x9c;
+    linux_pgd   = 0x24;
+    linux_addr  = 0x80;
+}
+}}}
+
+===PV Linux shipped with Xen 3.1.0 (2.6.18-xen)===
+{{{
+Linux2-6-18-PV {
+    ostype = "Linux";
+    linux_tasks = 0x82;
+    linux_mm    = 0x9a;
+    linux_pid   = 0xc0;
+    linux_pgd   = 0x24;
+    linux_addr  = 0xa0;
 }
 }}}
