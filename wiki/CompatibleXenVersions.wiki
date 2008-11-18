@@ -7,6 +7,8 @@ This page lists the different versions of Xen that !XenAccess is known to work o
 
 = Details =
 
+In order for !XenAccess to be considered working on a given version of Xen, please make sure that it works for both PV and HVM domains.  If you have only tested it on one or the other, please indicate that in the notes column.
+
   * Xen Version = {3.0.4, 3.1.0, 3.1.1, etc}
   * Status = {Working, Not Working, ?}
   * XA Version = {0.4, svn-r131, etc} list all versions known to work
