@@ -1,5 +1,4 @@
 #summary Working configuration file entries.
-#labels s
 
 = Introduction =
 
@@ -19,6 +18,19 @@ WinVista {
     win_peb    = 0x188;
     win_iba    = 0x8;
     win_ph     = 0x18;
+}
+}}}
+
+===Windows XP Professional, Service Pack 2, PAE enabled===
+{{{
+WinXPProSP2 {
+   ostype = "Windows";
+   win_tasks   = 0x88;
+   win_pdbase  = 0x18;
+   win_pid     = 0x84;
+   win_peb     = 0x1b0;
+   win_iba     = 0x8;
+   win_ph      = 0x18;
 }
 }}}
 
