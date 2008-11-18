@@ -1,0 +1,22 @@
+#summary Working configuration file entries.
+
+= Introduction =
+
+This page lists entries from `xenaccess.conf` that are known to be working.  You can use these to create a working configuration file for your system when you are getting started with !XenAccess.  If you have any working entries that are not shown here, feel free to add them.
+
+Note that the sysmap value in each entry should be omitted because this is a path and file name that will change for each installation of !XenAccess.
+
+= Configuration Entries =
+
+===Windows XP Professional, Service Pack 2, PAE enabled===
+{{{
+WinXPProSP2-PAE {
+    ostype = "Windows";
+    win_tasks   = 0x88;
+    win_pdbase  = 0x18;
+    win_pid     = 0x84;
+    win_peb     = 0x1b0;
+    win_iba     = 0x8;
+    win_ph      = 0x18;
+}
+}}}
