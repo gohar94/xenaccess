@@ -1,4 +1,5 @@
 #summary Working configuration file entries.
+#labels s
 
 = Introduction =
 
@@ -7,6 +8,19 @@ This page lists entries from `xenaccess.conf` that are known to be working.  You
 Note that the sysmap value in each entry should be omitted because this is a path and file name that will change for each installation of !XenAccess.
 
 = Configuration Entries =
+
+===Windows Vista, PAE enabled===
+{{{    
+WinVista {    
+    ostype = "Windows";
+    win_tasks  = 0xa0;
+    win_pdbase = 0x18;
+    win_pid    = 0x9c;
+    win_peb    = 0x188;
+    win_iba    = 0x8;
+    win_ph     = 0x18;
+}
+}}}
 
 ===Windows XP Professional, Service Pack 2, PAE disabled===
 {{{
@@ -20,6 +34,18 @@ WinXPProSP2 {
     win_ph      = 0x18;
 }
 }}}
+
+===HVM Debian Linux with 2.6.18-4-486 Kernel===
+{{{
+Linux2-6-18-486{
+    ostype = "Linux";
+    linux_tasks = 108;
+    linux_mm    = 132;
+    linux_pid   = 168;
+    linux_addr  = 120;
+    linux_pgd   = 36;
+}
+}}}    
 
 ===PV Linux shipped with Xen 3.0.4_1 (2.6.16.33-xen)===
 {{{
