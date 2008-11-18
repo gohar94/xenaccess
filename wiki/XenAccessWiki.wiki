@@ -1,6 +1,0 @@
-= Contents =
-
-  * CompatibleXenVersions
-  * ConfigFileEntries
-  * WindowsDetails
-  * LinuxDetails
