@@ -47,7 +47,7 @@ int main (int argc, char **argv)
     filename = strndup(argv[2], 50);
 
     /* initialize the xen access library */
-    if (xa_init(dom, &xai) == XA_FAILURE){
+    if (xa_init_vm_lax(dom, &xai) == XA_FAILURE){
         perror("failed to init XenAccess library");
         goto error_exit;
     }
