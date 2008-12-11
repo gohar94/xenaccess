@@ -1,4 +1,5 @@
 # ToDo Items
+* update build system to properly look for and fail on flex / yacc
 * update build system to provide warning message when xen functions not found
   - ability to build to support xen and/or file backed introspection
 * update code to not use deprecated functions anywhere, and then go ahead
@@ -12,6 +13,8 @@
 * fix file access stuff to make it a first class citizen
   - integrate into configure so that it can be built without xen
 * move xa_access_pa and xa_access_ma from xa_private.h to xenaccess.h
+* cache pid to pgd mappings 
+* add default ntoskrnl_base values to be searched first
 
 
 ## Future Plans
