@@ -299,6 +299,8 @@ void init_xen_version (xa_instance_t *instance)
 
     xc_version(instance->m.xen.xc_handle, cmd1, extra);
     xc_version(instance->m.xen.xc_handle, cmd2, cap);
+    xa_dbprint("--extra = %s\n", (char *) extra);
+    xa_dbprint("--cap = %s\n", (char *) cap);
 
     instance->m.xen.xen_version = XA_XENVER_UNKNOWN;
     if (strncmp((char *)extra, ".4-1", 4) == 0){
@@ -313,14 +315,14 @@ void init_xen_version (xa_instance_t *instance)
             xa_dbprint("**set instance->m.xen.xen_version = 3.1.0\n");
         }
     }
-    free(extra);
-    free(cap);
 
     if (instance->m.xen.xen_version == XA_XENVER_UNKNOWN){
         xa_dbprint("extra: %s\n", extra);
         xa_dbprint("cap: %s\n", cap);
         printf("WARNING: This Xen version not supported by XenAccess.\n");
     }
+    free(extra);
+    free(cap);
 }
 
 /* given a xa_instance_t struct with the xc_handle and the
