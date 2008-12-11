@@ -120,6 +120,20 @@ int xa_ishvm (int id)
         ret = 1;
     }
 
+    /* try again using different path for 3.3.x */
+    if (ostype) free(ostype);
+    memset(tmp, 0, 100);
+    sprintf(tmp, "%s/image/ostype", vmpath);
+    xsh = xs_domain_open();
+    ostype = xs_read(xsh, xth, tmp, NULL);
+
+    if (NULL == ostype){
+        goto error_exit;
+    }
+    else if (fnmatch("*hvm", ostype, NULL) == 0){
+        ret = 1;
+    }
+
 error_exit:
     /* cleanup memory here */
     if (tmp) free(tmp);
