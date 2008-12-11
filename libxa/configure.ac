@@ -37,13 +37,33 @@ dnl Checks for programs.
 dnl -----------------------------------------------
 
 AC_PROG_CC
-AC_PROG_LEX
-AC_PROG_YACC
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 AC_CHECK_LIB(xenstore, xs_read, [LIBS="-lxenstore $LIBS"], [exit -1])
 AC_CHECK_LIB(xenctrl, xc_interface_open, [LIBS="-lxenctrl $LIBS"], [exit -1])
+
+AC_CHECK_PROGS(YACC,yacc bison byacc,[no],[path = $PATH])
+[if    test "$YACC" = "no"]
+[then]
+   [echo "yacc not found in the search path. Please ensure that it is"]
+   [echo "installed and its directory is included in the search path".]
+   [exit 1]
+[else]
+   [echo "Found yacc as $YACC."]
+[fi]
+AC_PROG_YACC
+
+AC_CHECK_PROGS(LEX,lex flex ,[no],[path = $PATH])
+[if    test "$LEX" = "no"]
+[then]
+   [echo "lex not found in the search path. Please ensure that it is"]
+   [echo "installed and its directory is included in the search path".]
+   [exit 1]
+[else]
+   [echo "Found lex as $LEX."]
+[fi]
+AC_PROG_LEX
 
 AC_CHECK_FUNCS(xc_map_foreign_pages, AC_DEFINE([HAVE_MAP_FOREIGN], [], [Indicates existance of xc_map_foreign_pages]))
 
