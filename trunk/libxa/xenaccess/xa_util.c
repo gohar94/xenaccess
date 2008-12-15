@@ -192,12 +192,14 @@ void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num)
     void *memory = NULL;
 
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         memory = xc_map_foreign_range(
             instance->m.xen.xc_handle,
             instance->m.xen.domain_id,
             1,
             prot,
             frame_num);
+#endif /* ENABLE_XEN */
     }
     else if (XA_MODE_FILE == instance->mode){
         memory = xa_map_file_range(instance, prot, frame_num);
@@ -219,6 +221,7 @@ void *xa_map_page (xa_instance_t *instance, int prot, unsigned long frame_num)
  * the libxc equivalent when Xen 3.1.2 becomes widely
  * distributed.
  */
+#ifdef ENABLE_XEN
 #ifndef HAVE_MAP_FOREIGN
 void *xc_map_foreign_pages(int xc_handle, uint32_t dom, int prot,
                            const xen_pfn_t *arr, int num)
@@ -252,7 +255,8 @@ void *xc_map_foreign_pages(int xc_handle, uint32_t dom, int prot,
     free(pfn);
     return res;
 }
-#endif
+#endif /* HAVE_MAP_FOREIGN */
+#endif /* ENABLE_XEN */
 
 #ifndef XA_DEBUG
 /* Nothing */

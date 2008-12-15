@@ -44,8 +44,10 @@ int linux_system_map_symbol_to_address (
     int ret = XA_SUCCESS;
 
     if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
+#ifdef ENABLE_XEN
         instance->sysmap =
             linux_predict_sysmap_name(instance->m.xen.domain_id);
+#endif /* ENABLE_XEN */
     }
 
     if ((row = malloc(MAX_ROW_LENGTH)) == NULL ){

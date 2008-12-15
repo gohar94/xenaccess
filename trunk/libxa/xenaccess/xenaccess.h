@@ -36,7 +36,16 @@
 #ifndef LIB_XEN_ACCESS_H
 #define LIB_XEN_ACCESS_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif /* HAVE_CONFIG_H */
+
+#ifdef ENABLE_XEN
 #include <xenctrl.h>
+#endif /* ENABLE_XEN */
+#include <stddef.h>
+#include <stdint.h>
+#include <time.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <errno.h>
@@ -170,6 +179,7 @@ typedef struct xa_instance{
         } windows_instance;
     } os;
     union{
+#ifdef ENABLE_XEN
         struct xen{
             int xc_handle;       /**< handle to xenctrl library (libxc) */
             uint32_t domain_id;  /**< domid that we are accessing */
@@ -179,6 +189,7 @@ typedef struct xa_instance{
             unsigned long *live_pfn_to_mfn_table;
             unsigned long nr_pfns;
         } xen;
+#endif
         struct file{
             FILE *fhandle;       /**< handle to the memory image file */
             uint32_t size;       /**< total size of file, in bytes */

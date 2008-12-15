@@ -33,12 +33,18 @@
 #ifndef XA_PRIVATE_H
 #define XA_PRIVATE_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif /* HAVE_CONFIG_H */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#ifdef ENABLE_XEN
 #include <xenctrl.h>
+#endif /* ENABLE_XEN */
 #include "xenaccess.h"
 
 /* Architecture dependent constants */
@@ -138,12 +144,14 @@ int xa_update_cache (xa_instance_t *instance,
  */
 void print_hex (unsigned char *data, int length);
 
+#ifdef ENABLE_XEN
 /**
  * Prints out the data in a xc_dominfo_t struct to stdout.
  *
  * @param[in] info The struct to print
  */
 void print_dominfo (xc_dominfo_t info);
+#endif /* ENABLE_XEN */
 
 /*-----------------------------------------
  * Memory access functions from xa_memory.c
@@ -293,9 +301,11 @@ int xa_report_error (xa_instance_t *instance, int error, int error_type);
 /** Duplicate function from xc_util that should remain
  *  here until Xen 3.1.2 becomes widely distributed.
  */
+#ifdef ENABLE_XEN
 #ifndef HAVE_MAP_FOREIGN
 void *xc_map_foreign_pages(int xc_handle, uint32_t dom, int prot,
                            const xen_pfn_t *arr, int num);
-#endif
+#endif /* HAVE_MAP_FOREIGN */
+#endif /* ENABLE_XEN */
 
 #endif /* XA_PRIVATE_H */

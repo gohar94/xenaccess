@@ -7,5 +7,5 @@ Name: XenAccess Library
 Description: A monitoring framework for virtual machines running on Xen.
 Requires: 
 Version: @VERSION@
-Libs: -L@libdir@ -lxenaccess -lxenctrl -lxenstore -lm
+Libs: -L@libdir@ @LIBS@
 Cflags: -I@includedir@ 
