@@ -1,6 +1,4 @@
 # ToDo Items
-* update code to not use deprecated functions anywhere, and then go ahead
-  and remove those functions
 * setup cache for most recently mapped pages to prevent thrashing by people
   using the convience functions
 * finish using cr3 instead of kpgd throughout, or come up with a way to 
@@ -8,7 +6,6 @@
   - need to make sure this works with both live VMs and memory files
 * fix double lookup when xa_access_kernel_symbol
 * cache pid to pgd mappings 
-* add default ntoskrnl_base values to be searched first
 * add / fix / update documentation as needed
   - move description of codebase out of xenaccess.h
 
