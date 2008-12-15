@@ -490,15 +490,6 @@ void *xa_access_kernel_sym (
     }
 }
 
-/*TODO this is deprecated */
-/*
-void *xa_access_kernel_symbol (
-        xa_instance_t *instance, char *symbol, uint32_t *offset)
-{
-    return xa_access_kernel_sym(instance, symbol, offset, PROT_READ);
-}
-*/
-
 /*TODO fix these functions to return machine address just like real CR3 */
 /* finds the address of the page global directory for a given pid */
 uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)

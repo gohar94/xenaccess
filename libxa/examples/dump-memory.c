@@ -17,8 +17,9 @@
  * 02110-1301, USA.
  *
  * --------------------
- * This file provides a simple example for walking through the list
- * of tasks or processes in a guest domain.
+ * This file provides a simple example for dumping the memory from a 
+ * virtual machine into a file that can then be read using XenAccess
+ * in file mode or using other volitle memory analysis tools.
  *
  * File: dump-memory.c
  *

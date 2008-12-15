@@ -853,7 +853,7 @@ WinXPSP2 {
 @verbatim
     uint32_t dom = atoi(argv[1]);
 
-    if (xa_init(dom, &xai) == XA_FAILURE){
+    if (xa_init_vm_strict(dom, &xai) == XA_FAILURE){
         perror("failed to init XenAccess library");
         goto error_exit;
     } @endverbatim
@@ -871,7 +871,7 @@ WinXPSP2 {
  * of your copy of XenAccess.
  *
 @verbatim
-    memory = xa_access_kernel_symbol(&xai, "init_task", &offset);
+    memory = xa_access_kernel_sym(&xai, "init_task", &offset, PROT_READ);
     memcpy(&next_process, memory + offset + TASKS_OFFSET, 4);
     list_head = next_process;
     munmap(memory, xai.page_size); @endverbatim
@@ -888,7 +888,7 @@ WinXPSP2 {
  *
 @verbatim
     while (1){
-        memory = xa_access_virtual_address(&xai, next_process, &offset);
+        memory = xa_access_kernel_va(&xai, next_process, &offset, PROT_READ);
         memcpy(&next_process, memory + offset, 4);
 
         if (list_head == next_process){
