@@ -19,8 +19,7 @@
  * 02110-1301, USA.
  *
  * --------------------
- * This file contains utility functions for printing out data and
- * debugging information.
+ * This file contains functions for accessing memory data in Windows.
  *
  * File: windows_memory.c
  *
@@ -119,10 +118,28 @@ uint32_t bf_get_ntoskrnl_base (xa_instance_t *instance)
 }
 
 /* find the ntoskrnl base address by backwards scanning */
+#define NUM_BASE_ADDRESSES 10
 uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 {
-    uint32_t paddr = 0x0 + instance->page_size;
+    uint32_t paddr;
     uint32_t sysproc_rva;
+    int i = 0;
+
+    /* Various base addresses that are known to exist across different
+       versions of windows.  If you add to this list, be sure to change
+       the value of NUM_BASE_ADDRESSES as well! */
+    uint32_t base_address[NUM_BASE_ADDRESSES] = {
+        0x00100000, /* NT 4 */
+        0x00400000, /* Windows 2000 */
+        0x004d4000, /* Windows XP */
+        0x004d0000, /* Windows XP */
+        0x004d5000, /* Windows XP */
+        0x00a02000, /* Windows XP */
+        0x004d7000, /* Windows XP SP2/SP3 */
+        0x004de000, /* Windows Server 2003 */
+        0x00800000, /* Windows Server 2003 SP1 */
+        0x01800000  /* Windows Vista */
+    };
 
     /* find RVA for PsInitialSystemProcess to use for testing */
     if (windows_symbol_to_address(
@@ -130,13 +147,28 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
         return 0;
     }
 
+    /* start by looking at known base addresses */
+    for (i = 0; i < NUM_BASE_ADDRESSES; ++i){
+        paddr = base_address[i];
+        uint32_t header;
+        xa_read_long_phys(instance, paddr, &header);
+        if ((header & 0xffff) == 0x5a4d){
+            if (test_ntoskrnl_base(instance, paddr, sysproc_rva) == XA_SUCCESS){
+                goto fast_exit;
+            }
+        }
+    }
+
     /* start the downward search looking for MZ header */
+    printf("Note: Fast checking for kernel base address failed, XenAccess\n");
+    printf("is searching for the correct address, but it may take a while.\n");
+    paddr = 0x0 + instance->page_size;
     while (1){
         uint32_t header;
         xa_read_long_phys(instance, paddr, &header);
         if ((header & 0xffff) == 0x5a4d){
             if (test_ntoskrnl_base(instance, paddr, sysproc_rva) == XA_SUCCESS){
-                break;
+                goto fast_exit;
             }
         }
 
@@ -147,6 +179,7 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
         }
     }
 
+fast_exit:
     return paddr;
 }
 
