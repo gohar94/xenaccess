@@ -24,6 +24,7 @@
  *
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  */
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -31,6 +32,7 @@
 #include <stdio.h>
 #include <xenaccess/xenaccess.h>
 
+#ifdef ENABLE_XEN
 int main (int argc, char **argv)
 {
     xa_instance_t xai;
@@ -100,3 +102,12 @@ error_exit:
     return 0;
 }
 
+#else
+
+int main (int argc, char **argv)
+{
+    printf("The dump memory example is intended to work with a live Xen domain, but\n");
+    printf("XenAccess was compiled without support for Xen.  Exiting...\n");
+}
+
+#endif /* ENABLE_XEN */

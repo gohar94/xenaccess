@@ -30,25 +30,31 @@
  * $Date: 2006-12-06 01:23:30 -0500 (Wed, 06 Dec 2006) $
  */
 
+#include "xenaccess.h"
+#include "xa_private.h"
+#include "config/config_parser.h"
+
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <xs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <limits.h>
-#include "config/config_parser.h"
-#include "xenaccess.h"
-#include "xa_private.h"
+
+#ifdef ENABLE_XEN
+#include <xs.h>
 #include <xen/arch-x86/xen.h>
+#endif /* ENABLE_XEN */
 
 int get_memory_size (xa_instance_t *instance)
 {
     int ret = XA_SUCCESS;
 
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         struct xs_handle *xsh = NULL;
         xs_transaction_t xth = XBT_NULL;
         char *tmp = malloc(100);
@@ -70,6 +76,7 @@ int get_memory_size (xa_instance_t *instance)
         }
         xa_dbprint("**set instance->m.xen.size = %d\n", instance->m.xen.size);
         if (xsh) xs_daemon_close(xsh);
+#endif /* ENABLE_XEN */
     }
     else if (XA_MODE_FILE == instance->mode){
         struct stat s;
@@ -92,8 +99,10 @@ int read_config_file (xa_instance_t *instance)
     extern FILE *yyin;
     int ret = XA_SUCCESS;
     xa_config_entry_t *entry;
+#ifdef ENABLE_XEN
     struct xs_handle *xsh = NULL;
     xs_transaction_t xth = XBT_NULL;
+#endif /* ENABLE_XEN */
     char *tmp = NULL;
 
     yyin = fopen("/etc/xenaccess.conf", "r");
@@ -105,6 +114,7 @@ int read_config_file (xa_instance_t *instance)
 
     /* convert domain id to domain name for Xen mode */
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         tmp = malloc(100);
         if (NULL == tmp){
             printf("ERROR: failed to allocate memory for tmp variable\n");
@@ -123,6 +133,7 @@ int read_config_file (xa_instance_t *instance)
         }
         xa_dbprint("--got domain name from id (%d ==> %s).\n",
                     instance->m.xen.domain_id, instance->image_type);
+#endif /* ENABLE_XEN */
     }
 
     if (xa_parse_config(instance->image_type)){
@@ -225,7 +236,9 @@ int read_config_file (xa_instance_t *instance)
 error_exit:
     if (tmp) free(tmp);
     if (yyin) fclose(yyin);
+#ifdef ENABLE_XEN
     if (xsh) xs_daemon_close(xsh);
+#endif /* ENABLE_XEN */
 
     return ret;
 }
@@ -235,7 +248,9 @@ int get_page_info_xen (xa_instance_t *instance)
 {
     int ret = XA_SUCCESS;
     int i = 0, j = 0;
+#ifdef ENABLE_XEN
     vcpu_guest_context_t ctxt;
+
     if ((ret = xc_vcpu_getcontext(
                 instance->m.xen.xc_handle,
                 instance->m.xen.domain_id,
@@ -267,6 +282,7 @@ int get_page_info_xen (xa_instance_t *instance)
     /* testing to see CR3 value */
     instance->cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
     xa_dbprint("**set instance->cr3 = 0x%.8x\n", instance->cr3);
+#endif /* ENABLE_XEN */
 
 error_exit:
     return ret;
@@ -292,6 +308,7 @@ void init_page_offset (xa_instance_t *instance)
 
 void init_xen_version (xa_instance_t *instance)
 {
+#ifdef ENABLE_XEN
     int cmd1 = XENVER_extraversion;
     int cmd2 = XENVER_capabilities;
     void *extra = malloc(sizeof(xen_extraversion_t));
@@ -323,6 +340,7 @@ void init_xen_version (xa_instance_t *instance)
     }
     free(extra);
     free(cap);
+#endif /* ENABLE_XEN */
 }
 
 /* given a xa_instance_t struct with the xc_handle and the
@@ -335,7 +353,7 @@ int helper_init (xa_instance_t *instance)
     unsigned char *memory = NULL;
 
     if (XA_MODE_XEN == instance->mode){
-
+#ifdef ENABLE_XEN
         /* init instance->m.xen.xc_handle */
         if (xc_domain_getinfo(
                 instance->m.xen.xc_handle, instance->m.xen.domain_id,
@@ -349,6 +367,7 @@ int helper_init (xa_instance_t *instance)
 
         /* find the version of xen that we are running */
         init_xen_version(instance);
+#endif /* ENABLE_XEN */
     }
 
     /* read in configure file information */
@@ -359,11 +378,13 @@ int helper_init (xa_instance_t *instance)
     
     /* determine the page sizes and layout for target OS */
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         if (get_page_info_xen(instance) == XA_FAILURE){
             printf("ERROR: memory layout not supported\n");
             ret = xa_report_error(instance, 0, XA_ECRITICAL);
             if (XA_FAILURE == ret) goto error_exit;
         }
+#endif /* ENABLE_XEN */
     }
     else{
         /*TODO add memory layout discovery here for file */
@@ -376,6 +397,7 @@ int helper_init (xa_instance_t *instance)
     init_page_offset(instance);
 
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         /* init instance->hvm */
         instance->hvm = xa_ishvm(instance->m.xen.domain_id);
 #ifdef XA_DEBUG
@@ -385,7 +407,8 @@ int helper_init (xa_instance_t *instance)
         else{
             xa_dbprint("**set instance->hvm to false (PV).\n");
         }
-#endif
+#endif /* XA_DEBUG */
+#endif /* ENABLE_XEN */
     }
 
     /* get the memory size */
@@ -411,10 +434,12 @@ error_exit:
  * than the xc_handle and the domain_id */
 int helper_destroy (xa_instance_t *instance)
 {
+#ifdef ENABLE_XEN
     if (instance->m.xen.live_pfn_to_mfn_table){
         munmap(instance->m.xen.live_pfn_to_mfn_table,
                instance->m.xen.nr_pfns * 4);
     }
+#endif /* ENABLE_XEN */
 
     xa_destroy_cache(instance);
 
@@ -434,6 +459,7 @@ void xa_init_common (xa_instance_t *instance)
 int xa_init_vm_private
     (uint32_t domain_id, xa_instance_t *instance, uint32_t error_mode)
 {
+#ifdef ENABLE_XEN
     int xc_handle;
     instance->mode = XA_MODE_XEN;
     xa_dbprint("XenAccess Mode Xen\n");
@@ -452,6 +478,9 @@ int xa_init_vm_private
     instance->m.xen.live_pfn_to_mfn_table = NULL;
     instance->m.xen.nr_pfns = 0;
     return helper_init(instance);
+#else
+    return XA_FAILURE;
+#endif /* ENABLE_XEN */
 }
 
 /* initialize to view a file image (currently only dd images supported) */
@@ -485,6 +514,7 @@ int xa_init (uint32_t domain_id, xa_instance_t *instance)
 {
     xa_init_vm_private(domain_id, instance, XA_FAILHARD);
 }
+#ifdef ENABLE_XEN
 int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance)
 {
     xa_init_vm_private(domain_id, instance, XA_FAILHARD);
@@ -493,6 +523,7 @@ int xa_init_vm_lax (uint32_t domain_id, xa_instance_t *instance)
 {
     xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
 }
+#endif /* ENABLE_XEN */
 
 /* xa_init_file is deprecated */
 int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
@@ -514,9 +545,15 @@ int xa_destroy (xa_instance_t *instance)
 {
     int ret1, ret2;
 
+#ifdef ENABLE_XEN
     instance->m.xen.domain_id = 0;
+#endif /* ENABLE_XEN */
+
     ret1 = helper_destroy(instance);
+
+#ifdef ENABLE_XEN
     ret2 = xc_interface_close(instance->m.xen.xc_handle);
+#endif /* ENABLE_XEN */
 
     if (XA_FAILURE == ret1 || XA_FAILURE == ret2){
         return XA_FAILURE;

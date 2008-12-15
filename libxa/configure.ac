@@ -33,35 +33,63 @@ VERSION=$VERSION
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION, no-define)
 
 dnl -----------------------------------------------
-dnl Checks for programs.
+dnl Check package options
+dnl -----------------------------------------------
+AC_ARG_ENABLE([xen],
+      [AS_HELP_STRING([--disable-xen],
+         [Support memory introspection with live Xen domains (default is yes)])],
+      [enable_xen=$enableval],
+      [enable_xen=yes])
+
+dnl -----------------------------------------------
+dnl Checks for programs, libraries, etc.
 dnl -----------------------------------------------
 
 AC_PROG_CC
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
-AC_CHECK_LIB(xenstore, xs_read, [LIBS="-lxenstore $LIBS"], [exit -1])
-AC_CHECK_LIB(xenctrl, xc_interface_open, [LIBS="-lxenctrl $LIBS"], [exit -1])
+[if test "$enable_xen" = "yes"]
+[then]
+    AC_DEFINE([ENABLE_XEN], [1], [Define to 1 to enable Xen support.])
+    AC_CHECK_LIB(xenstore, xs_read, [LIBS="-lxenstore $LIBS"], [LIBS="no"])
+    [if test "$LIBS" = "no"]
+    [then]
+        [echo "xenstore library not found. Please install this library and"]
+        [echo "run configure again before attemping to build XenAccess."]
+        [exit 1]
+    [fi]
+
+    AC_CHECK_LIB(xenctrl, xc_interface_open, [LIBS="-lxenctrl $LIBS"], [LIBS="no"])
+    [if test "$LIBS" = "no"]
+    [then]
+        [echo "xenctrl library not found. Please install this library and"]
+        [echo "run configure again before attemping to build XenAccess."]
+        [exit 1]
+    [fi]
+[fi]
 
 AC_CHECK_PROGS(YACC,yacc bison byacc,[no],[path = $PATH])
-[if    test "$YACC" = "no"]
+[if test "$YACC" = "no"]
 [then]
-   [echo "yacc not found in the search path. Please ensure that it is"]
-   [echo "installed and its directory is included in the search path".]
-   [exit 1]
+    [echo "yacc not found in the search path. Please ensure that it is"]
+    [echo "installed and its directory is included in the search path."]
+    [echo "Then run configure again before attempting to build XenAccess."]
+    [exit 1]
 [else]
-   [echo "Found yacc as $YACC."]
+    [echo "Found yacc as $YACC."]
 [fi]
 AC_PROG_YACC
 
 AC_CHECK_PROGS(LEX,lex flex ,[no],[path = $PATH])
-[if    test "$LEX" = "no"]
+[if test "$LEX" = "no"]
 [then]
-   [echo "lex not found in the search path. Please ensure that it is"]
-   [echo "installed and its directory is included in the search path".]
-   [exit 1]
+    [echo "lex not found in the search path. Please ensure that it is"]
+    [echo "installed and its directory is included in the search path".]
+    [echo "Then run configure again before attempting to build XenAccess."]
+    [exit 1]
 [else]
-   [echo "Found lex as $LEX."]
+    [echo "Found lex as $LEX."]
 [fi]
 AC_PROG_LEX
 

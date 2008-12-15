@@ -4,7 +4,7 @@ SUBDIRS =
 
 INCLUDES = -I$(top_srcdir)
 AM_LDFLAGS = -L$(top_srcdir)/xenaccess/.libs/
-LDADD = -lxenaccess -lxenctrl -lxenstore -lm
+LDADD = -lxenaccess $(LIBS)
 
 bin_PROGRAMS = module-list process-data process-list map-symbol map-addr process-list-file dump-memory
 module_list_SOURCES = module-list.c

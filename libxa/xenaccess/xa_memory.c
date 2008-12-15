@@ -41,6 +41,7 @@
 /* convert a pfn to a mfn based on the live mapping tables */
 unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
 {
+#ifdef ENABLE_XEN
     shared_info_t *live_shinfo = NULL;
     unsigned long *live_pfn_to_mfn_frame_list_list = NULL;
     unsigned long *live_pfn_to_mfn_frame_list = NULL;
@@ -128,6 +129,9 @@ error_exit:
         munmap(live_pfn_to_mfn_frame_list, XC_PAGE_SIZE);
 
     return ret;
+#else
+    return 0;
+#endif /* ENABLE_XEN */
 }
 
 void *xa_mmap_mfn (xa_instance_t *instance, int prot, unsigned long mfn)
@@ -437,9 +441,12 @@ uint32_t xa_pagetable_lookup (
 uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
 {
     int ret = XA_SUCCESS;
+#ifdef ENABLE_XEN
     vcpu_guest_context_t ctxt;
+#endif /* ENABLE_XEN */
 
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         if ((ret = xc_vcpu_getcontext(
                 instance->m.xen.xc_handle,
                 instance->m.xen.domain_id,
@@ -450,6 +457,7 @@ uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
             goto error_exit;
         }
         *cr3 = ctxt.ctrlreg[3] & 0xFFFFF000;
+#endif /* ENABLE_XEN */
     }
     else if (XA_MODE_FILE == instance->mode){
         *cr3 = instance->kpgd - instance->page_offset;
@@ -554,6 +562,7 @@ void *xa_access_user_va (
     return xa_access_ma(instance, address, offset, prot);
 }
 
+/*TODO find a way to support this in file mode */
 void *xa_access_user_va_range (
         xa_instance_t *instance,
         uint32_t virt_address,
@@ -562,33 +571,38 @@ void *xa_access_user_va_range (
         int pid,
         int prot)
 {
-	int i;
+#ifdef ENABLE_XEN
+    int i;
 
-	uint32_t num_pages = size / instance->page_size + 1;
+    uint32_t num_pages = size / instance->page_size + 1;
 
-	uint32_t pgd = pid ? xa_pid_to_pgd(instance, pid) : instance->kpgd;
-	xen_pfn_t* pfns = (xen_pfn_t*)malloc(sizeof(xen_pfn_t)*num_pages);
+    uint32_t pgd = pid ? xa_pid_to_pgd(instance, pid) : instance->kpgd;
+    xen_pfn_t* pfns = (xen_pfn_t*)malloc(sizeof(xen_pfn_t)*num_pages);
 	
-	uint32_t start = virt_address & ~(instance->page_size-1);
-	for (i = 0; i < num_pages; i++){
-		/* Virtual address for each page we will map */
-		uint32_t addr = start + i*instance->page_size;
+    uint32_t start = virt_address & ~(instance->page_size-1);
+    for (i = 0; i < num_pages; i++){
+        /* Virtual address for each page we will map */
+        uint32_t addr = start + i*instance->page_size;
 	
-		if(!addr) {
-			printf("ERROR: address not in page table (%p)\n", addr);
-			return NULL;
-		}
+        if(!addr) {
+            printf("ERROR: address not in page table (%p)\n", addr);
+            return NULL;
+        }
 
-		/* Physical page frame number of each page */
-		pfns[i] = xa_pagetable_lookup(
-					instance, pgd, addr, pid ? 0 : 1) >> instance->page_shift;
-	}
+        /* Physical page frame number of each page */
+        pfns[i] = xa_pagetable_lookup(
+            instance, pgd, addr, pid ? 0 : 1) >> instance->page_shift;
+    }
 
-	*offset = virt_address - start;
+    *offset = virt_address - start;
 
-	return xc_map_foreign_pages(
+    return xc_map_foreign_pages(
         instance->m.xen.xc_handle,
-        instance->m.xen.domain_id, prot, pfns, num_pages);
+        instance->m.xen.domain_id, prot, pfns, num_pages
+    );
+#else
+    return NULL;
+#endif /* ENABLE_XEN */
 }
 
 void *xa_access_kernel_va (
@@ -846,7 +860,9 @@ uint32_t xa_find_kernel_pd (xa_instance_t *instance)
 
     /* get the size of the physical memory */
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         end = instance->m.xen.size;
+#endif /* ENABLE_XEN */
     }
     else if (XA_MODE_FILE == instance->mode){
         end = instance->m.file.size;

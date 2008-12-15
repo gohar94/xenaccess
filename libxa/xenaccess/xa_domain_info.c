@@ -31,10 +31,17 @@
  * $Date$
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif /* HAVE_CONFIG_H */
+
+
 #include <fnmatch.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#ifdef ENABLE_XEN
 #include <xs.h>
 
 char *xa_get_vmpath (int id)
@@ -143,3 +150,9 @@ error_exit:
 
     return ret;
 }
+
+#else
+char *xa_get_vmpath (int id){return NULL;}
+char *xa_get_kernel_name (int id){return NULL;}
+int xa_ishvm (int id){return 0;}
+#endif /* ENABLE_XEN */

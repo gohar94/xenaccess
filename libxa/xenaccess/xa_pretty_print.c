@@ -82,6 +82,7 @@ void print_hex (unsigned char *data, int length)
     }
 }
 
+#ifdef ENABLE_XEN
 void print_dominfo (xc_dominfo_t info)
 {
     printf("xc_dominfo_t struct for dom%d\n", info.domid);
@@ -102,3 +103,4 @@ void print_dominfo (xc_dominfo_t info)
     printf("\tmax_vcpu_id = %d\n", info.max_vcpu_id);
     printf("\n");
 }
+#endif /* ENABLE_XEN */

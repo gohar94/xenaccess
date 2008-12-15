@@ -27,6 +27,7 @@
  * Author(s): Bryan D. Payne (bryan@thepaynes.cc)
  */
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <sys/mman.h>
 #include "xenaccess.h"
@@ -50,7 +51,9 @@ uint32_t windows_find_eprocess (xa_instance_t *instance, char *name)
     uint32_t value = 0;
 
     if (XA_MODE_XEN == instance->mode){
+#ifdef ENABLE_XEN
         end = instance->m.xen.size;
+#endif /* ENABLE_XEN */
     }
     else if (XA_MODE_FILE == instance->mode){
         end = instance->m.file.size;

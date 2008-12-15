@@ -30,12 +30,14 @@
  * $Id$
  * $Date$
  */
+#include "xa_private.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef ENABLE_XEN
 #include <xs.h>
-#include <xa_private.h>
+#endif /* ENABLE_XEN */
 
 char *linux_predict_sysmap_name (int id)
 {
