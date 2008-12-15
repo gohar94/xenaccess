@@ -1,7 +1,4 @@
 # ToDo Items
-* update build system to properly look for and fail on flex / yacc
-* update build system to provide warning message when xen functions not found
-  - ability to build to support xen and/or file backed introspection
 * update code to not use deprecated functions anywhere, and then go ahead
   and remove those functions
 * setup cache for most recently mapped pages to prevent thrashing by people
@@ -10,11 +7,10 @@
   reliably find the kpgd value
   - need to make sure this works with both live VMs and memory files
 * fix double lookup when xa_access_kernel_symbol
-* fix file access stuff to make it a first class citizen
-  - integrate into configure so that it can be built without xen
-* move xa_access_pa and xa_access_ma from xa_private.h to xenaccess.h
 * cache pid to pgd mappings 
 * add default ntoskrnl_base values to be searched first
+* add / fix / update documentation as needed
+  - move description of codebase out of xenaccess.h
 
 
 ## Future Plans
