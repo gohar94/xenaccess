@@ -30,4 +30,4 @@ In order for !XenAccess to be considered working on a given version of Xen, plea
 ||3.2.0||?||
 ||3.2.1||Working||0.4||Only HVM tested (linux kernel 2.6.16 from kernel.org)||
 ||3.2.2||?||
-||3.3.0||Not Working||svn-r131||Issue2||
+||3.3.0||Working||svn-r156||Only HVM tested||
