@@ -512,33 +512,33 @@ int xa_init_file_private (
 /* xa_init is deprecated */
 int xa_init (uint32_t domain_id, xa_instance_t *instance)
 {
-    xa_init_vm_private(domain_id, instance, XA_FAILHARD);
+    return xa_init_vm_private(domain_id, instance, XA_FAILHARD);
 }
 #ifdef ENABLE_XEN
 int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance)
 {
-    xa_init_vm_private(domain_id, instance, XA_FAILHARD);
+    return xa_init_vm_private(domain_id, instance, XA_FAILHARD);
 }
 int xa_init_vm_lax (uint32_t domain_id, xa_instance_t *instance)
 {
-    xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
+    return xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
 }
 #endif /* ENABLE_XEN */
 
 /* xa_init_file is deprecated */
 int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
 {
-    xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
+    return xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
 }
 int xa_init_file_strict
     (char *filename, char *image_type, xa_instance_t *instance)
 {
-    xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
+    return xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
 }
 int xa_init_file_lax
     (char *filename, char *image_type, xa_instance_t *instance)
 {
-    xa_init_file_private(filename, image_type, instance, XA_FAILSOFT);
+    return xa_init_file_private(filename, image_type, instance, XA_FAILSOFT);
 }
 
 int xa_destroy (xa_instance_t *instance)
