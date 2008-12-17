@@ -273,6 +273,9 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
     pgd = *((uint32_t*)(memory + offset + pdbase_offset - tasks_offset));
     munmap(memory, instance->page_size);
 
+    /* update the cache with this new pid->pgd mapping */
+    xa_update_pid_cache(instance, pid, pgd);
+
 error_exit:
     if (memory) munmap(memory, instance->page_size);
     return pgd;

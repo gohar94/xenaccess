@@ -122,7 +122,6 @@
  */
 #define XA_XENVER_3_1_0 2
 
-/*TODO find a way to move this to xa_private.h */
 struct xa_cache_entry{
     time_t last_used;
     char *symbol_name;
@@ -133,6 +132,15 @@ struct xa_cache_entry{
     struct xa_cache_entry *prev;
 };
 typedef struct xa_cache_entry* xa_cache_entry_t;
+
+struct xa_pid_cache_entry{
+    time_t last_used;
+    int pid;
+    uint32_t pgd;
+    struct xa_pid_cache_entry *next;
+    struct xa_pid_cache_entry *prev;
+};
+typedef struct xa_pid_cache_entry* xa_pid_cache_entry_t;
 
 /**
  * @brief XenAccess instance.
@@ -160,6 +168,9 @@ typedef struct xa_instance{
     xa_cache_entry_t cache_head;
     xa_cache_entry_t cache_tail;
     int current_cache_size;
+    xa_pid_cache_entry_t pid_cache_head;
+    xa_pid_cache_entry_t pid_cache_tail;
+    int current_pid_cache_size;
     union{
         struct linux_instance{
             int tasks_offset;    /**< task_struct->tasks */
