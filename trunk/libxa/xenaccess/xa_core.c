@@ -513,27 +513,29 @@ int xa_init_file_private (
 }
 
 /* below are stub init functions that are called by library users */
-/* xa_init is deprecated */
-int xa_init (uint32_t domain_id, xa_instance_t *instance)
-{
-    return xa_init_vm_private(domain_id, instance, XA_FAILHARD);
-}
 #ifdef ENABLE_XEN
-int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance)
+int xa_init_vm_name_strict (char *domain_name, xa_instance_t *instance)
+{
+    uint32_t domain_id = xa_get_domain_id(domain_name);
+    xa_dbprint("--got domid from name (%s --> %d)\n", domain_name, domain_id);
+    return xa_init_vm_private(domain_id, instance, XA_FAILHARD);
+}
+int xa_init_vm_name_lax (char *domain_name, xa_instance_t *instance)
+{
+    uint32_t domain_id = xa_get_domain_id(domain_name);
+    xa_dbprint("--got domid from name (%s --> %d)\n", domain_name, domain_id);
+    return xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
+}
+int xa_init_vm_id_strict (uint32_t domain_id, xa_instance_t *instance)
 {
     return xa_init_vm_private(domain_id, instance, XA_FAILHARD);
 }
-int xa_init_vm_lax (uint32_t domain_id, xa_instance_t *instance)
+int xa_init_vm_id_lax (uint32_t domain_id, xa_instance_t *instance)
 {
     return xa_init_vm_private(domain_id, instance, XA_FAILSOFT);
 }
 #endif /* ENABLE_XEN */
 
-/* xa_init_file is deprecated */
-int xa_init_file (char *filename, char *image_type, xa_instance_t *instance)
-{
-    return xa_init_file_private(filename, image_type, instance, XA_FAILHARD);
-}
 int xa_init_file_strict
     (char *filename, char *image_type, xa_instance_t *instance)
 {

@@ -123,7 +123,7 @@ int xa_ishvm (int id)
     if (NULL == ostype){
         goto error_exit;
     }
-    else if (fnmatch("*hvmloader", ostype, NULL) == 0){
+    else if (fnmatch("*hvmloader", ostype, 0) == 0){
         ret = 1;
     }
 
@@ -137,7 +137,7 @@ int xa_ishvm (int id)
     if (NULL == ostype){
         goto error_exit;
     }
-    else if (fnmatch("*hvm", ostype, NULL) == 0){
+    else if (fnmatch("*hvm", ostype, 0) == 0){
         ret = 1;
     }
 
@@ -151,8 +151,45 @@ error_exit:
     return ret;
 }
 
+uint32_t xa_get_domain_id (char *name)
+{
+    char **domains = NULL;
+    int size = 0;
+    int i = 0;
+    struct xs_handle *xsh = NULL;
+    xs_transaction_t xth = XBT_NULL;
+    uint32_t domain_id = 0;
+
+    xsh = xs_domain_open();
+    domains = xs_directory(xsh, xth, "/local/domain", &size);
+    for (i = 0; i < size; ++i){
+        /* read in name */
+        char *tmp = malloc(100);
+        char *idStr = domains[i];
+        sprintf(tmp, "/local/domain/%s/name", idStr);
+        char *nameCandidate = xs_read(xsh, xth, tmp, NULL);
+
+        // if name matches, then return number
+        if (strncmp(name, nameCandidate, 100) == 0){
+            int idNum = atoi(idStr);
+            domain_id = (uint32_t) idNum;
+            break;
+        }
+
+        /* free memory as we go */
+        if (tmp) free(tmp);
+        if (nameCandidate) free(nameCandidate);
+    }
+
+error_exit:
+    if (domains) free(domains);
+    if (xsh) xs_daemon_close(xsh);
+    return domain_id;
+}
+
 #else
 char *xa_get_vmpath (int id){return NULL;}
 char *xa_get_kernel_name (int id){return NULL;}
 int xa_ishvm (int id){return 0;}
+uint32_t xa_get_domain_id (char *name){return 0;}
 #endif /* ENABLE_XEN */
