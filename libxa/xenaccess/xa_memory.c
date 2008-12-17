@@ -582,7 +582,7 @@ void *xa_access_user_va_range (
 
         /* Physical page frame number of each page */
         pfns[i] = xa_pagetable_lookup(
-            instance, pgd, addr, pid ? 0 : 1) >> instance->page_shift;
+            instance, pgd, addr, pid) >> instance->page_shift;
     }
 
     *offset = virt_address - start;
