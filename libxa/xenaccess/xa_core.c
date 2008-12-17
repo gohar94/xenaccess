@@ -312,7 +312,7 @@ void init_xen_version (xa_instance_t *instance)
 {
 #ifdef ENABLE_XEN
 #define VERSION_STR_LEN 100
-    char *versionStr[VERSION_STR_LEN];
+    char versionStr[VERSION_STR_LEN];
     int versions;
     int major;
     int minor;
