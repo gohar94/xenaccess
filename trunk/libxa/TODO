@@ -1,9 +1,11 @@
 # ToDo Items
-* finish using cr3 instead of kpgd throughout, or come up with a way to 
-  reliably find the kpgd value
-  - need to make sure this works with both live VMs and memory files
 * add / fix / update documentation as needed
   - move description of codebase out of xenaccess.h
+* test PV functionality on newer versions of xen
+* create tools directory with...
+  - 64-bit patch
+  - linux offset finder tool
+* update config reader to accept linux_name parameter
 
 
 ## Future Plans
@@ -26,3 +28,7 @@
      memory pages are still in use by the user of the library.  Would need
      to somehow handle mappings done by the library differently than 
      mappings done by the user of the library.
+* finish using cr3 instead of kpgd throughout, or come up with a way to 
+  reliably find the kpgd value
+  - need to make sure this works with both live VMs and memory files
+* tool for automatically finding windows offsets
