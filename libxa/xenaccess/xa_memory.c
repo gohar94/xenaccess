@@ -494,6 +494,13 @@ void *xa_access_kernel_sym (
 /* finds the address of the page global directory for a given pid */
 uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
 {
+    /* first check the cache */
+    uint32_t pgd = 0;
+    if (xa_check_pid_cache(instance, pid, &pgd)){
+        return pgd;
+    }
+
+    /* otherwise do the lookup */
     if (XA_OS_LINUX == instance->os_type){
         return linux_pid_to_pgd(instance, pid);
     }

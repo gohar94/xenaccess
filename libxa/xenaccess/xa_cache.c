@@ -255,3 +255,142 @@ int xa_destroy_cache (xa_instance_t *instance)
     instance->current_cache_size = 0;
     return 0;
 }
+
+/* ========================================================= */
+/*     Cache implementation for PID to PGD cache below.      */
+/* ========================================================= */
+
+xa_pid_cache_entry_t xa_check_pid_cache_helper (
+    xa_instance_t *instance, int pid)
+{
+    xa_pid_cache_entry_t current = instance->pid_cache_head;
+    while (current != NULL){
+        if (current->pid == pid){
+            current->last_used = time(NULL);
+            goto exit;
+        }
+        current = current->next;
+    }
+
+exit:
+    return current;
+}
+
+int xa_check_pid_cache (xa_instance_t *instance, int pid, uint32_t *pgd)
+{
+    xa_pid_cache_entry_t search;
+    int ret = 0;
+
+    /* if found, set ret to 1 and put answer in *pgd */
+    search = xa_check_pid_cache_helper(instance, pid);
+    if (search != NULL){
+        *pgd = search->pgd;
+        ret = 1;
+        xa_dbprint("++PID Cache hit (%d --> 0x%.8x)\n", pid, *pgd);
+    }
+
+exit:
+    return ret;
+}
+
+int xa_update_pid_cache (xa_instance_t *instance, int pid, uint32_t pgd)
+{
+    xa_pid_cache_entry_t search = NULL;
+    xa_pid_cache_entry_t new_entry = NULL;
+
+    /* is cache enabled? */
+    if (XA_PID_CACHE_SIZE == 0){
+        return 1;
+    }
+
+    /* was this a spurious call with bad info? */
+    if (!pid){
+        goto exit;
+    }
+
+    /* does anything match the passed pid? */
+    /* if so, update that entry */
+    search = xa_check_pid_cache_helper(instance, pid);
+    if (search != NULL){
+        search->pgd = pgd;
+        xa_dbprint("++PID Cache update (%d --> 0x%.8x)\n", pid, pgd);
+        goto exit;
+    }
+
+    /* do we need to remove anything from the cache? */
+    if (instance->current_pid_cache_size >= XA_PID_CACHE_SIZE){
+        xa_pid_cache_entry_t oldest = instance->pid_cache_head;
+        xa_pid_cache_entry_t current = instance->pid_cache_head;
+
+        /* find the least recently used entry */
+        while (current != NULL){
+            if (current->last_used < oldest->last_used){
+                oldest = current;
+            }
+            current = current->next;
+        }
+
+        /* remove that entry */
+        if (NULL == oldest->next && NULL == oldest->prev){  /* only entry */
+            instance->pid_cache_head = NULL;
+            instance->pid_cache_tail = NULL;
+        }
+        else if (NULL == oldest->next){  /* last entry */
+            instance->pid_cache_tail = oldest->prev;
+            oldest->prev->next = NULL;
+        }
+        else if (NULL == oldest->prev){  /* first entry */
+            instance->pid_cache_head = oldest->next;
+            oldest->next->prev = NULL;
+        }
+        else{  /* somewhere in the middle */
+            oldest->prev->next = oldest->next;
+            oldest->next->prev = oldest->prev;
+        }
+
+        /* free up memory */
+        oldest->next = NULL;
+        oldest->prev = NULL;
+        free(oldest);
+
+        instance->current_pid_cache_size--;
+    }
+
+    /* allocate memory for the new cache entry */
+    new_entry = (xa_pid_cache_entry_t)malloc(sizeof(struct xa_pid_cache_entry));
+    new_entry->last_used = time(NULL);
+    new_entry->pid = pid;
+    new_entry->pgd = pgd;
+    xa_dbprint("++PID Cache set (%d --> 0x%.8x)\n", pid, pgd);
+
+    /* add it to the end of the list */
+    if (NULL != instance->pid_cache_tail){
+        instance->pid_cache_tail->next = new_entry;
+    }
+    new_entry->prev = instance->pid_cache_tail;
+    instance->pid_cache_tail = new_entry;
+    if (NULL == instance->pid_cache_head){
+        instance->pid_cache_head = new_entry;
+    }
+    new_entry->next = NULL;
+    instance->current_pid_cache_size++;
+
+exit:
+    return 1;
+}
+
+int xa_destroy_pid_cache (xa_instance_t *instance)
+{
+    xa_pid_cache_entry_t current = instance->pid_cache_head;
+    xa_pid_cache_entry_t tmp = NULL;
+    while (current != NULL){
+        tmp = current->next;
+        free(current);
+        current = tmp;
+    }
+
+    instance->pid_cache_head = NULL;
+    instance->pid_cache_tail = NULL;
+    instance->current_pid_cache_size = 0;
+    return 0;
+}

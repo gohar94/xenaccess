@@ -442,6 +442,7 @@ int helper_destroy (xa_instance_t *instance)
 #endif /* ENABLE_XEN */
 
     xa_destroy_cache(instance);
+    xa_destroy_pid_cache(instance);
 
     return XA_SUCCESS;
 }
@@ -453,6 +454,9 @@ void xa_init_common (xa_instance_t *instance)
     instance->cache_head = NULL;
     instance->cache_tail = NULL;
     instance->current_cache_size = 0;
+    instance->pid_cache_head = NULL;
+    instance->pid_cache_tail = NULL;
+    instance->current_pid_cache_size = 0;
 }
 
 /* initialize to view an actively running Xen domain */

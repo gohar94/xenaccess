@@ -102,6 +102,9 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
     munmap(memory, instance->page_size);
     xa_read_long_virt(instance, ptr + pgd_offset, 0, &pgd);
 
+    /* update the cache with this new pid->pgd mapping */
+    xa_update_pid_cache(instance, pid, pgd);
+
 error_exit:
     return pgd;
 }

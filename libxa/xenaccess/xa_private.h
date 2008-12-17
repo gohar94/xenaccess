@@ -85,6 +85,7 @@ void xa_dbprint(char *format, ...);
  * Definitions to support the LRU cache
  */
 #define XA_CACHE_SIZE 25
+#define XA_PID_CACHE_SIZE 5
 
 /**
  * Check if a symbol_name is in the LRU cache.
@@ -129,6 +130,17 @@ int xa_update_cache (xa_instance_t *instance,
                      int pid,
                      uint32_t mach_address);
 
+/**
+ * Releases the cache.
+ *
+ * @param[in] instance libxa instance
+ * @return 0 for success. -1 for failure.
+ */
+int xa_destroy_cache (xa_instance_t *instance);
+
+int xa_check_pid_cache (xa_instance_t *instance, int pid, uint32_t *pgd);
+int xa_update_pid_cache (xa_instance_t *instance, int pid, uint32_t pgd);
+int xa_destroy_pid_cache (xa_instance_t *instance);
 
 /*--------------------------------------------
  * Print util functions from xa_pretty_print.c
@@ -229,14 +241,6 @@ int linux_system_map_symbol_to_address (
  */
 void *linux_access_kernel_symbol (
         xa_instance_t *instance, char *symbol, uint32_t *offset, int prot);
-
-/**
- * Releases the cache.
- *
- * @param[in] instance libxa instance
- * @return 0 for success. -1 for failure.
- */
-int xa_destroy_cache (xa_instance_t *instance);
 
 /**
  * Gets name of the kernel for given \a id.
