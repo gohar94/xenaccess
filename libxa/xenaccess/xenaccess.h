@@ -249,12 +249,31 @@ typedef struct xa_windows_peb{
  */
 
 /**
- * @deprecated This function should no longer be used.  The new 
- * function name, which does the same thing, is xa_init_vm_strict.
- *
- * Initializes access to a specific domU given a domain id.  The
- * domain id must represent an active domain and must be > 0.  All
+ * Initializes access to a specific domU given a domain name.  All
  * calls to xa_init must eventually call xa_destroy.
+ *
+ * This function will fail if any problems are detected upon init.
+ * If you want to use XenAccess with reduced functionality instead
+ * of failing during initialization, then use the lax function instead.
+ *
+ * This is a costly funtion in terms of the time needed to execute.
+ * You should call this function only once per domain, and then use the
+ * resulting instance when calling any of the other library functions.
+ *
+ * @param[in] domain_name Domain name to access, specified as a string
+ * @param[out] instance Struct that holds instance information
+ * @return XA_SUCCESS or XA_FAILURE
+ */
+int xa_init_vm_name_strict (char *domain_name, xa_instance_t *instance);
+
+/**
+ * Initializes access to a specific domU given a domain name.  All
+ * calls to xa_init must eventually call xa_destroy.
+ *
+ * This function will init unless a critical error is found.  In some
+ * cases minor errors can lead to reduced functionality.  If you want
+ * to ensure that XenAccess has full functionality, then use the
+ * strict function instead.
  *
  * This is a costly funtion in terms of the time needed to execute.
  * You should call this function only once per domain, and then use the
@@ -264,25 +283,7 @@ typedef struct xa_windows_peb{
  * @param[out] instance Struct that holds instance information
  * @return XA_SUCCESS or XA_FAILURE
  */
-int xa_init (uint32_t domain_id, xa_instance_t *instance);
-
-/**
- * @deprecated This function should no longer be used.  The new 
- * function name, which does the same thing, is xa_init_file_strict.
- *
- * Initializes access to a memory image stored in the given file.  All
- * calls to xa_init_file must eventually call xa_destroy.
- *
- * This is a costly funtion in terms of the time needed to execute.
- * You should call this function only once per file, and then use the
- * resulting instance when calling any of the other library functions.
- *
- * @param[in] filename Name of memory image file
- * @param[in] image_type Name of config file entry for this image
- * @param[out] instance Struct that holds instance information
- * @return XA_SUCCESS or XA_FAILURE
- */
-int xa_init_file (char *filename, char *image_type, xa_instance_t *instance);
+int xa_init_vm_name_lax (char *domain_name, xa_instance_t *instance);
 
 /**
  * Initializes access to a specific domU given a domain id.  The
@@ -301,7 +302,7 @@ int xa_init_file (char *filename, char *image_type, xa_instance_t *instance);
  * @param[out] instance Struct that holds instance information
  * @return XA_SUCCESS or XA_FAILURE
  */
-int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance);
+int xa_init_vm_id_strict (uint32_t domain_id, xa_instance_t *instance);
 
 /**
  * Initializes access to a specific domU given a domain id.  The
@@ -321,7 +322,7 @@ int xa_init_vm_strict (uint32_t domain_id, xa_instance_t *instance);
  * @param[out] instance Struct that holds instance information
  * @return XA_SUCCESS or XA_FAILURE
  */
-int xa_init_vm_lax (uint32_t domain_id, xa_instance_t *instance);
+int xa_init_vm_id_lax (uint32_t domain_id, xa_instance_t *instance);
 
 /**
  * Initializes access to a memory image stored in the given file.  All

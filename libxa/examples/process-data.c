@@ -69,7 +69,7 @@ int main (int argc, char **argv)
     int pid = atoi(argv[2]);
 
     /* initialize the xen access library */
-    if (xa_init_vm_strict(dom, &xai) == XA_FAILURE){
+    if (xa_init_vm_id_strict(dom, &xai) == XA_FAILURE){
         perror("failed to init XenAccess library");
         goto error_exit;
     }
