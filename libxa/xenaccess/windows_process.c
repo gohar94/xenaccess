@@ -29,6 +29,7 @@
 
 #define _GNU_SOURCE
 #include <string.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include "xenaccess.h"
 

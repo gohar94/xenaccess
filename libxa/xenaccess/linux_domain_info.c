@@ -39,7 +39,7 @@
 #include <xs.h>
 #endif /* ENABLE_XEN */
 
-char *linux_predict_sysmap_name (int id)
+char *linux_predict_sysmap_name (uint32_t id)
 {
     char *kernel = NULL;
     char *sysmap = NULL;

@@ -35,14 +35,15 @@
 #include "config/config_parser.h"
 
 #define _GNU_SOURCE
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <fnmatch.h>
 
 #ifdef ENABLE_XEN
 #include <xs.h>
@@ -249,6 +250,7 @@ int get_page_info_xen (xa_instance_t *instance)
     int ret = XA_SUCCESS;
     int i = 0, j = 0;
 #ifdef ENABLE_XEN
+    /*TODO this changed to vcpu_guest_context_any_t in Xen 3.3.0 */
     vcpu_guest_context_t ctxt;
 
     if ((ret = xc_vcpu_getcontext(
@@ -309,34 +311,75 @@ void init_page_offset (xa_instance_t *instance)
 void init_xen_version (xa_instance_t *instance)
 {
 #ifdef ENABLE_XEN
+#define VERSION_STR_LEN 100
+    char *versionStr[VERSION_STR_LEN];
+    int versions;
+    int major;
+    int minor;
+    int cmd0 = XENVER_version;
     int cmd1 = XENVER_extraversion;
     int cmd2 = XENVER_capabilities;
     void *extra = malloc(sizeof(xen_extraversion_t));
     void *cap = malloc(sizeof(xen_capabilities_info_t));
 
+    versions = xc_version(instance->m.xen.xc_handle, cmd0, NULL);
     xc_version(instance->m.xen.xc_handle, cmd1, extra);
     xc_version(instance->m.xen.xc_handle, cmd2, cap);
+
+    major = versions >> 16;
+    minor = versions & ((1 << 16) - 1);
+
+    xa_dbprint("--major = %d\n", major);
+    xa_dbprint("--minor = %d\n", minor);
     xa_dbprint("--extra = %s\n", (char *) extra);
     xa_dbprint("--cap = %s\n", (char *) cap);
+    sprintf(versionStr, "%d.%d%s", major, minor, (char *)extra);
 
     instance->m.xen.xen_version = XA_XENVER_UNKNOWN;
-    if (strncmp((char *)extra, ".4-1", 4) == 0){
-        if (strncmp((char *)cap, "xen-3.0-x86_32", 14) == 0){
-            instance->m.xen.xen_version = XA_XENVER_3_0_4;
-            xa_dbprint("**set instance->m.xen.xen_version = 3.0.4\n");
-        }
+    if (fnmatch("3.0.4*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_0_4;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.0.4\n");
     }
-    else if (strncmp((char *)extra, ".0", 2) == 0){
-        if (strncmp((char *)cap, "xen-3.0-x86_32p", 15) == 0){
-            instance->m.xen.xen_version = XA_XENVER_3_1_0;
-            xa_dbprint("**set instance->m.xen.xen_version = 3.1.0\n");
-        }
+    else if (fnmatch("3.1.0*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_1_0;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.1.0\n");
+    }
+    else if (fnmatch("3.1.1*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_1_1;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.1.1\n");
+    }
+    else if (fnmatch("3.1.2*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_1_2;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.1.2\n");
+    }
+    else if (fnmatch("3.1.3*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_1_3;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.1.3\n");
+    }
+    else if (fnmatch("3.1.4*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_1_4;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.1.4\n");
+    }
+    else if (fnmatch("3.2.0*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_2_0;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.2.0\n");
+    }
+    else if (fnmatch("3.2.1*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_2_1;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.2.1\n");
+    }
+    else if (fnmatch("3.2.2*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_2_2;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.2.2\n");
+    }
+    else if (fnmatch("3.3.0*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_3_0;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.3.0\n");
     }
 
     if (instance->m.xen.xen_version == XA_XENVER_UNKNOWN){
-        xa_dbprint("extra: %s\n", extra);
-        xa_dbprint("cap: %s\n", cap);
-        printf("WARNING: This Xen version not supported by XenAccess.\n");
+        printf("WARNING: This Xen version not supported by XenAccess ");
+        printf("(%s).\n", versionStr);
     }
     free(extra);
     free(cap);

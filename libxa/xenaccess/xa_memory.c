@@ -442,6 +442,7 @@ uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
 {
     int ret = XA_SUCCESS;
 #ifdef ENABLE_XEN
+    /*TODO this changed to vcpu_guest_context_any_t in Xen 3.3.0 */
     vcpu_guest_context_t ctxt;
 #endif /* ENABLE_XEN */
 

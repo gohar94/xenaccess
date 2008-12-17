@@ -112,15 +112,55 @@
  */
 #define XA_XENVER_UNKNOWN 0
 /**
- * Constant used to indicate that we are running on Xen 3.0.4-1.  This
+ * Constant used to indicate that we are running on Xen 3.0.4.  This
  * is used in the xen_version member of the xa_instance struct.
  */
 #define XA_XENVER_3_0_4 1
 /**
- * Constant used to indicate that we are running on Xen 3.0.1  This 
+ * Constant used to indicate that we are running on Xen 3.1.0  This 
  * is used in the xen_version member of the xa_instance struct.
  */
-#define XA_XENVER_3_1_0 2
+#define XA_XENVER_3_1_0 3
+/**
+ * Constant used to indicate that we are running on Xen 3.1.1  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_1_1 4
+/**
+ * Constant used to indicate that we are running on Xen 3.1.2  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_1_2 5
+/**
+ * Constant used to indicate that we are running on Xen 3.1.3  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_1_3 6
+/**
+ * Constant used to indicate that we are running on Xen 3.1.4  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_1_4 7
+/**
+ * Constant used to indicate that we are running on Xen 3.2.0  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_2_0 8
+/**
+ * Constant used to indicate that we are running on Xen 3.2.1  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_2_1 9
+/**
+ * Constant used to indicate that we are running on Xen 3.2.2  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_2_2 10
+/**
+ * Constant used to indicate that we are running on Xen 3.3.0  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_3_0 11
 
 struct xa_cache_entry{
     time_t last_used;
