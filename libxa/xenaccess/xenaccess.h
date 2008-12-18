@@ -752,8 +752,7 @@ int xa_windows_get_peb (
  * Please report you success and problems through the XenAccess Google
  * Group or on the XenAccess wiki so that we can continue to make this 
  * a better tool for everyone.  To see specific details about how XenAccess
- * works on different versions of Xen, please see our wiki using the 
- * link below:
+ * works on different versions of Xen, please see our wiki:
  * http://code.google.com/p/xenaccess/wiki/CompatibleXenVersions
  *
  * @subsection install1 Getting XenAccess
