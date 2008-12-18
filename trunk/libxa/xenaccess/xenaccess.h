@@ -51,7 +51,7 @@
 #include <errno.h>
 
 /* uncomment this to enable debug output */
-#define XA_DEBUG
+//#define XA_DEBUG
 
 /**
  * Mode indicating that we are monitoring a live Xen VM
