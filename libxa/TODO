@@ -1,7 +1,6 @@
 # ToDo Items
 * add / fix / update documentation as needed
   - move description of codebase out of xenaccess.h
-* test PV functionality on newer versions of xen
 * create tools directory with...
   - 64-bit patch
   - linux offset finder tool

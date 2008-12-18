@@ -99,6 +99,7 @@ error_exit:
     return kernel;
 }
 
+/*TODO use Xen version info to to correct test the first time */
 int xa_ishvm (int id)
 {
     struct xs_handle *xsh = NULL;
@@ -121,10 +122,11 @@ int xa_ishvm (int id)
     ostype = xs_read(xsh, xth, tmp, NULL);
 
     if (NULL == ostype){
-        goto error_exit;
+        /* no action */
     }
     else if (fnmatch("*hvmloader", ostype, 0) == 0){
         ret = 1;
+        goto error_exit;
     }
 
     /* try again using different path for 3.3.x */
@@ -135,10 +137,11 @@ int xa_ishvm (int id)
     ostype = xs_read(xsh, xth, tmp, NULL);
 
     if (NULL == ostype){
-        goto error_exit;
+        /* no action */
     }
     else if (fnmatch("*hvm", ostype, 0) == 0){
         ret = 1;
+        goto error_exit;
     }
 
 error_exit:
