@@ -316,25 +316,25 @@ void init_xen_version (xa_instance_t *instance)
     int versions;
     int major;
     int minor;
+    xen_extraversion_t extra;
     int cmd0 = XENVER_version;
     int cmd1 = XENVER_extraversion;
-    int cmd2 = XENVER_capabilities;
-    void *extra = malloc(sizeof(xen_extraversion_t));
-    void *cap = malloc(sizeof(xen_capabilities_info_t));
 
+    /* get the major and minor versions */
     versions = xc_version(instance->m.xen.xc_handle, cmd0, NULL);
-    xc_version(instance->m.xen.xc_handle, cmd1, extra);
-    xc_version(instance->m.xen.xc_handle, cmd2, cap);
-
     major = versions >> 16;
     minor = versions & ((1 << 16) - 1);
-
     xa_dbprint("--major = %d\n", major);
     xa_dbprint("--minor = %d\n", minor);
+
+    /* get the extra version */
+    xc_version(instance->m.xen.xc_handle, cmd1, &extra);
     xa_dbprint("--extra = %s\n", (char *) extra);
-    xa_dbprint("--cap = %s\n", (char *) cap);
+
+    /* put everything together for easy comparison testing */
     sprintf(versionStr, "%d.%d%s", major, minor, (char *)extra);
 
+    /* see if we recognize this version */
     instance->m.xen.xen_version = XA_XENVER_UNKNOWN;
     if (fnmatch("3.0.4*", versionStr, 0) == 0){
         instance->m.xen.xen_version = XA_XENVER_3_0_4;
@@ -381,8 +381,6 @@ void init_xen_version (xa_instance_t *instance)
         printf("WARNING: This Xen version not supported by XenAccess ");
         printf("(%s).\n", versionStr);
     }
-    free(extra);
-    free(cap);
 #endif /* ENABLE_XEN */
 }
 
