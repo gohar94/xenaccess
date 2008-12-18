@@ -51,7 +51,7 @@
 #include <errno.h>
 
 /* uncomment this to enable debug output */
-//#define XA_DEBUG
+#define XA_DEBUG
 
 /**
  * Mode indicating that we are monitoring a live Xen VM
@@ -205,12 +205,12 @@ typedef struct xa_instance{
     int pae;                /**< nonzero if PAE is enabled */
     int pse;                /**< nonzero if PSE is enabled */
     uint32_t cr3;           /**< value in the CR3 register */
-    xa_cache_entry_t cache_head;
-    xa_cache_entry_t cache_tail;
-    int current_cache_size;
-    xa_pid_cache_entry_t pid_cache_head;
-    xa_pid_cache_entry_t pid_cache_tail;
-    int current_pid_cache_size;
+    xa_cache_entry_t cache_head;         /**< head of the address cache list */
+    xa_cache_entry_t cache_tail;         /**< tail of the address cache list */
+    int current_cache_size;              /**< size of the address cache list */
+    xa_pid_cache_entry_t pid_cache_head; /**< head of the pid cache list */
+    xa_pid_cache_entry_t pid_cache_tail; /**< tail of the pid cache list */
+    int current_pid_cache_size;          /**< size of the pid cache list */
     union{
         struct linux_instance{
             int tasks_offset;    /**< task_struct->tasks */
@@ -319,7 +319,7 @@ int xa_init_vm_name_strict (char *domain_name, xa_instance_t *instance);
  * You should call this function only once per domain, and then use the
  * resulting instance when calling any of the other library functions.
  *
- * @param[in] domain_id Domain id to access, specified as a number
+ * @param[in] domain_name Domain name to access, specified as a string
  * @param[out] instance Struct that holds instance information
  * @return XA_SUCCESS or XA_FAILURE
  */
@@ -689,8 +689,8 @@ int xa_windows_get_peb (
  * come up with a useful extension to it, we are always happy to receive
  * patches.
  *
- * Please direct all questions about XenAccess to the mailing list:
- * https://lists.sf.net/lists/listinfo/xenaccess-devel
+ * Please direct all questions about XenAccess to the Google Group:
+ * http://groups.google.com/group/xenaccess
  *
  * The project was created and is maintained by Bryan D. Payne, who is
  * currently working towards his PhD in Computer Science at Georgia Tech.
@@ -706,6 +706,14 @@ int xa_windows_get_peb (
  * included with Xen, provides the ability to access another virtual 
  * machine's memory at a low level, XenAccess allows you to access memory
  * using kernel symbols, virtual addresses, and physical addresses.
+ *
+ * XenAccess also provides the ability to parse memory dumps stored in raw
+ * memory files (i.e., any file where an offset into the file equals a
+ * physical address in the memory space).  This is a common memory dump 
+ * format used in the digital forensic community and can also be useful
+ * for testing programs built using XenAccess.  To create a memory dump
+ * from a Xen virtual machine, you can use the dump-memory.c example
+ * application included with XenAccess.
  *
  * @subsection intro2 What is memory introspection?
  * Memory introspection is the process of viewing the memory of one virtual
@@ -728,7 +736,8 @@ int xa_windows_get_peb (
  * kernel symbols are converted to virtual addresses using the export values
  * from ntoskrnl.exe.
  *
- * Memory introspection is useful because it allows you to monitor and control
+ * Memory introspection is useful because it allows you to monitor (reading
+ * memory values and control (writing memory values)
  * an operating system from a protected location.  Previous research has 
  * shown that introspection can be used for a wide variety of security
  * applications, but more ideas are coming out all the time.  Using XenAccess,
@@ -738,22 +747,24 @@ int xa_windows_get_peb (
  *
  * @section install Installation
  * @subsection install0 Requirements
- * XenAccess is designed for 32-bit x86 systems running Xen 3.0.4.  Work is
- * underway to get support for Xen 3.1.0, but right now support for this 
- * platform is very limited.  If you have success with another version or
- * if you would like to help port XenAccess to another version, then please
- * send a message to the mailing list.
+ * XenAccess is designed for 32-bit x86 systems running Xen.  Users have
+ * reported success with all recent Xen versions (3.0.x through 3.3.x).
+ * Please report you success and problems through the XenAccess Google
+ * Group or on the XenAccess wiki so that we can continue to make this 
+ * a better tool for everyone.  To see specific details about how XenAccess
+ * works on different versions of Xen, please see our wiki using the 
+ * link below:
+ * http://code.google.com/p/xenaccess/wiki/CompatibleXenVersions
  *
  * @subsection install1 Getting XenAccess
- * You can get the latest released version of XenAccess from SourceForge
+ * You can get the latest released version of XenAccess from Google Code
  * using the following link:
- * http://sf.net/project/platformdownload.php?group_id=159196
+ * http://code.google.com/p/xenaccess/
  *
  * You can also grab the development version directly from the subversion
- * repository.  To do this, you will need a subversion client capable of
- * handling SSL.  Then, perform the checkout with the following command:
+ * repository.  Perform the checkout with the following command:
 @verbatim
- svn co https://xenaccess.svn.sf.net/svnroot/xenaccess/trunk/libxa @endverbatim
+ svn checkout http://xenaccess.googlecode.com/svn/trunk/libxa xenaccess @endverbatim
  *
  * If you are just getting started with XenAccess, you probably want to 
  * use the latest released version.  However, if you need a new feature that
@@ -764,16 +775,19 @@ int xa_windows_get_peb (
  * Before compiling XenAccess, you should make sure that you have a standard
  * development environment installed including gcc, make, autoconf, etc.
  * You will also need the libxc library and the libxenstore library, which are
- * included with a typical Xen installation.  XenAccess uses the standard GNU
- * build system.  To compile the library, follow the steps shown below.
+ * included with a typical Xen installation.  Finally, you will need the lex
+ * yacc libraries (often called flex and bison).  XenAccess uses the standard
+ * GNU build system.  To compile the library, follow the steps shown below.
 @verbatim
 ./autogen.sh
 ./configure
 make @endverbatim
  *
  * Note that you can specify options to the configure script to specify, for
- * example, the installation location.  For a complete list of configure
- * options, run:
+ * example, the installation location.  Of note is the '--disable-xen' option,
+ * which allows you to build XenAccess without support for Xen (in this case
+ * you only get support for working with memory files).  For a complete list
+ * of configure options, run:
 @verbatim
 ./configure --help @endverbatim
  *
@@ -861,11 +875,13 @@ WinXPSP2 {
  * examples are listed below.  The arguments passed on the command line to each
  * program are specified in squared brackets.
  *
+ * @li @c dump-memory [domain id, filename] Dumps the entire physical memory image from a virtual machine into a file.  This image can then be used with the file access capabilities of XenAccess (e.g., see the 'process-list-file' example below).
  * @li @c map-addr [domain id, virtual address] Dumps a memory page to stdout based on the provided virtual address.  The virtual address must be a kernel virtual address.  The page is displayed in a readable format complete with hex, ascii, and offsets.  The number printed before the memory page is the offset of the specified address within the page.
  * @li @c map-symbol [domain id, kernel symbol] Same as @c map-addr except you specify a kernel symbol instead of a kernel virtual address.
  * @li @c module-list [domain id] Lists the kernel modules installed in the operating system.  This is the same list that you would get using 'lsmod' on a Linux system.  On Windows, it lists the drivers loaded into the kernel.
- * @li @c process-list [domain id] Lists the running processes in the operating system.  This is the same list that you would get using 'ps -ef' on a Linux system.  On Windows, it is the same list that you would get using the task manager.
  * @li @c process-data [domain id, process id] Displays the first memory page of executable content for a given process.  The process number, which is provided as a second argument, is the number obtained from using the @c process-list example above.
+ * @li @c process-list [domain id] Lists the running processes in the operating system.  This is the same list that you would get using 'ps -ef' on a Linux system.  On Windows, it is the same list that you would get using the task manager.
+ * @li @c process-list-file [filename] Same as above, but this works from a memory dump file, specified by the filename.
  *
  * @subsection examples2 In Detail: process-list.c
  * In order to better understand how the examples work, let's take a look at
@@ -886,7 +902,7 @@ WinXPSP2 {
  *
  * The include list is not too surprising.  Note that xa_private.h is included
  * here, but this is only to access the function that prints a memory page to
- * stdout.  Most people will not need to include xa_private.h
+ * stdout.  Most people will not need to include xa_private.h.
  *
 @verbatim
 #define TASKS_OFFSET 24 * 4
@@ -905,7 +921,7 @@ WinXPSP2 {
 @verbatim
     uint32_t dom = atoi(argv[1]);
 
-    if (xa_init_vm_strict(dom, &xai) == XA_FAILURE){
+    if (xa_init_vm_id_strict(dom, &xai) == XA_FAILURE){
         perror("failed to init XenAccess library");
         goto error_exit;
     } @endverbatim
@@ -966,8 +982,8 @@ WinXPSP2 {
     xa_destroy(&xai); @endverbatim
  *
  * The final step is cleanup.  We perform a sanity check to make sure that 
- * there mapped memory pages.  And then we call xa_destroy to free any memory
- * associated with the XenAccess instance.
+ * there are no mapped memory pages.  And then we call xa_destroy to free
+ * any memory associated with the XenAccess instance.
  *
  * @subsection examples3 Running the Examples
  * A quick way to see XenAccess in action is to try out the example code.  You
@@ -1077,7 +1093,7 @@ failed to map memory for process list pointer: Success
  *
  * Note:  This section provides some preliminary ideas and help.  If you
  * find other tips that could be added to this section, please send a note
- * to the mailing list.
+ * to the XenAccess Google Group.
  *
  * @subsection devel1 Best Practices for Performance
  * Performance is a key concern when building any application that uses 
@@ -1121,8 +1137,8 @@ failed to map memory for process list pointer: Success
  * optionally, reinstall XenAccess).  With the debug output enabled, you will
  * see lots of information on stdout about XenAccess's operation.
  *
- * If you are requesting help from the mailing list, please send the debug
- * output along with your question as it will be easier to diagnose your
+ * If you are requesting help from the XenAccess Google Group, please send
+ * the debug output along with your question as it will be easier to diagnose your
  * problem this way.
  *
  * @subsection devel4 Bridging the Semantic Gap
