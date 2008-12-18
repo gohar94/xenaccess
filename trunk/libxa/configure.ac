@@ -67,6 +67,14 @@ AM_SANITY_CHECK
         [echo "run configure again before attemping to build XenAccess."]
         [exit 1]
     [fi]
+
+    AC_CHECK_FUNCS(xc_map_foreign_pages, AC_DEFINE([HAVE_MAP_FOREIGN], [], [Indicates existance of xc_map_foreign_pages]))
+
+    AC_CHECK_TYPE(
+        [vcpu_guest_context_any_t],
+        AC_DEFINE([HAVE_CONTEXT_ANY], [1], [Checks existance of vcpu_guest_context_any_t to know how to check cpu context on this libxc version.]),
+        [],
+        [#include "xenctrl.h"])
 [fi]
 
 AC_CHECK_PROGS(YACC,yacc bison byacc,[no],[path = $PATH])
@@ -93,7 +101,6 @@ AC_CHECK_PROGS(LEX,lex flex ,[no],[path = $PATH])
 [fi]
 AC_PROG_LEX
 
-AC_CHECK_FUNCS(xc_map_foreign_pages, AC_DEFINE([HAVE_MAP_FOREIGN], [], [Indicates existance of xc_map_foreign_pages]))
 
 dnl -----------------------------------------------
 dnl Generates Makefile's, configuration files and scripts
