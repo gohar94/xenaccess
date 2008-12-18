@@ -1,0 +1,11 @@
+Copy the folder to the DomU
+
+cd into the extracted folder 
+
+run make
+
+insmod findOffsets.ko
+
+
+rmmod findOffsets
+
