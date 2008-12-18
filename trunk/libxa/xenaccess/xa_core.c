@@ -250,18 +250,32 @@ int get_page_info_xen (xa_instance_t *instance)
     int ret = XA_SUCCESS;
     int i = 0, j = 0;
 #ifdef ENABLE_XEN
-    /*TODO this changed to vcpu_guest_context_any_t in Xen 3.3.0 */
+#ifdef HAVE_CONTEXT_ANY
+    vcpu_guest_context_any_t ctxt_any;
+#endif /* HAVE_CONTEXT_ANY */
     vcpu_guest_context_t ctxt;
 
+#ifdef HAVE_CONTEXT_ANY
+    if ((ret = xc_vcpu_getcontext(
+                instance->m.xen.xc_handle,
+                instance->m.xen.domain_id,
+                0, /*TODO vcpu, assuming only 1 for now */
+                &ctxt_any)) != 0){
+#else
     if ((ret = xc_vcpu_getcontext(
                 instance->m.xen.xc_handle,
                 instance->m.xen.domain_id,
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
+#endif /* HAVE_CONTEXT_ANY */
         printf("ERROR: failed to get context information.\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
+
+#ifdef HAVE_CONTEXT_ANY
+    ctxt = ctxt_any.c;
+#endif /* HAVE_CONTEXT_ANY */
 
     /* For details on the registers involved in the x86 paging configuation
        see the Intel 64 and IA-32 Architectures Software Developer's Manual,
