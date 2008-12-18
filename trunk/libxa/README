@@ -1,10 +1,11 @@
-XenAccess v0.4 README
+XenAccess v0.5 README
 by Bryan D. Payne
 =====================
 
 This file contains very basic instructions to get you up and running.  If you
 want more details about installation, or programming with XenAccess, then see
-the documentation included in the doc/ subdirectory of XenAccess.
+the documentation included in the doc/ subdirectory of XenAccess, or view the
+documentation online at http://doc.xenaccess.org.
 
 Dependencies
 ------------
@@ -12,7 +13,8 @@ The following libraries are used in building this code:
 
 libxc (from Xen, the Xen Control library)
 libxenstore (from Xen, access to the xenstore)
-
+yacc OR bison (for reading the configuration file)
+lex OR flex (for reading the configuration file)
 
 Building
 --------
@@ -23,7 +25,12 @@ follow the steps below:
 ./configure
 make
 
-The example code will work without installing the library.  However, you may
+Note that if you only want to use XenAccess to read dd-style memory files,
+then you can pass the "--disable-xen" option to configure.  This will build
+XenAccess without any Xen support, allowing you to use the library on systems
+without Xen installed.
+
+The example code will work without installing XenAccess.  However, you may
 choose to install the library into the prefix specified to 'configure' by:
 
 make install
@@ -47,6 +54,6 @@ add developers to the group, depending on how you would like to get invovled.
 
 Questions?
 ----------
-The mailing list is the best place to get your questions answered:
+The Google Group is the best place to get your questions answered:
 
-    https://lists.sf.net/lists/listinfo/xenaccess-devel
+    http://groups.google.com/group/xenaccess
