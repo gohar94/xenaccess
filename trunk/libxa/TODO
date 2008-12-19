@@ -1,11 +1,9 @@
 # ToDo Items
-* add / fix / update documentation as needed
-  - move description of codebase out of xenaccess.h
-* create tools directory with...
-  - 64-bit patch
-  - linux offset finder tool
-* update config reader to accept linux_name parameter
-
+* finish README file
+* add README file for pyxa
+* figure out if there's a volatility piece that can be included
+* figure out if there's a bug to be fixed / memory error 
+* look into better options than #define ENABLE_XEN
 
 ## Future Plans
 * cleanup code throughout and fix TODO spots
@@ -31,3 +29,4 @@
   reliably find the kpgd value
   - need to make sure this works with both live VMs and memory files
 * tool for automatically finding windows offsets
+* update config reader to accept linux_name parameter
