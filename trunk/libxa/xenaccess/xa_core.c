@@ -346,6 +346,7 @@ void init_xen_version (xa_instance_t *instance)
     xa_dbprint("--extra = %s\n", (char *) extra);
 
     /* put everything together for easy comparison testing */
+    memset(versionStr, 0, VERSION_STR_LEN);
     sprintf(versionStr, "%d.%d%s", major, minor, (char *)extra);
 
     /* see if we recognize this version */
@@ -549,6 +550,7 @@ int xa_init_file_private (
     xa_instance_t *instance,
     uint32_t error_mode)
 {
+#define MAX_IMAGE_TYPE_LEN 256
     FILE *fhandle = NULL;
     instance->mode = XA_MODE_FILE;
     xa_dbprint("XenAccess Mode File\n");
@@ -563,7 +565,7 @@ int xa_init_file_private (
     instance->m.file.fhandle = fhandle;
 
     xa_init_common(instance);
-    instance->image_type = strndup(image_type, 256);
+    instance->image_type = strndup(image_type, MAX_IMAGE_TYPE_LEN);
     return helper_init(instance);
 }
 
