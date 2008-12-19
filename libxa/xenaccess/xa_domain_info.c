@@ -107,44 +107,44 @@ int xa_ishvm (int id)
     char *vmpath = NULL;
     char *ostype = NULL;
     char *tmp = NULL;
+    unsigned int len = 0;
     int ret = 0;
 
+    /* setup initial values */
     vmpath = xa_get_vmpath(id);
-
-    /* get the os type */
+    xsh = xs_domain_open();
     tmp = malloc(100);
     if (NULL == tmp){
-        goto error_exit;
+        goto exit;
     }
+
+    /* check the value for xen 3.2.x and earlier */
     memset(tmp, 0, 100);
     sprintf(tmp, "%s/image/kernel", vmpath);
-    xsh = xs_domain_open();
-    ostype = xs_read(xsh, xth, tmp, NULL);
-
+    ostype = xs_read(xsh, xth, tmp, &len);
     if (NULL == ostype){
         /* no action */
     }
     else if (fnmatch("*hvmloader", ostype, 0) == 0){
         ret = 1;
-        goto error_exit;
+        goto exit;
     }
 
     /* try again using different path for 3.3.x */
     if (ostype) free(ostype);
     memset(tmp, 0, 100);
     sprintf(tmp, "%s/image/ostype", vmpath);
-    xsh = xs_domain_open();
-    ostype = xs_read(xsh, xth, tmp, NULL);
+    ostype = xs_read(xsh, xth, tmp, &len);
 
     if (NULL == ostype){
         /* no action */
     }
     else if (fnmatch("*hvm", ostype, 0) == 0){
         ret = 1;
-        goto error_exit;
+        goto exit;
     }
 
-error_exit:
+exit:
     /* cleanup memory here */
     if (tmp) free(tmp);
     if (vmpath) free(vmpath);

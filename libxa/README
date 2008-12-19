@@ -7,6 +7,12 @@ want more details about installation, or programming with XenAccess, then see
 the documentation included in the doc/ subdirectory of XenAccess, or view the
 documentation online at http://doc.xenaccess.org.
 
+Changes From Previous Versions
+------------------------------
+* #define ENABLE_XEN
+* --disable-xen
+* new init functions 
+
 Dependencies
 ------------
 The following libraries are used in building this code:
