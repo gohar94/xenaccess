@@ -21,3 +21,12 @@ adapter will help get you going.  Follow the steps below to use it.
     xai.get_cr3()
     xai.is_pae()
     xai.is_pse()
+
+
+Once you have pyxa installed, you can write your own programs using Python or
+you can use Volatility to perform your memory analysis.  To use Volatility,
+you need to apply the included patch (pyxa_volatility.patch) to Volatility.
+More information on Volatility and a link to download the tool, are available
+on the following web page:
+
+https://www.volatilesystems.com/default/volatility
