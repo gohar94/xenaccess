@@ -14,7 +14,7 @@ LIBRARY_NAME=xenaccess
 #release versioning
 MAJOR_VERSION=0
 MINOR_VERSION=5
-MICRO_VERSION=0
+MICRO_VERSION=1
 
 dnl --------------------------------
 dnl Package name and version number

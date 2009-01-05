@@ -506,7 +506,7 @@ int helper_destroy (xa_instance_t *instance)
 /* common code for all init functions */
 void xa_init_common (xa_instance_t *instance)
 {
-    xa_dbprint("XenAccess Version 0.5\n");
+    xa_dbprint("XenAccess Devel Version\n");
     instance->cache_head = NULL;
     instance->cache_tail = NULL;
     instance->current_cache_size = 0;
