@@ -1,0 +1,32 @@
+# ToDo Items
+* finish README file
+* add README file for pyxa
+* figure out if there's a volatility piece that can be included
+* figure out if there's a bug to be fixed / memory error 
+* look into better options than #define ENABLE_XEN
+
+## Future Plans
+* cleanup code throughout and fix TODO spots
+* create higher level abstractions
+  -- iterators (process lists, module lists, other lists)
+  -- windows handle table walking
+  -- windows VADs
+  -- linux proc data (?)
+  -- windows registry data (?)
+* consider adding data gathering from xenbus, xenoprofile, etc
+* create some kind of clean api abtraction for memory that spans multiple pages
+* show additional example applications
+* add function that returns active domid(s)
+* autodetect os type
+* automatically determine offset information
+* setup cache for most recently mapped pages to prevent thrashing by people
+  using the convience functions
+  -- This may not be able to be done inside XA because XA can't know when
+     memory pages are still in use by the user of the library.  Would need
+     to somehow handle mappings done by the library differently than 
+     mappings done by the user of the library.
+* finish using cr3 instead of kpgd throughout, or come up with a way to 
+  reliably find the kpgd value
+  - need to make sure this works with both live VMs and memory files
+* tool for automatically finding windows offsets
+* update config reader to accept linux_name parameter
