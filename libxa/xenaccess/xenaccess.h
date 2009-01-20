@@ -95,16 +95,22 @@
  * initialization.
  */
 #define XA_FAILSOFT 1
+
+/**
+ * Constant used to specify that the os_type is unknown
+ */
+#define XA_OS_UNKNOWN 0
+
 /**
  * Constant used to specify Linux in the os_type member of the
  * xa_instance struct.
  */
-#define XA_OS_LINUX 0
+#define XA_OS_LINUX 1
 /**
  * Constant used to specify Windows in the os_type member of the
  * xa_instance struct.
  */
-#define XA_OS_WINDOWS 1
+#define XA_OS_WINDOWS 2
 /**
  * Constant used to indicate that we are running on a version of Xen
  * that XenAccess does not support.  XenAccess might work, or it might
