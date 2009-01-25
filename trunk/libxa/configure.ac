@@ -77,7 +77,7 @@ AM_SANITY_CHECK
         [#include "xenctrl.h"])
 [fi]
 
-AC_CHECK_PROGS(YACC,yacc bison byacc,[no],[path = $PATH])
+AC_CHECK_PROGS(YACC,bison yacc byacc,[no],[path = $PATH])
 [if test "$YACC" = "no"]
 [then]
     [echo "yacc not found in the search path. Please ensure that it is"]
