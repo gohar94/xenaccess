@@ -55,9 +55,9 @@ int linux_system_map_symbol_to_address (
         goto error_exit;
     }
     if ((f = fopen(instance->sysmap, "r")) == NULL){
-        printf("ERROR: could not find System.map file after checking:\n");
-        printf("\t%s\n", instance->sysmap);
-        printf("To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
+        fprintf(stderr, "ERROR: could not find System.map file after checking:\n");
+        fprintf(stderr, "\t%s\n", instance->sysmap);
+        fprintf(stderr, "To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }

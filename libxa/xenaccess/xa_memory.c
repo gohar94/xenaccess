@@ -61,7 +61,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         live_shinfo = xa_mmap_mfn(
             instance, PROT_READ, instance->m.xen.info.shared_info_frame);
         if (live_shinfo == NULL){
-            printf("ERROR: failed to init live_shinfo\n");
+            fprintf(stderr, "ERROR: failed to init live_shinfo\n");
             goto error_exit;
         }
 
@@ -78,7 +78,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
         live_pfn_to_mfn_frame_list_list = xa_mmap_mfn(
             instance, PROT_READ, live_shinfo->arch.pfn_to_mfn_frame_list_list);
         if (live_pfn_to_mfn_frame_list_list == NULL){
-            printf("ERROR: failed to init live_pfn_to_mfn_frame_list_list\n");
+            fprintf(stderr, "ERROR: failed to init live_pfn_to_mfn_frame_list_list\n");
             goto error_exit;
         }
 
@@ -89,7 +89,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
             live_pfn_to_mfn_frame_list_list,
             (nr_pfns+(fpp*fpp)-1)/(fpp*fpp) );
         if (live_pfn_to_mfn_frame_list == NULL){
-            printf("ERROR: failed to init live_pfn_to_mfn_frame_list\n");
+            fprintf(stderr, "ERROR: failed to init live_pfn_to_mfn_frame_list\n");
             goto error_exit;
         }
 
@@ -99,7 +99,7 @@ unsigned long helper_pfn_to_mfn (xa_instance_t *instance, unsigned long pfn)
             PROT_READ,
             live_pfn_to_mfn_frame_list, (nr_pfns+fpp-1)/fpp );
         if (live_pfn_to_mfn_table  == NULL){
-            printf("ERROR: failed to init live_pfn_to_mfn_table\n");
+            fprintf(stderr, "ERROR: failed to init live_pfn_to_mfn_table\n");
             goto error_exit;
         }
 
@@ -152,7 +152,7 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn)
     }
 
     if (-1 == mfn){
-        printf("ERROR: pfn to mfn mapping failed.\n");
+        fprintf(stderr, "ERROR: pfn to mfn mapping failed.\n");
         return NULL;
     }
     else{
@@ -463,7 +463,7 @@ uint32_t xa_current_cr3 (xa_instance_t *instance, uint32_t *cr3)
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
 #endif /* HAVE_CONTEXT_ANY */
-            printf("ERROR: failed to get context information.\n");
+            fprintf(stderr, "ERROR: failed to get context information.\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -550,7 +550,7 @@ void *xa_access_user_va (
         xa_current_cr3(instance, &cr3);
         address = xa_pagetable_lookup(instance, cr3, virt_address, 1);
         if (!address){
-            printf("ERROR: address not in page table (0x%x)\n", virt_address);
+            fprintf(stderr, "ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
     }
@@ -565,7 +565,7 @@ void *xa_access_user_va (
         }
 
         if (!address){
-            printf("ERROR: address not in page table (0x%x)\n", virt_address);
+            fprintf(stderr, "ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
         }
     }
@@ -598,7 +598,7 @@ void *xa_access_user_va_range (
         uint32_t addr = start + i*instance->page_size;
 	
         if(!addr) {
-            printf("ERROR: address not in page table (%p)\n", addr);
+            fprintf(stderr, "ERROR: address not in page table (%p)\n", addr);
             return NULL;
         }
 

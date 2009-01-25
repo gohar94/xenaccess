@@ -52,7 +52,7 @@ unsigned char *linux_get_taskstruct (
     while (1){
         memory = xa_access_kernel_va(instance, next_process, offset, PROT_READ);
         if (NULL == memory){
-            printf("ERROR: failed to get task list next pointer");
+            fprintf(stderr, "ERROR: failed to get task list next pointer");
             goto error_exit;
         }
         memcpy(&next_process, memory + *offset, 4);
@@ -92,7 +92,7 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
     /* first we need a pointer to this pid's task_struct */
     memory = linux_get_taskstruct(instance, pid, &offset);
     if (NULL == memory){
-        printf("ERROR: could not find task struct for pid = %d\n", pid);
+        fprintf(stderr, "ERROR: could not find task struct for pid = %d\n", pid);
         goto error_exit;
     }
 
@@ -143,7 +143,7 @@ int xa_linux_get_taskaddr (
     /* find the right task struct */
     memory = linux_get_taskstruct(instance, pid, &offset);
     if (NULL == memory){
-        printf("ERROR: could not find task struct for pid = %d\n", pid);
+        fprintf(stderr, "ERROR: could not find task struct for pid = %d\n", pid);
         goto error_exit;
     }
 
@@ -152,7 +152,7 @@ int xa_linux_get_taskaddr (
     munmap(memory, instance->page_size);
     memory = xa_access_kernel_va(instance, ptr, &offset, PROT_READ);
     if (NULL == memory){
-        printf("ERROR: failed to follow mm pointer (0x%x)\n", ptr);
+        fprintf(stderr, "ERROR: failed to follow mm pointer (0x%x)\n", ptr);
         goto error_exit;
     }
     memcpy(

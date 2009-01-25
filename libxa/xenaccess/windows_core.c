@@ -116,7 +116,7 @@ int windows_init (xa_instance_t *instance)
     if (get_kpgd_method1(instance, &sysproc) == XA_FAILURE){
         xa_dbprint("--kpgd method1 failed, trying method2\n");
         if (get_kpgd_method2(instance, &sysproc) == XA_FAILURE){
-            printf("ERROR: failed to find kernel page directory.\n");
+            fprintf(stderr, "ERROR: failed to find kernel page directory.\n");
             ret = xa_report_error(instance, 0, XA_EMINOR);
             if (XA_FAILURE == ret) goto error_exit;
         }
