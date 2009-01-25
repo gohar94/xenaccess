@@ -51,7 +51,7 @@ int windows_symbol_to_address (
     int counter = 0;
 
     if ((NULL == instance->sysmap) || (strlen(instance->sysmap) == 0)){
-        printf("ERROR: windows sysmap file not specified in config file\n");
+        fprintf(stderr, "ERROR: windows sysmap file not specified in config file\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -61,9 +61,9 @@ int windows_symbol_to_address (
         goto error_exit;
     }
     if ((f = fopen(instance->sysmap, "r")) == NULL){
-        printf("ERROR: could not find exports file after checking:\n");
-        printf("\t%s\n", instance->sysmap);
-        printf("To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
+        fprintf(stderr, "ERROR: could not find exports file after checking:\n");
+        fprintf(stderr, "\t%s\n", instance->sysmap);
+        fprintf(stderr, "To fix this problem, add the correct sysmap entry to /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }

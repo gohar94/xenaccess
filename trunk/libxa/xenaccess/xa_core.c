@@ -60,7 +60,7 @@ int get_memory_size (xa_instance_t *instance)
         xs_transaction_t xth = XBT_NULL;
         char *tmp = malloc(100);
         if (NULL == tmp){
-            printf("ERROR: failed to allocate memory for tmp variable\n");
+            fprintf(stderr, "ERROR: failed to allocate memory for tmp variable\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -71,7 +71,7 @@ int get_memory_size (xa_instance_t *instance)
         instance->m.xen.size =
             strtol(xs_read(xsh, xth, tmp, NULL), NULL, 10) * 1000;
         if (0 == instance->m.xen.size){
-            printf("ERROR: failed to get memory size for Xen domain.\n");
+            fprintf(stderr, "ERROR: failed to get memory size for Xen domain.\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -83,7 +83,7 @@ int get_memory_size (xa_instance_t *instance)
         struct stat s;
 
         if (fstat(fileno(instance->m.file.fhandle), &s) == -1){
-            printf("ERROR: Failed to stat file\n");
+            fprintf(stderr, "ERROR: Failed to stat file\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -108,7 +108,7 @@ int read_config_file (xa_instance_t *instance)
 
     yyin = fopen("/etc/xenaccess.conf", "r");
     if (NULL == yyin){
-        printf("ERROR: config file not found at /etc/xenaccess.conf\n");
+        fprintf(stderr, "ERROR: config file not found at /etc/xenaccess.conf\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -118,7 +118,7 @@ int read_config_file (xa_instance_t *instance)
 #ifdef ENABLE_XEN
         tmp = malloc(100);
         if (NULL == tmp){
-            printf("ERROR: failed to allocate memory for tmp variable\n");
+            fprintf(stderr, "ERROR: failed to allocate memory for tmp variable\n");
             ret = XA_FAILURE;
             goto error_exit;
         }
@@ -127,7 +127,7 @@ int read_config_file (xa_instance_t *instance)
         xsh = xs_domain_open();
         instance->image_type = xs_read(xsh, xth, tmp, NULL);
         if (NULL == instance->image_type){
-            printf("ERROR: domain id %d is not running\n",
+            fprintf(stderr, "ERROR: domain id %d is not running\n",
                     instance->m.xen.domain_id);
             ret = XA_FAILURE;
             goto error_exit;
@@ -138,7 +138,7 @@ int read_config_file (xa_instance_t *instance)
     }
 
     if (xa_parse_config(instance->image_type)){
-        printf("ERROR: failed to read config file\n");
+        fprintf(stderr, "ERROR: failed to read config file\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -155,7 +155,7 @@ int read_config_file (xa_instance_t *instance)
         instance->os_type = XA_OS_WINDOWS;
     }
     else{
-        printf("ERROR: Unknown or undefined OS type.\n");
+        fprintf(stderr, "ERROR: Unknown or undefined OS type.\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -268,7 +268,7 @@ int get_page_info_xen (xa_instance_t *instance)
                 0, /*TODO vcpu, assuming only 1 for now */
                 &ctxt)) != 0){
 #endif /* HAVE_CONTEXT_ANY */
-        printf("ERROR: failed to get context information.\n");
+        fprintf(stderr, "ERROR: failed to get context information.\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -283,7 +283,7 @@ int get_page_info_xen (xa_instance_t *instance)
 
     /* PG Flag --> CR0, bit 31 == 1 --> paging enabled */
     if (!xa_get_bit(ctxt.ctrlreg[0], 31)){
-        printf("ERROR: Paging disabled for this VM, not supported.\n");
+        fprintf(stderr, "ERROR: Paging disabled for this VM, not supported.\n");
         ret = XA_FAILURE;
         goto error_exit;
     }
@@ -393,8 +393,8 @@ void init_xen_version (xa_instance_t *instance)
     }
 
     if (instance->m.xen.xen_version == XA_XENVER_UNKNOWN){
-        printf("WARNING: This Xen version not supported by XenAccess ");
-        printf("(%s).\n", versionStr);
+        fprintf(stderr, "WARNING: This Xen version not supported by XenAccess ");
+        fprintf(stderr, "(%s).\n", versionStr);
     }
 #endif /* ENABLE_XEN */
 }
@@ -415,7 +415,7 @@ int helper_init (xa_instance_t *instance)
                 instance->m.xen.xc_handle, instance->m.xen.domain_id,
                 1, &(instance->m.xen.info)
             ) != 1){
-            printf("ERROR: Failed to get domain info\n");
+            fprintf(stderr, "ERROR: Failed to get domain info\n");
             ret = xa_report_error(instance, 0, XA_ECRITICAL);
             if (XA_FAILURE == ret) goto error_exit;
         }
@@ -436,7 +436,7 @@ int helper_init (xa_instance_t *instance)
     if (XA_MODE_XEN == instance->mode){
 #ifdef ENABLE_XEN
         if (get_page_info_xen(instance) == XA_FAILURE){
-            printf("ERROR: memory layout not supported\n");
+            fprintf(stderr, "ERROR: memory layout not supported\n");
             ret = xa_report_error(instance, 0, XA_ECRITICAL);
             if (XA_FAILURE == ret) goto error_exit;
         }
@@ -469,7 +469,7 @@ int helper_init (xa_instance_t *instance)
 
     /* get the memory size */
     if (get_memory_size(instance) == XA_FAILURE){
-        printf("ERROR: Failed to get memory size.\n");
+        fprintf(stderr, "ERROR: Failed to get memory size.\n");
         ret = xa_report_error(instance, 0, XA_ECRITICAL);
         if (XA_FAILURE == ret) goto error_exit;
     }
@@ -528,7 +528,7 @@ int xa_init_vm_private
 
     /* open handle to the libxc interface */
     if ((xc_handle = xc_interface_open()) == -1){
-        printf("ERROR: Failed to open libxc interface\n");
+        fprintf(stderr, "ERROR: Failed to open libxc interface\n");
         return XA_FAILURE;
     }
     instance->m.xen.xc_handle = xc_handle;
@@ -559,7 +559,7 @@ int xa_init_file_private (
 
     /* open handle to memory file */
     if ((fhandle = fopen(filename, "rb")) == NULL){
-        printf("ERROR: Failed to open file for reading\n");
+        fprintf(stderr, "ERROR: Failed to open file for reading\n");
         return XA_FAILURE;
     }
     instance->m.file.fhandle = fhandle;

@@ -37,7 +37,7 @@ int linux_init (xa_instance_t *instance)
 
     if (linux_system_map_symbol_to_address(
              instance, "swapper_pg_dir", &instance->kpgd) == XA_FAILURE){
-        printf("ERROR: failed to lookup 'swapper_pg_dir' address\n");
+        fprintf(stderr, "ERROR: failed to lookup 'swapper_pg_dir' address\n");
         ret = xa_report_error(instance, 0, XA_EMINOR);
         if (XA_FAILURE == ret) goto error_exit;
     }
@@ -47,7 +47,7 @@ int linux_init (xa_instance_t *instance)
         instance->kpgd -= instance->page_offset;
         if (xa_read_long_phys(
                 instance, instance->kpgd, &(instance->kpgd)) == XA_FAILURE){
-            printf("ERROR: failed to get physical addr for kpgd\n");
+            fprintf(stderr, "ERROR: failed to get physical addr for kpgd\n");
             ret = xa_report_error(instance, 0, XA_EMINOR);
             if (XA_FAILURE == ret) goto error_exit;
         }
@@ -62,7 +62,7 @@ int linux_init (xa_instance_t *instance)
         xa_dbprint("**set instance->pae = %d\n", instance->pae);
         memory = xa_access_kernel_sym(instance, "init_task", &local_offset, PROT_READ);
         if (NULL == memory){
-            printf("ERROR: failed to get task list head 'init_task'\n");
+            fprintf(stderr, "ERROR: failed to get task list head 'init_task'\n");
             ret = xa_report_error(instance, 0, XA_EMINOR);
             //TODO should we switch PAE mode back?
             if (XA_FAILURE == ret) goto error_exit;

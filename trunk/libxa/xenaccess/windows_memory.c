@@ -160,8 +160,8 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
     }
 
     /* start the downward search looking for MZ header */
-    printf("Note: Fast checking for kernel base address failed, XenAccess\n");
-    printf("is searching for the correct address, but it may take a while.\n");
+    fprintf(stderr, "Note: Fast checking for kernel base address failed, XenAccess\n");
+    fprintf(stderr, "is searching for the correct address, but it may take a while.\n");
     paddr = 0x0 + instance->page_size;
     while (1){
         uint32_t header;
@@ -226,7 +226,7 @@ unsigned char *windows_get_EPROCESS (
     while (1){
         memory = xa_access_kernel_va(instance, next_process, offset, PROT_READ);
         if (NULL == memory){
-            printf("ERROR: failed to get EPROCESS list next pointer");
+            fprintf(stderr, "ERROR: failed to get EPROCESS list next pointer");
             goto error_exit;
         }
         memcpy(&next_process, memory + *offset, 4);
@@ -264,7 +264,7 @@ uint32_t windows_pid_to_pgd (xa_instance_t *instance, int pid)
     /* first we need a pointer to this pid's EPROCESS struct */
     memory = windows_get_EPROCESS(instance, pid, &offset);
     if (NULL == memory){
-        printf("ERROR: could not find EPROCESS struct for pid = %d\n", pid);
+        fprintf(stderr, "ERROR: could not find EPROCESS struct for pid = %d\n", pid);
         goto error_exit;
     }
 
@@ -295,7 +295,7 @@ int xa_windows_get_peb (
     /* find the right EPROCESS struct */
     memory = windows_get_EPROCESS(instance, pid, &offset);
     if (NULL == memory){
-        printf("ERROR: could not find EPROCESS struct for pid = %d\n", pid);
+        fprintf(stderr, "ERROR: could not find EPROCESS struct for pid = %d\n", pid);
         goto error_exit;
     }
     ptr = *((uint32_t*)(memory+offset + peb_offset - tasks_offset));
@@ -304,7 +304,7 @@ int xa_windows_get_peb (
     /* map the PEB struct */
     memory = xa_access_user_va(instance, ptr, &offset, pid, PROT_READ);
     if (NULL == memory){
-        printf("ERROR: could not find PEB struct for pid = %d\n", pid);
+        fprintf(stderr, "ERROR: could not find PEB struct for pid = %d\n", pid);
         goto error_exit;
     }
 
