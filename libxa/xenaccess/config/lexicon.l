@@ -47,6 +47,7 @@ linux_mm                { BeginToken(yytext); return LINUX_MM; }
 linux_pid               { BeginToken(yytext); return LINUX_PID; }
 linux_pgd               { BeginToken(yytext); return LINUX_PGD; }
 linux_addr              { BeginToken(yytext); return LINUX_ADDR; }
+ntoskrnl                { BeginToken(yytext); return WIN_NTOSKRNL; }
 win_tasks               { BeginToken(yytext); return WIN_TASKS; }
 win_pdbase              { BeginToken(yytext); return WIN_PDBASE; }
 win_pid                 { BeginToken(yytext); return WIN_PID; }

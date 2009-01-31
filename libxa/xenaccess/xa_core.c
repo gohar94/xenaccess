@@ -190,6 +190,11 @@ int read_config_file (xa_instance_t *instance)
     }
     else if (XA_OS_WINDOWS == instance->os_type){
 	    xa_dbprint("--reading in windows offsets from config file.\n");
+        if(entry->offsets.windows_offsets.ntoskrnl){
+          instance->os.windows_instance.ntoskrnl =
+                entry->offsets.windows_offsets.ntoskrnl;
+        }
+
         if(entry->offsets.windows_offsets.tasks){
             instance->os.windows_instance.tasks_offset =
                 entry->offsets.windows_offsets.tasks;
@@ -519,6 +524,7 @@ void xa_init_common (xa_instance_t *instance)
 int xa_init_vm_private
     (uint32_t domain_id, xa_instance_t *instance, uint32_t error_mode)
 {
+    bzero(instance, sizeof(xa_instance_t));
 #ifdef ENABLE_XEN
     int xc_handle;
     instance->mode = XA_MODE_XEN;

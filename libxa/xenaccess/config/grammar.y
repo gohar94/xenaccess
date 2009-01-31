@@ -240,6 +240,7 @@ void entry_done ()
         entry.offsets = tmp_entry.offsets;
 */
     }
+    bzero(&tmp_entry, sizeof(xa_config_entry_t));
 }
 
 xa_config_entry_t* xa_get_config()
@@ -251,6 +252,8 @@ int xa_parse_config (char *td)
 {
     int ret;
     target_domain = strdup(td);
+    bzero(&entry, sizeof(xa_config_entry_t));
+    bzero(&tmp_entry, sizeof(xa_config_entry_t));
     ret = yyparse();
     if (target_domain) free(target_domain);
     return ret;
@@ -269,6 +272,7 @@ int xa_parse_config (char *td)
 %token         LINUX_NAME
 %token         LINUX_PGD
 %token         LINUX_ADDR
+%token         WIN_NTOSKRNL
 %token         WIN_TASKS
 %token         WIN_PDBASE
 %token         WIN_PID
@@ -321,6 +325,8 @@ assignment:
         |
         linux_addr_assignment
         |
+        win_ntoskrnl_assignment
+        |
         win_tasks_assignment
         |
         win_pdbase_assignment
@@ -371,6 +377,14 @@ linux_addr_assignment:
         {
             int tmp = strtol($3, NULL, 0);
             tmp_entry.offsets.linux_offsets.addr = tmp;
+        }
+        ;
+
+win_ntoskrnl_assignment:
+        WIN_NTOSKRNL EQUALS NUM
+        {
+            int tmp = strtol($3, NULL, 0);
+            tmp_entry.offsets.windows_offsets.ntoskrnl = tmp;
         }
         ;
 
