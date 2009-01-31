@@ -104,13 +104,16 @@ int windows_init (xa_instance_t *instance)
     int ret = XA_SUCCESS;
     uint32_t sysproc = 0;
 
-    /* get base address for kernel image in memory */
-    instance->os.windows_instance.ntoskrnl = get_ntoskrnl_base(instance);
-    if (!instance->os.windows_instance.ntoskrnl){
-        ret = xa_report_error(instance, 0, XA_EMINOR);
-        if (XA_FAILURE == ret) goto error_exit;
+    // get base address for kernel image in memory unless
+    // it has already been set in the configuration file.
+    if(instance->os.windows_instance.ntoskrnl == 0){
+        instance->os.windows_instance.ntoskrnl = get_ntoskrnl_base(instance);
+        if (!instance->os.windows_instance.ntoskrnl){
+            ret = xa_report_error(instance, 0, XA_EMINOR);
+            if (XA_FAILURE == ret) goto error_exit;
+        }
+        xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->os.windows_instance.ntoskrnl);
     }
-    xa_dbprint("--got ntoskrnl (0x%.8x).\n", instance->os.windows_instance.ntoskrnl);
 
     /* get the kernel page directory location */
     if (get_kpgd_method1(instance, &sysproc) == XA_FAILURE){
