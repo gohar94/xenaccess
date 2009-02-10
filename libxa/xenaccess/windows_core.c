@@ -43,7 +43,7 @@ int get_kpgd_method2 (xa_instance_t *instance, uint32_t *sysproc)
         ret = xa_report_error(instance, 0, XA_EMINOR);
         if (XA_FAILURE == ret) goto error_exit;
     }
-    xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
+    xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", *sysproc);
 
     /* get address for page directory (from system process) */
     /*TODO this 0x18 offset should not be hard coded below */
@@ -78,8 +78,8 @@ int get_kpgd_method1 (xa_instance_t *instance, uint32_t *sysproc)
         ret = xa_report_error(instance, 0, XA_EMINOR);
         if (XA_FAILURE == ret) goto error_exit;
     }
-    *sysproc -= instance->page_offset; /* PA to PsInit.. */
-    xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", sysproc);
+    *sysproc = xa_translate_kv2p(instance, *sysproc);
+    xa_dbprint("--got PA to PsInititalSystemProcess (0x%.8x).\n", *sysproc);
 
     if (xa_read_long_phys(
             instance,
