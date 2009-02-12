@@ -392,9 +392,17 @@ void init_xen_version (xa_instance_t *instance)
         instance->m.xen.xen_version = XA_XENVER_3_2_2;
         xa_dbprint("**set instance->m.xen.xen_version = 3.2.2\n");
     }
+    else if (fnmatch("3.2.3*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_2_3;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.2.3\n");
+    }
     else if (fnmatch("3.3.0*", versionStr, 0) == 0){
         instance->m.xen.xen_version = XA_XENVER_3_3_0;
         xa_dbprint("**set instance->m.xen.xen_version = 3.3.0\n");
+    }
+    else if (fnmatch("3.3.1*", versionStr, 0) == 0){
+        instance->m.xen.xen_version = XA_XENVER_3_3_1;
+        xa_dbprint("**set instance->m.xen.xen_version = 3.3.1\n");
     }
 
     if (instance->m.xen.xen_version == XA_XENVER_UNKNOWN){

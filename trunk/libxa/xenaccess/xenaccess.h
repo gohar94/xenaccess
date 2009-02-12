@@ -163,10 +163,20 @@
  */
 #define XA_XENVER_3_2_2 9
 /**
+ * Constant used to indicate that we are running on Xen 3.2.3  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_2_3 10
+/**
  * Constant used to indicate that we are running on Xen 3.3.0  This 
  * is used in the xen_version member of the xa_instance struct.
  */
-#define XA_XENVER_3_3_0 10
+#define XA_XENVER_3_3_0 11
+/**
+ * Constant used to indicate that we are running on Xen 3.3.0  This 
+ * is used in the xen_version member of the xa_instance struct.
+ */
+#define XA_XENVER_3_3_1 12
 
 struct xa_cache_entry{
     time_t last_used;
