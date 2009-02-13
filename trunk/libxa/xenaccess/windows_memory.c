@@ -31,93 +31,16 @@
 #include <sys/mman.h>
 #include "xa_private.h"
 
-/* brute force to find most likely location */
-int bf_test_ntoskrnl_base (xa_instance_t *instance, uint32_t base)
+int windows_symbol_to_address (
+        xa_instance_t *instance, char *symbol, uint32_t *address)
 {
-    uint32_t header = 0;
-    int offset = 0;
-    uint32_t testval;
-    int count = 0;
+    /* check exports first */
+    return windows_export_to_rva(instance, symbol, address);
 
-    for (offset = 0; offset < 0xd0000; offset += 4){
-        xa_read_long_phys(instance, base + offset, &testval);
-        if (testval > instance->page_offset){
-            testval -= instance->page_offset;
-            xa_read_long_phys(instance, testval, &header);
-            if (header == 0x001b0003 || header == 0x00200003){
-                count++;
-            }
-        }
-    }
-
-    return count;
+    /*TODO check symbol server */
 }
 
-/* test a candidate location */
-int test_ntoskrnl_base (
-        xa_instance_t *instance, uint32_t base, uint32_t sysproc)
-{
-    uint32_t header = 0;
-
-    sysproc += base;
-    xa_read_long_phys(instance, sysproc, &sysproc);
-    if (sysproc <= instance->page_offset){
-        return XA_FAILURE;
-    }
-    sysproc -= instance->page_offset;
-
-    /* sysproc should now be the PA of a an EPROCESS location */
-    xa_read_long_phys(instance, sysproc, &header);
-    
-    /*  Look for EPROCESS by checking of the first 4 bytes of the
-        structure.  
-
-        This was obtained from Table 1 (p. S14) of:
-   
-        A. Schuster.  "Searching for Processes and Threads in
-        Microsoft Windows Memory Dumps".  Proceedings of the
-        Digital Forensic Research Workshop 2006 (DFRWS '06).
-
-        The XP value is 0x001b0003, the Vista value is 0x00200003.
-        This is taken from <EPROCESS>.Pcb.Header.  The type is 
-        3, for process.  The differing value comes from the size,
-        which is 0x1b in Win 2000 SP 4, XP, XP SP2, and Win 2003,
-        but 0x20 in Vista.  */
-    if (header != 0x001b0003 && header != 0x00200003){
-        return XA_FAILURE;
-    }
-    return XA_SUCCESS;
-}
-
-/* find the ntoskrnl base address by brute force scanning */
-uint32_t bf_get_ntoskrnl_base (xa_instance_t *instance)
-{
-    uint32_t paddr = 0x0 + instance->page_size;
-    int best_count = 0;
-    uint32_t best_answer = 0;
-
-    /* start the downward search looking for MZ header */
-    while (1){
-        uint32_t header;
-        xa_read_long_phys(instance, paddr, &header);
-        if ((header & 0xffff) == 0x5a4d){
-            int count = 0;
-            if ((count = bf_test_ntoskrnl_base(instance, paddr)) > best_count){
-                best_count = count;
-                best_answer = paddr;
-            }
-        }
-
-        paddr += instance->page_size;
-        if (paddr <= 0 || 0x40000000 <= paddr){
-            break;
-        }
-    }
-
-    return best_answer;
-}
-
-/* find the ntoskrnl base address by backwards scanning */
+/* find the ntoskrnl base address */
 #define NUM_BASE_ADDRESSES 10
 uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 {
@@ -141,41 +64,27 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
         0x01800000  /* Windows Vista */
     };
 
-    /* find RVA for PsInitialSystemProcess to use for testing */
-    if (windows_symbol_to_address(
-            instance, "PsInitialSystemProcess", &sysproc_rva) == XA_FAILURE){
-        return 0;
-    }
-
     /* start by looking at known base addresses */
     for (i = 0; i < NUM_BASE_ADDRESSES; ++i){
         paddr = base_address[i];
-        uint32_t header;
-        xa_read_long_phys(instance, paddr, &header);
-        if ((header & 0xffff) == 0x5a4d){
-            if (test_ntoskrnl_base(instance, paddr, sysproc_rva) == XA_SUCCESS){
-                goto fast_exit;
-            }
+        if (valid_ntoskrnl_start(instance, paddr) == XA_SUCCESS){
+            goto fast_exit;
         }
     }
 
     /* start the downward search looking for MZ header */
     fprintf(stderr, "Note: Fast checking for kernel base address failed, XenAccess\n");
-    fprintf(stderr, "is searching for the correct address, but it may take a while.\n");
+    fprintf(stderr, "is searching for the correct address.\n");
     paddr = 0x0 + instance->page_size;
     while (1){
-        uint32_t header;
-        xa_read_long_phys(instance, paddr, &header);
-        if ((header & 0xffff) == 0x5a4d){
-            if (test_ntoskrnl_base(instance, paddr, sysproc_rva) == XA_SUCCESS){
-                goto fast_exit;
-            }
+        if (valid_ntoskrnl_start(instance, paddr) == XA_SUCCESS){
+            goto fast_exit;
         }
 
         paddr += instance->page_size;
         if (paddr <= 0 || 0x40000000 <= paddr){
-            xa_dbprint("--get_ntoskrnl_base failed, switching to search\n");
-            return bf_get_ntoskrnl_base(instance);
+            xa_dbprint("--get_ntoskrnl_base failed\n");
+            return 0;
         }
     }
 

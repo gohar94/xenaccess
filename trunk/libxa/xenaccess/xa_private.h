@@ -261,17 +261,6 @@ char *xa_get_kernel_name (int id);
 int xa_ishvm (int id);
 
 /**
- * Gets address of a symbol in domU virtual memory. It uses exports 
- * file specified in xenaccess configuration file.
- *
- * @param[in] instance Handle to xenaccess instance (see xa_init).
- * @param[in] symbol Name of the requested symbol.
- * @param[out] address The addres of the symbol in guest memory.
- */
-int windows_symbol_to_address (
-        xa_instance_t *instance, char *symbol, uint32_t *address);
-
-/**
  * Get the ntoskrnl base address by doing a backwards search.
  *
  * @param[in] instance Handle to xenaccess instance (see xa_init).
@@ -303,6 +292,10 @@ uint32_t xa_find_kernel_pd (xa_instance_t *instance);
 int xa_report_error (xa_instance_t *instance, int error, int error_type);
 uint32_t xa_get_domain_id (char *name);
 char *linux_predict_sysmap_name (uint32_t id);
+
+int windows_export_to_rva (xa_instance_t *, char *, uint32_t *);
+int valid_ntoskrnl_start (xa_instance_t *instance, uint32_t addr);
+
 
 /** Duplicate function from xc_util that should remain
  *  here until Xen 3.1.2 becomes widely distributed.
