@@ -210,21 +210,10 @@ int xa_windows_get_peb (
     ptr = *((uint32_t*)(memory+offset + peb_offset - tasks_offset));
     munmap(memory, instance->page_size);
 
-    /* map the PEB struct */
-    memory = xa_access_user_va(instance, ptr, &offset, pid, PROT_READ);
-    if (NULL == memory){
-        fprintf(stderr, "ERROR: could not find PEB struct for pid = %d\n", pid);
-        goto error_exit;
-    }
-
     /* copy appropriate values into peb struct */
-    memcpy(&peb->ImageBaseAddress,
-           memory + offset + iba_offset - tasks_offset,
-           sizeof(uint32_t));
-    memcpy(&peb->ProcessHeap,
-           memory + offset + ph_offset - tasks_offset,
-           sizeof(uint32_t));
-    munmap(memory, instance->page_size);
+    xa_read_long_virt(instance, ptr + iba_offset, pid, &(peb->ImageBaseAddress));
+    xa_read_long_virt(instance, ptr + ph_offset, pid, &(peb->ProcessHeap));
+
     return XA_SUCCESS;
 
 error_exit:
