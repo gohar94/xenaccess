@@ -185,12 +185,7 @@ uint64_t get_pdpi (
     uint64_t value;
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
     xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
-    if (k){
-        xa_read_long_long_mach(instance, pdpi_entry, &value);
-    }
-    else{
-        xa_read_long_long_virt(instance, pdpi_entry, 0, &value);
-    }
+    xa_read_long_long_phys(instance, pdpi_entry, &value);
     return value;
 }
 
@@ -218,12 +213,7 @@ uint32_t get_pgd_nopae (
     uint32_t value;
     uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
-    if (k){
-        xa_read_long_mach(instance, pgd_entry, &value);
-    }
-    else{
-        xa_read_long_virt(instance, pgd_entry, 0, &value);
-    }
+    xa_read_long_phys(instance, pgd_entry, &value);
     return value;
 }
 
@@ -603,6 +593,7 @@ void *xa_access_user_va_range (
         }
 
         /* Physical page frame number of each page */
+        /*TODO last arg should be 1 for kernel, 0 for user... NOT pid */
         pfns[i] = xa_pagetable_lookup(
             instance, pgd, addr, pid) >> instance->page_shift;
     }
