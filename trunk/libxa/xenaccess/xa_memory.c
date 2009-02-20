@@ -185,7 +185,7 @@ uint64_t get_pdpi (
     uint64_t value;
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
     xa_dbprint("--PTLookup: pdpi_entry = 0x%.8x\n", pdpi_entry);
-    xa_read_long_long_phys(instance, pdpi_entry, &value);
+    xa_read_long_long_mach(instance, pdpi_entry, &value);
     return value;
 }
 
@@ -213,7 +213,7 @@ uint32_t get_pgd_nopae (
     uint32_t value;
     uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
     xa_dbprint("--PTLookup: pgd_entry = 0x%.8x\n", pgd_entry);
-    xa_read_long_phys(instance, pgd_entry, &value);
+    xa_read_long_mach(instance, pgd_entry, &value);
     return value;
 }
 
