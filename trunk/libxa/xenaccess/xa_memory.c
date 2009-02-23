@@ -179,8 +179,7 @@ uint32_t pdpi_index (uint32_t pdpi){
     return (pdpi >> 30) * sizeof(uint64_t);
 }
 
-uint64_t get_pdpi (
-        xa_instance_t *instance, uint32_t vaddr, uint32_t cr3, int k)
+uint64_t get_pdpi (xa_instance_t *instance, uint32_t vaddr, uint32_t cr3)
 {
     uint64_t value;
     uint32_t pdpi_entry = get_pdptb(cr3) + pdpi_index(vaddr);
@@ -207,8 +206,7 @@ uint64_t pdba_base_pae (uint64_t pdpe){
     return pdpe & 0xFFFFFF000ULL;
 }
 
-uint32_t get_pgd_nopae (
-        xa_instance_t *instance, uint32_t vaddr, uint32_t pdpe, int k)
+uint32_t get_pgd_nopae (xa_instance_t *instance, uint32_t vaddr, uint32_t pdpe)
 {
     uint32_t value;
     uint32_t pgd_entry = pdba_base_nopae(pdpe) + pgd_index(instance, vaddr);
@@ -217,8 +215,7 @@ uint32_t get_pgd_nopae (
     return value;
 }
 
-uint64_t get_pgd_pae (
-        xa_instance_t *instance, uint32_t vaddr, uint64_t pdpe, int k)
+uint64_t get_pgd_pae (xa_instance_t *instance, uint32_t vaddr, uint64_t pdpe)
 {
     uint64_t value;
     uint32_t pgd_entry = pdba_base_pae(pdpe) + pgd_index(instance, vaddr);
@@ -348,14 +345,14 @@ void buffalo_nopae (xa_instance_t *instance, uint32_t entry, int pde)
 }
 
 /* translation */
-uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
+uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr)
 {
     uint32_t paddr = 0;
     uint32_t pgd, pte;
         
     xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", vaddr);
     xa_dbprint("--PTLookup: cr3 = 0x%.8x\n", cr3);
-    pgd = get_pgd_nopae(instance, vaddr, cr3, k);
+    pgd = get_pgd_nopae(instance, vaddr, cr3);
     xa_dbprint("--PTLookup: pgd = 0x%.8x\n", pgd);
         
     if (entry_present(pgd)){
@@ -381,19 +378,19 @@ uint32_t v2p_nopae(xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
     return paddr;
 }
 
-uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
+uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr)
 {
     uint32_t paddr = 0;
     uint64_t pdpe, pgd, pte;
         
     xa_dbprint("--PTLookup: lookup vaddr = 0x%.8x\n", vaddr);
     xa_dbprint("--PTLookup: cr3 = 0x%.8x\n", cr3);
-    pdpe = get_pdpi(instance, vaddr, cr3, k);
+    pdpe = get_pdpi(instance, vaddr, cr3);
     xa_dbprint("--PTLookup: pdpe = 0x%.16x\n", pdpe);
     if (!entry_present(pdpe)){
         return paddr;
     }
-    pgd = get_pgd_pae(instance, vaddr, pdpe, k);
+    pgd = get_pgd_pae(instance, vaddr, pdpe);
     xa_dbprint("--PTLookup: pgd = 0x%.16x\n", pgd);
 
     if (entry_present(pgd)){
@@ -417,14 +414,13 @@ uint32_t v2p_pae (xa_instance_t *instance, uint32_t cr3, uint32_t vaddr, int k)
 uint32_t xa_pagetable_lookup (
             xa_instance_t *instance,
             uint32_t cr3,
-            uint32_t vaddr,
-            int kernel)
+            uint32_t vaddr)
 {
     if (instance->pae){
-        return v2p_pae(instance, cr3, vaddr, kernel);
+        return v2p_pae(instance, cr3, vaddr);
     }
     else{
-        return v2p_nopae(instance, cr3, vaddr, kernel);
+        return v2p_nopae(instance, cr3, vaddr);
     }
 }
 
@@ -477,7 +473,7 @@ uint32_t xa_translate_kv2p(xa_instance_t *instance, uint32_t virt_address)
 {
     uint32_t cr3 = 0;
     xa_current_cr3(instance, &cr3);
-    return xa_pagetable_lookup(instance, cr3, virt_address, 1);
+    return xa_pagetable_lookup(instance, cr3, virt_address);
 }
 
 /* map memory given a kernel symbol */
@@ -538,7 +534,7 @@ void *xa_access_user_va (
     if (!pid){
         uint32_t cr3 = 0;
         xa_current_cr3(instance, &cr3);
-        address = xa_pagetable_lookup(instance, cr3, virt_address, 1);
+        address = xa_pagetable_lookup(instance, cr3, virt_address);
         if (!address){
             fprintf(stderr, "ERROR: address not in page table (0x%x)\n", virt_address);
             return NULL;
@@ -551,7 +547,7 @@ void *xa_access_user_va (
         xa_dbprint("--UserVirt: pgd for pid=%d is 0x%.8x.\n", pid, pgd);
 
         if (pgd){
-            address = xa_pagetable_lookup(instance, pgd, virt_address, 0);
+            address = xa_pagetable_lookup(instance, pgd, virt_address);
         }
 
         if (!address){
@@ -593,9 +589,8 @@ void *xa_access_user_va_range (
         }
 
         /* Physical page frame number of each page */
-        /*TODO last arg should be 1 for kernel, 0 for user... NOT pid */
         pfns[i] = xa_pagetable_lookup(
-            instance, pgd, addr, pid) >> instance->page_shift;
+            instance, pgd, addr) >> instance->page_shift;
     }
 
     *offset = virt_address - start;

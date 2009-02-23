@@ -199,13 +199,12 @@ void *xa_mmap_pfn (xa_instance_t *instance, int prot, unsigned long pfn);
  * @param[in] instance Handle to xenaccess instance.
  * @param[in] pgd Page directory to use for this lookup.
  * @param[in] virt_address Virtual address to convert.
- * @param[in] kernel 0 for user space lookup, 1 for kernel lookup
  *
  * @return Machine address resulting from page table lookup.
  */
 uint32_t xa_pagetable_lookup (
             xa_instance_t *instance, uint32_t pgd,
-            uint32_t virt_address, int kernel);
+            uint32_t virt_address);
 
 /**
  * Find the address of the page global directory for a given PID
