@@ -4,7 +4,7 @@ from distutils.core import setup, Extension
 
 pyxamod = Extension('pyxa', sources=['pyxamodule.c'],
                     include_dirs = ['/usr/local/include'],
-                    library_dirs = ['/use/local/lib'],
+                    library_dirs = ['/usr/local/lib'],
                     libraries = ['xenaccess'])
 
 
