@@ -82,3 +82,15 @@ Linux2-6-18-PV {
     linux_addr  = 0xa0;
 }
 }}}
+
+===PV fc8 2.6.21 with xen 3.1.0-13===
+{{{
+fedora{
+    ostype = "Linux";
+    linux_tasks= 0x7c;
+    linux_mm = 0x84;
+    linux_pid = 0xa8;
+    linux_pgd = 0x28;
+    linux_addr = 0x84;
+}
+}}}
