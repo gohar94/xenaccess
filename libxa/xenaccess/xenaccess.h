@@ -790,9 +790,12 @@ int xa_windows_get_peb (
  * Before compiling XenAccess, you should make sure that you have a standard
  * development environment installed including gcc, make, autoconf, etc.
  * You will also need the libxc library and the libxenstore library, which are
- * included with a typical Xen installation.  Finally, you will need the lex
- * yacc libraries (often called flex and bison).  XenAccess uses the standard
- * GNU build system.  To compile the library, follow the steps shown below.
+ * included with a typical Xen installation.  Note that you will need the
+ * development versions of these libraries, meaning that you may need to
+ * install a package such as 'xen-devel' that is included with your Linux
+ * distribution.  Finally, you will need the lex yacc libraries (often called
+ * flex and bison).  XenAccess uses the standard GNU build system.  To compile
+ * the library, follow the steps shown below.
 @verbatim
 ./autogen.sh
 ./configure
