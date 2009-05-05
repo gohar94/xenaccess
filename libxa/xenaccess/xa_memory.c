@@ -491,26 +491,25 @@ void *xa_access_kernel_sym (
     }
 }
 
-/*TODO fix these functions to return machine address just like real CR3 */
 /* finds the address of the page global directory for a given pid */
 uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
 {
     /* first check the cache */
     uint32_t pgd = 0;
     if (xa_check_pid_cache(instance, pid, &pgd)){
-        return pgd;
+        /* nothing */
     }
 
     /* otherwise do the lookup */
-    if (XA_OS_LINUX == instance->os_type){
-        return linux_pid_to_pgd(instance, pid);
+    else if (XA_OS_LINUX == instance->os_type){
+        pgd = linux_pid_to_pgd(instance, pid);
+        pgd = xa_translate_kv2p(instance, pgd);
     }
     else if (XA_OS_WINDOWS == instance->os_type){
-        return windows_pid_to_pgd(instance, pid);
+        pgd = windows_pid_to_pgd(instance, pid);
     }
-    else{
-        return 0;
-    }
+
+    return pgd;
 }
 
 void *xa_access_user_va (
