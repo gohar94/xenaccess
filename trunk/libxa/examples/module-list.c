@@ -31,13 +31,39 @@
 #include <stdio.h>
 #include <xenaccess/xenaccess.h>
 
+/* len and addr should be from a _UNICODE_STRING struct where len is the 
+   'Length' field and addr is the 'Buffer' field */
+void print_unicode_string (xa_instance_t *xai, uint16_t len, uint32_t addr)
+{
+    //below is a total hack to bypass unicode support
+    int i = 0;
+    uint32_t offset = 0;
+    char *tmpname = malloc(len);
+    char *name = malloc(len);
+    unsigned char *memory =
+        xa_access_kernel_va(xai, addr, &offset, PROT_READ);
+
+    if (memory){
+        memset(name, 0, len);
+        memcpy(tmpname, memory + offset, len);
+        munmap(memory, xai->page_size);
+        for (i = 0; i < len; i++){
+            if (i%2 == 0){
+                name[i/2] = tmpname[i];
+            }
+        }
+        printf("%s\n", name);
+    }
+    if (name) free(name);
+    if (tmpname) free(tmpname);
+}
+
 int main (int argc, char **argv)
 {
     xa_instance_t xai;
     unsigned char *memory = NULL;
     uint32_t offset, next_module, list_head;
     char *name = NULL;
-    wchar_t *wname = NULL;
 
     /* this is the domain ID that we are looking at */
     uint32_t dom = atoi(argv[1]);
@@ -96,21 +122,13 @@ int main (int argc, char **argv)
             printf("%s\n", name);
         }
         else if (XA_OS_WINDOWS == xai.os_type){
-            //wname = (wchar_t *) (memory + offset + 0x4c);
-            //wprintf("%ls\n", wname);
-            //below is a total hack to bypass unicode support
-            int i = 0;
-            /*TODO don't use a hard-coded offset here */
-            char *tmpname = (char *) (memory + offset + 0x4c);
-            name = malloc(28);
-            memset(name, 0, 28);
-            for (i = 0; i < 28; i++){
-                if (i%2 == 0){
-                    name[i/2] = tmpname[i];
-                }
-            }
-            printf("%s\n", name);
-            free(name);
+            /*TODO don't use a hard-coded offsets here */
+            /* these offsets work with WinXP SP2 */
+            uint16_t length;
+            uint32_t buffer_addr;
+            memcpy(&length, memory + offset + 0x2c, 2);
+            memcpy(&buffer_addr, memory + offset + 0x30, 4);
+            print_unicode_string(&xai, length, buffer_addr);
         }
         munmap(memory, xai.page_size);
     }

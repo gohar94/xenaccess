@@ -53,8 +53,7 @@ int main (int argc, char **argv)
     /* init the offset values */
     if (XA_OS_LINUX == xai.os_type){
         tasks_offset = xai.os.linux_instance.tasks_offset;
-        name_offset = 108*4; /* pv, xen 3.0.4, linux 2.6.16 */
-//        name_offset = ??; /* pv, xen 3.1.0, centos 2.6.18-53.el5xen */
+        name_offset = 0x194; /* pv, xen 3.3.1, centos 2.6.18-92.1.10.el5xen */
         pid_offset = xai.os.linux_instance.pid_offset;
     }
     else if (XA_OS_WINDOWS == xai.os_type){
