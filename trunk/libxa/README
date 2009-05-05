@@ -22,6 +22,10 @@ libxenstore (from Xen, access to the xenstore)
 yacc OR bison (for reading the configuration file)
 lex OR flex (for reading the configuration file)
 
+Note: If you are installing a packaged version of Xen, you will likely
+  need to install something like 'xen-devel' to obtain the files needed
+  from libxc and libxenstore in the dependencies listed above.
+
 Building
 --------
 XenAccess uses the standard GNU build system.  To compile this library, simply
