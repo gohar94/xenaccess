@@ -79,7 +79,6 @@ error_exit:
     return NULL;
 }
 
-/*TODO make sure that this returns a mach address */
 /* finds the address of the page global directory for a given pid */
 uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
 {
@@ -101,6 +100,9 @@ uint32_t linux_pid_to_pgd (xa_instance_t *instance, int pid)
     memcpy(&ptr, memory + offset + mm_offset - tasks_offset, 4);
     munmap(memory, instance->page_size);
     xa_read_long_virt(instance, ptr + pgd_offset, 0, &pgd);
+
+    /* convert pgd into a machine address */
+    pgd = xa_translate_kv2p(instance, pgd);
 
     /* update the cache with this new pid->pgd mapping */
     xa_update_pid_cache(instance, pid, pgd);
