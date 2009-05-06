@@ -569,17 +569,22 @@ void *xa_access_user_va_range (
         int prot)
 {
 #ifdef ENABLE_XEN
-    int i;
-
+    int i = 0;
     uint32_t num_pages = size / instance->page_size + 1;
+    uint32_t pgd = 0;
 
-    uint32_t pgd = pid ? xa_pid_to_pgd(instance, pid) : instance->kpgd;
-    xen_pfn_t* pfns = (xen_pfn_t*)malloc(sizeof(xen_pfn_t)*num_pages);
+    if (pid){
+        pgd = xa_pid_to_pgd(instance, pid);
+    }
+    else{
+        xa_current_cr3(instance, &pgd);
+    }
+    xen_pfn_t* pfns = (xen_pfn_t*) malloc(sizeof(xen_pfn_t) * num_pages);
 	
-    uint32_t start = virt_address & ~(instance->page_size-1);
+    uint32_t start = virt_address & ~(instance->page_size - 1);
     for (i = 0; i < num_pages; i++){
         /* Virtual address for each page we will map */
-        uint32_t addr = start + i*instance->page_size;
+        uint32_t addr = start + i * instance->page_size;
 	
         if(!addr) {
             fprintf(stderr, "ERROR: address not in page table (%p)\n", addr);
