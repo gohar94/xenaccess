@@ -2,7 +2,8 @@ dnl --------------------------------
 dnl Initialization macros.
 dnl --------------------------------
 
-AC_INIT(xenaccess/xenaccess.h)
+AC_INIT([xenaccess])
+AC_CONFIG_SRCDIR(xenaccess/xa_memory.c)
 AM_CONFIG_HEADER(config.h)
 
 dnl -----------------------------------------------
@@ -40,6 +41,7 @@ AC_ARG_ENABLE([xen],
          [Support memory introspection with live Xen domains (default is yes)])],
       [enable_xen=$enableval],
       [enable_xen=yes])
+AM_CONDITIONAL([XEN], [test x$enable_xen = xyes])
 
 dnl -----------------------------------------------
 dnl Checks for programs, libraries, etc.

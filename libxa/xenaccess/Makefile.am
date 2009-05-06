@@ -12,3 +12,15 @@ lib_LTLIBRARIES= libxenaccess.la
 libxenaccess_la_SOURCES= $(h_sources) $(c_sources)
 libxenaccess_la_LIBADD= config/libconfig.la
 libxenaccess_la_LDFLAGS= -release $(RELEASE)
+libxenaccess_la_DEPENDENCIES= xenaccess.h
+
+CLEANFILES= xenaccess.h
+
+if XEN
+do_subst= $(SED) -r '/\#ifdef ENABLE_XEN/,/\#endif/ s/(^\#ifdef|^\#endif)/\/\/&/'
+else
+do_subst= $(SED) '/\#ifdef ENABLE_XEN/,/\#endif/ s/^.*/\/\/&/'
+endif
+
+xenaccess.h: xenaccess.h.in
+	$(do_subst) < xenaccess.h.in > xenaccess.h
