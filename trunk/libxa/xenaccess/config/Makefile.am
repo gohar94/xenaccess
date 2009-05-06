@@ -7,3 +7,6 @@ AM_YFLAGS = -y -d
 
 noinst_LTLIBRARIES= libconfig.la
 libconfig_la_SOURCES= $(h_sources) $(c_sources)
+
+../xenaccess.h: ../xenaccess.h.in $(c_sources) $(h_sources)
+	cd .. && $(MAKE) $(AM_MAKEFLAGS) xenaccess.h
