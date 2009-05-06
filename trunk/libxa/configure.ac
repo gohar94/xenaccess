@@ -106,10 +106,11 @@ dnl -----------------------------------------------
 dnl Generates Makefile's, configuration files and scripts
 dnl -----------------------------------------------
 
-AC_OUTPUT(Makefile \
-          xenaccess.pc \
-          xenaccess/Makefile \
-          xenaccess/config/Makefile \
-          examples/Makefile
+AC_CONFIG_FILES(Makefile \
+                xenaccess.pc \
+                xenaccess/Makefile \
+                xenaccess/config/Makefile \
+                examples/Makefile
 )
+AC_OUTPUT
 
