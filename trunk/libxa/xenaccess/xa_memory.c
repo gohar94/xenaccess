@@ -522,7 +522,7 @@ void *xa_access_user_va (
 
     /* check the LRU cache */
     if (xa_check_cache_virt(instance, virt_address, pid, &address)){
-        return xa_access_ma(instance, address, offset, PROT_READ);
+        return xa_access_ma(instance, address, offset, prot);
     }
 
     /* use kernel page tables */
