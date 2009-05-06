@@ -503,7 +503,6 @@ uint32_t xa_pid_to_pgd (xa_instance_t *instance, int pid)
     /* otherwise do the lookup */
     else if (XA_OS_LINUX == instance->os_type){
         pgd = linux_pid_to_pgd(instance, pid);
-        pgd = xa_translate_kv2p(instance, pgd);
     }
     else if (XA_OS_WINDOWS == instance->os_type){
         pgd = windows_pid_to_pgd(instance, pid);
