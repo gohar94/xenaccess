@@ -43,3 +43,5 @@
   -- patch for Xen to tag memory pages for notification on read/write/exec
   -- patch for libxc to set these notifications via mfn
   -- set notifications via PA/VA in XenAccess
+* get additional symbols from MS symbol server
+* support for KVM and/or other virtualization platforms
