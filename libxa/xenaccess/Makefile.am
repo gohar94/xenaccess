@@ -14,6 +14,7 @@ libxenaccess_la_LIBADD= config/libconfig.la
 libxenaccess_la_LDFLAGS= -release $(RELEASE)
 libxenaccess_la_DEPENDENCIES= xenaccess.h
 
+BUILT_SOURCES= xenaccess.h
 CLEANFILES= xenaccess.h
 
 if XEN
