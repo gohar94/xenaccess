@@ -94,3 +94,16 @@ fedora{
     linux_addr = 0x84;
 }
 }}}
+
+===SLES 10 SP 2, with Xen 3.2.0 and PAE (2.6.16.60-0.21-xenpae)===
+{{{
+sles10sp2 {
+    ostype = "Linux";
+    # linux_name = 452;
+    linux_tasks= 120;
+    linux_mm = 144;
+    linux_pid = 180;
+    linux_pgd = 36;
+    linux_addr = 128;
+}
+}}}
