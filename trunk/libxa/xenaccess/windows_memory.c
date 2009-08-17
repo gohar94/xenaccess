@@ -41,7 +41,7 @@ int windows_symbol_to_address (
 }
 
 /* find the ntoskrnl base address */
-#define NUM_BASE_ADDRESSES 10
+#define NUM_BASE_ADDRESSES 11
 uint32_t get_ntoskrnl_base (xa_instance_t *instance)
 {
     uint32_t paddr;
@@ -58,6 +58,7 @@ uint32_t get_ntoskrnl_base (xa_instance_t *instance)
         0x004d0000, /* Windows XP */
         0x004d5000, /* Windows XP */
         0x00a02000, /* Windows XP */
+        0x00496000, /* Windows XP */
         0x004d7000, /* Windows XP SP2/SP3 */
         0x004de000, /* Windows Server 2003 */
         0x00800000, /* Windows Server 2003 SP1 */
