@@ -136,6 +136,7 @@ char *rva_to_string (xa_instance_t *instance, uint32_t rva)
     unsigned char *memory = NULL;
     uint32_t offset = 0;
     int length = 0;
+    int max_length = 0;
     char *str = NULL;
 
     memory = xa_access_pa(
@@ -148,7 +149,8 @@ char *rva_to_string (xa_instance_t *instance, uint32_t rva)
     }
 
     /* assuming that this is null terminated */
-    length = strlen(memory + offset);
+    max_length = instance->page_size - offset - 1;
+    length = strnlen(memory + offset, max_length);
     if (length > 0){
         str = malloc(length + 1);
         memset(str, 0, length + 1);
@@ -268,9 +270,11 @@ int get_aon_index (
         xa_read_long_phys(instance, str_rva_loc, &str_rva);
         if (str_rva){
             char *rva = rva_to_string(instance, str_rva);
-            if (strncmp(rva, symbol, strlen(rva)) == 0){
-                free(rva);
-                return (int) i;
+            if (NULL != rva){
+                if (strncmp(rva, symbol, strlen(rva)) == 0){
+                    free(rva);
+                    return (int) i;
+                }
             }
             free(rva);
         }
